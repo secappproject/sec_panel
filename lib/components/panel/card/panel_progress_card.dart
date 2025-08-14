@@ -1,0 +1,649 @@
+// lib/components/panel/card/panel_progress_card.dart
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:secpanel/components/alert_box.dart';
+import 'package:secpanel/components/panel/card/remarks_bottom_sheet.dart';
+import 'package:secpanel/models/approles.dart';
+import 'package:secpanel/models/busbarremark.dart';
+import 'package:secpanel/theme/colors.dart';
+
+class AlertInfo {
+  final String title;
+  final String description;
+  final String imagePath;
+  final Color backgroundColor;
+  final Color borderColor;
+  final Color textColor;
+
+  AlertInfo({
+    required this.title,
+    required this.description,
+    required this.imagePath,
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.textColor,
+  });
+}
+
+class PanelProgressCard extends StatelessWidget {
+  final AppRole currentUserRole;
+  final String duration;
+  final DateTime? targetDelivery;
+  final double progress;
+  final DateTime? startDate;
+  final String progressLabel;
+  final String panelTitle;
+  final String panelType;
+  final String statusBusbarPcc;
+  final String statusBusbarMcc;
+  final String statusComponent;
+  final String statusPalet;
+  final String statusCorepart;
+  final String ppNumber;
+  final String wbsNumber;
+  final String project;
+  final VoidCallback onEdit;
+  final String panelVendorName;
+  final String busbarVendorNames;
+  final String componentVendorName;
+  final String paletVendorName;
+  final String corepartVendorName;
+  final bool isClosed;
+  final DateTime? closedDate;
+  final List<BusbarRemark> busbarRemarks;
+
+  const PanelProgressCard({
+    super.key,
+    required this.currentUserRole,
+    required this.duration,
+    required this.targetDelivery,
+    required this.progress,
+    required this.startDate,
+    required this.progressLabel,
+    required this.panelType,
+    required this.panelTitle,
+    required this.statusBusbarPcc,
+    required this.statusBusbarMcc,
+    required this.statusComponent,
+    required this.statusPalet,
+    required this.statusCorepart,
+    required this.ppNumber,
+    required this.wbsNumber,
+    required this.project,
+    required this.onEdit,
+    required this.panelVendorName,
+    required this.busbarVendorNames,
+    required this.componentVendorName,
+    required this.paletVendorName,
+    required this.corepartVendorName,
+    required this.isClosed,
+    this.closedDate,
+    required this.busbarRemarks,
+  });
+
+  void _showRemarksBottomSheet(
+    BuildContext context,
+    List<BusbarRemark> remarks,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => RemarksBottomSheet(remarks: remarks),
+    );
+  }
+
+  AlertInfo? _getAlertInfo() {
+    if (isClosed || targetDelivery == null) return null;
+
+    final now = DateTime.now();
+    final nowDateOnly = DateTime(now.year, now.month, now.day);
+    final targetDateOnly = DateTime(
+      targetDelivery!.year,
+      targetDelivery!.month,
+      targetDelivery!.day,
+    );
+    final differenceInDays = targetDateOnly.difference(nowDateOnly).inDays;
+    final formattedDate = DateFormat(
+      'd MMM yyyy',
+      'id_ID',
+    ).format(targetDelivery!);
+
+    if (differenceInDays < 0) {
+      final daysLate = differenceInDays.abs();
+      return AlertInfo(
+        title: "Terlambat",
+        description: "Terlambat $daysLate hari ($formattedDate)",
+        imagePath: 'assets/images/alert-danger.png',
+        backgroundColor: const Color.fromARGB(6, 219, 4, 4),
+        borderColor: AppColors.red,
+        textColor: AppColors.red,
+      );
+    }
+    if (differenceInDays <= 2) {
+      String description;
+      if (differenceInDays == 0) {
+        description = "Target delivery adalah hari ini ($formattedDate)";
+      } else {
+        description = "Sisa $differenceInDays hari lagi ($formattedDate)";
+      }
+      return AlertInfo(
+        title: "Perlu Dikejar",
+        description: description,
+        imagePath: 'assets/images/alert-progress.png',
+        backgroundColor: const Color.fromARGB(30, 120, 175, 231),
+        borderColor: AppColors.blue,
+        textColor: AppColors.blue,
+      );
+    }
+    return null;
+  }
+
+  Color _getProgressColor() {
+    if (isClosed) return AppColors.schneiderGreen;
+    if (progress < 0.5) return AppColors.red;
+    if (progress < 0.75) return AppColors.orange;
+    return AppColors.blue;
+  }
+
+  String _getProgressImage() {
+    if (isClosed) return 'assets/images/progress-bolt-green.png';
+    if (progress < 0.5) return 'assets/images/progress-bolt-red.png';
+    if (progress < 0.75) return 'assets/images/progress-bolt-orange.png';
+    return 'assets/images/progress-bolt-blue.png';
+  }
+
+  String _getBusbarStatusImage(String status) {
+    final lower = status.toLowerCase();
+    if (lower.contains('on progress')) return 'assets/images/new-yellow.png';
+    if (lower.contains('close')) return 'assets/images/done-green.png';
+    if (lower.contains('siap 100%')) return 'assets/images/done-blue.png';
+    if (lower.contains('red block')) return 'assets/images/on-block-red.png';
+    return 'assets/images/no-status-gray.png';
+  }
+
+  String _getComponentStatusImage(String status) {
+    final lower = status.toLowerCase();
+    if (lower.contains('open')) return 'assets/images/no-status-gray.png';
+    if (lower.contains('done')) return 'assets/images/done-green.png';
+    if (lower.contains('on progress'))
+      return 'assets/images/on-progress-blue.png';
+    return 'assets/images/no-status-gray.png';
+  }
+
+  String _getPaletStatusImage(String status) =>
+      status.toLowerCase().contains('close')
+      ? 'assets/images/done-green.png'
+      : 'assets/images/no-status-gray.png';
+  String _getCorepartStatusImage(String status) =>
+      status.toLowerCase().contains('close')
+      ? 'assets/images/done-green.png'
+      : 'assets/images/no-status-gray.png';
+
+  String _formatTimeAgo(DateTime date) {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('d MMM yyyy', 'id_ID').format(date);
+    final nowDateOnly = DateTime(now.year, now.month, now.day);
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    final dayDifference = nowDateOnly.difference(dateOnly).inDays;
+
+    if (dayDifference > 0)
+      return '$dayDifference hari yang lalu ($formattedDate)';
+    if (dayDifference < 0)
+      return '${dayDifference.abs()} hari lagi ($formattedDate)';
+
+    final timeDifference = now.difference(date);
+    if (timeDifference.inHours > 0)
+      return '${timeDifference.inHours} jam yang lalu ($formattedDate)';
+    if (timeDifference.inMinutes > 0)
+      return '${timeDifference.inMinutes} menit yang lalu ($formattedDate)';
+
+    return 'Baru saja ($formattedDate)';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isTemporary = ppNumber.startsWith('TEMP_PP_');
+    final bool hasRemarks = busbarRemarks.isNotEmpty;
+    final alertInfo = _getAlertInfo();
+
+    final String pccDisplayStatus = statusBusbarPcc.isEmpty
+        ? 'On Progress'
+        : statusBusbarPcc;
+    final String mccDisplayStatus = statusBusbarMcc.isEmpty
+        ? 'On Progress'
+        : statusBusbarMcc;
+    final String componentDisplayStatus = statusComponent.isEmpty
+        ? 'Open'
+        : statusComponent;
+    final String paletDisplayStatus = statusPalet.isEmpty
+        ? 'Open'
+        : statusPalet;
+    final String corepartDisplayStatus = statusCorepart.isEmpty
+        ? 'Open'
+        : statusCorepart;
+
+    final bool isFuture =
+        startDate != null && startDate!.isAfter(DateTime.now());
+
+    // [PERBAIKAN] Logika diubah untuk memeriksa setiap nilai secara individual
+    final String durationLabel = isFuture ? "Mulai Dalam" : "Durasi Proses";
+    final String displayDuration = startDate == null
+        ? "Belum Diatur"
+        : duration;
+    final String displayPanelType = panelType.isEmpty
+        ? "Belum Diatur"
+        : panelType;
+    final String displayPanelTitle = panelTitle.isEmpty
+        ? "Belum Diatur"
+        : panelTitle;
+    final String displayPpNumber = isTemporary ? "Belum Diatur" : ppNumber;
+    final String displayWbsNumber = wbsNumber.isEmpty
+        ? "Belum Diatur"
+        : wbsNumber;
+
+    return Column(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.all(Radius.circular(8)),
+            border: Border.all(width: 1, color: AppColors.grayLight),
+          ),
+          width: MediaQuery.of(context).size.width,
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Image.asset(_getProgressImage(), height: 28),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.only(right: 8),
+                          decoration: const BoxDecoration(
+                            border: Border(
+                              right: BorderSide(
+                                color: AppColors.grayNeutral,
+                                width: 1,
+                              ),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                durationLabel,
+                                style: const TextStyle(
+                                  color: AppColors.gray,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 10,
+                                ),
+                              ),
+                              Text(
+                                displayDuration,
+                                style: const TextStyle(
+                                  color: AppColors.black,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          height: 11,
+                          width: MediaQuery.of(context).size.width - 280,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: progress.clamp(0.0, 1.0),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: _getProgressColor(),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          progressLabel,
+                          style: const TextStyle(
+                            color: AppColors.black,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(width: 1, color: AppColors.grayLight),
+                    top: BorderSide(width: 1, color: AppColors.grayLight),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          width: 1,
+                          color: AppColors.grayLight,
+                        ),
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Text(
+                                "Panel",
+                                style: TextStyle(
+                                  color: AppColors.gray,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 10,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.grayLight,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  panelVendorName.isEmpty
+                                      ? 'No Vendor'
+                                      : panelVendorName,
+                                  style: const TextStyle(
+                                    color: AppColors.black,
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              const Text(
+                                "Busbar",
+                                style: TextStyle(
+                                  color: AppColors.gray,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 10,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Container(
+                                constraints: BoxConstraints(
+                                  maxWidth:
+                                      MediaQuery.of(context).size.width * 0.3,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.grayLight,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  busbarVendorNames.isEmpty
+                                      ? 'No Vendor'
+                                      : busbarVendorNames,
+                                  style: const TextStyle(
+                                    color: AppColors.black,
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 10,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (hasRemarks) ...[
+                                const SizedBox(width: 4),
+                                InkWell(
+                                  onTap: () => _showRemarksBottomSheet(
+                                    context,
+                                    busbarRemarks,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: AppColors.grayLight,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Image.asset(
+                                      'assets/images/remarks.png',
+                                      height: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      displayPanelTitle,
+                      style: const TextStyle(
+                        color: AppColors.black,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatusColumn(
+                            "Busbar Pcc",
+                            pccDisplayStatus,
+                            _getBusbarStatusImage(statusBusbarPcc),
+                          ),
+                        ),
+                        Expanded(
+                          child: _buildStatusColumn(
+                            "Busbar Mcc",
+                            mccDisplayStatus,
+                            _getBusbarStatusImage(statusBusbarMcc),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 60,
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: _buildEditButton(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatusColumn(
+                            "Component",
+                            componentDisplayStatus,
+                            _getComponentStatusImage(statusComponent),
+                          ),
+                        ),
+                        Expanded(
+                          child: _buildStatusColumn(
+                            "Palet",
+                            paletDisplayStatus,
+                            _getPaletStatusImage(statusPalet),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 60,
+                          child: _buildStatusColumn(
+                            "Corepart",
+                            corepartDisplayStatus,
+                            _getCorepartStatusImage(statusCorepart),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (isClosed && closedDate != null)
+                AlertBox(
+                  title: "Closed",
+                  description: _formatTimeAgo(closedDate!),
+                  imagePath: 'assets/images/alert-success.png',
+                  backgroundColor: const Color.fromARGB(11, 0, 138, 21),
+                  borderColor: AppColors.schneiderGreen,
+                  textColor: AppColors.schneiderGreen,
+                )
+              else if (alertInfo != null)
+                AlertBox(
+                  title: alertInfo.title,
+                  description: alertInfo.description,
+                  imagePath: alertInfo.imagePath,
+                  backgroundColor: alertInfo.backgroundColor,
+                  borderColor: alertInfo.borderColor,
+                  textColor: alertInfo.textColor,
+                )
+              else if (targetDelivery != null)
+                Builder(
+                  builder: (context) {
+                    final diff = targetDelivery!
+                        .difference(DateTime.now())
+                        .inDays;
+                    return AlertBox(
+                      title: "Target Delivery",
+                      description:
+                          "${diff > 0 ? '$diff hari lagi' : 'Target:'} (${DateFormat('d MMM yyyy', 'id_ID').format(targetDelivery!)})",
+                      imagePath: 'assets/images/alert-progress.png',
+                      backgroundColor: const Color.fromARGB(30, 120, 175, 231),
+                      borderColor: AppColors.blue,
+                      textColor: AppColors.blue,
+                    );
+                  },
+                ),
+              Container(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: [
+                    _buildInfoRow("Tipe Panel", displayPanelType),
+                    const SizedBox(height: 8),
+                    _buildInfoRow("No. PP", displayPpNumber),
+                    const SizedBox(height: 8),
+                    _buildInfoRow("No. WBS", displayWbsNumber),
+                    const SizedBox(height: 8),
+                    _buildInfoRow("Project", project),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusColumn(String title, String status, String imagePath) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: AppColors.gray,
+            fontWeight: FontWeight.w400,
+            fontSize: 10,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Text(
+              status,
+              style: const TextStyle(
+                color: AppColors.black,
+                fontWeight: FontWeight.w400,
+                fontSize: 10,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Image.asset(imagePath, height: 12),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEditButton() {
+    if (currentUserRole == AppRole.viewer) return const SizedBox.shrink();
+    return InkWell(
+      onTap: onEdit,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.grayLight, width: 1),
+        ),
+        child: Image.asset('assets/images/edit-green.png', height: 20),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.gray,
+            fontWeight: FontWeight.w300,
+            fontSize: 10,
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: AppColors.gray,
+            fontWeight: FontWeight.w400,
+            fontSize: 10,
+          ),
+        ),
+      ],
+    );
+  }
+}
