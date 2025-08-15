@@ -433,6 +433,22 @@ class DatabaseHelper {
     );
   }
 
+  Future<void> deletePalet(String panelNoPp, String vendorId) async {
+    await _apiRequest(
+      'DELETE',
+      '/palet', // Pastikan endpoint ini ada di backend Go
+      body: {'panel_no_pp': panelNoPp, 'vendor': vendorId},
+    );
+  }
+
+  Future<void> deleteCorepart(String panelNoPp, String vendorId) async {
+    await _apiRequest(
+      'DELETE',
+      '/corepart', // Pastikan endpoint ini ada di backend Go
+      body: {'panel_no_pp': panelNoPp, 'vendor': vendorId},
+    );
+  }
+
   Future<int> upsertComponent(Component component) async {
     await _apiRequest('POST', '/component', body: component.toMap());
     return 1;

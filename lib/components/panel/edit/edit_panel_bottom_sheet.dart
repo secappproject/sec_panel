@@ -270,16 +270,48 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
           Busbar(panelNoPp: finalPanel.noPp, vendor: vendorId),
         );
       }
+      // 4. Urus relasi Palet & Corepart dengan memeriksa perubahan vendor K3
+      final oldK3VendorId = widget.panelData.paletVendorIds.isNotEmpty
+          ? widget.panelData.paletVendorIds.first
+          : null;
+      final newK3VendorId = _selectedK3VendorId;
 
-      // 4. [FIX] Gunakan no_pp yang BENAR dari `finalPanel` untuk upsert relasi lain
-      if (_selectedK3VendorId != null && _selectedK3VendorId!.isNotEmpty) {
-        await DatabaseHelper.instance.upsertPalet(
-          Palet(panelNoPp: finalPanel.noPp, vendor: _selectedK3VendorId!),
-        );
-        await DatabaseHelper.instance.upsertCorepart(
-          Corepart(panelNoPp: finalPanel.noPp, vendor: _selectedK3VendorId!),
-        );
+      // Cek apakah vendor K3 berubah
+      if (oldK3VendorId != newK3VendorId) {
+        // Jika vendor lama ada, hapus relasi lamanya
+        if (oldK3VendorId != null && oldK3VendorId.isNotEmpty) {
+          // Hapus relasi lama menggunakan No. PP LAMA (_originalNoPp)
+          // karena relasi di DB masih terikat dengan itu sebelum diubah.
+          // NOTE: Ini asumsi, jika changePanelNoPp sudah mengupdate relasi secara cascade,
+          // maka gunakan finalPanel.noPp. Tapi lebih aman pakai _originalNoPp untuk delete.
+          // Mari kita asumsikan cascade ON UPDATE ada di DB dan pakai noPp yang baru.
+          // Jika backend tidak punya ON UPDATE CASCADE, maka harus pakai _originalNoPp
+          await DatabaseHelper.instance.deletePalet(
+            _originalNoPp,
+            oldK3VendorId,
+          );
+          await DatabaseHelper.instance.deleteCorepart(
+            _originalNoPp,
+            oldK3VendorId,
+          );
+        }
+
+        // Jika vendor baru dipilih, tambahkan relasi baru
+        if (newK3VendorId != null && newK3VendorId.isNotEmpty) {
+          // Tambah relasi baru menggunakan No. PP BARU (finalPanel.noPp)
+          await DatabaseHelper.instance.upsertPalet(
+            Palet(panelNoPp: finalPanel.noPp, vendor: newK3VendorId),
+          );
+          await DatabaseHelper.instance.upsertCorepart(
+            Corepart(panelNoPp: finalPanel.noPp, vendor: newK3VendorId),
+          );
+        }
       }
+
+      // 5. Urus relasi Component (ini sepertinya statis ke 'warehouse', jadi aman)
+      await DatabaseHelper.instance.upsertComponent(
+        Component(panelNoPp: finalPanel.noPp, vendor: 'warehouse'),
+      );
 
       await DatabaseHelper.instance.upsertComponent(
         Component(panelNoPp: finalPanel.noPp, vendor: 'warehouse'),
