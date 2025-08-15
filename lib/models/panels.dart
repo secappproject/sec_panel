@@ -97,6 +97,7 @@ class Panel {
       'closed_date': closedDate?.toUtc().toIso8601String(),
       // [PERUBAHAN] Mengirim ke API
       'panel_type': panelType,
+      'remarks': remarks,
     };
   }
 
