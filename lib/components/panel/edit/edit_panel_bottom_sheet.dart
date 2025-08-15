@@ -491,6 +491,8 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                   ],
                 ),
                 const SizedBox(height: 12),
+
+                // Container Utama untuk Data Panel
                 Container(
                   width: MediaQuery.of(context).size.width,
                   padding: const EdgeInsets.all(12),
@@ -538,12 +540,6 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                       _buildTextField(
                         controller: _noPpController,
                         label: "No. PP",
-                        // validator: (value) {
-                        //   if (value == null || value.isEmpty) {
-                        //     return 'No. PP tidak boleh kosong';
-                        //   }
-                        //   return null;
-                        // },
                       ),
                       const SizedBox(height: 16),
                       Row(
@@ -577,11 +573,14 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                       const SizedBox(height: 16),
                       _buildTargetDeliveryPicker(),
                       const SizedBox(height: 16),
+
+                      // Bagian untuk menampilkan pilihan/nama vendor
                       if (_isAdmin)
                         _buildAdminVendorPicker()
                       else if (_isK3)
                         _buildK3VendorDisplay(),
 
+                      // Bagian untuk field remark
                       if (_isAdmin || _isK3) ...[
                         const SizedBox(height: 16),
                         _buildTextField(
@@ -593,8 +592,11 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                     ],
                   ),
                 ),
+
+                // Bagian Khusus Admin
                 if (_isAdmin) ...[
                   const SizedBox(height: 12),
+                  // Container Busbar
                   Container(
                     width: MediaQuery.of(context).size.width,
                     padding: const EdgeInsets.all(12),
@@ -653,6 +655,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                     ),
                   ),
                   const SizedBox(height: 12),
+                  // Container Komponen
                   Container(
                     width: MediaQuery.of(context).size.width,
                     padding: const EdgeInsets.all(12),
@@ -680,6 +683,8 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                     ),
                   ),
                 ],
+
+                // Bagian Umum (Terlihat oleh semua role yang bisa edit)
                 const SizedBox(height: 12),
                 Container(
                   width: MediaQuery.of(context).size.width,
@@ -767,8 +772,6 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       ),
     );
   }
-
-  // --- HELPER WIDGET BUILDERS ---
 
   Widget _buildSectionHeader(String title) {
     return Padding(
