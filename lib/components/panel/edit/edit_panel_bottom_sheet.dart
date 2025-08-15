@@ -579,9 +579,10 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                       const SizedBox(height: 16),
                       if (_isAdmin)
                         _buildAdminVendorPicker()
-                      else if (_isK3) ...[
-                        // <-- TAMBAHKAN BLOK INI
+                      else if (_isK3)
                         _buildK3VendorDisplay(),
+
+                      if (_isAdmin || _isK3) ...[
                         const SizedBox(height: 16),
                         _buildTextField(
                           controller: _panelRemarkController,
