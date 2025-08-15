@@ -39,6 +39,8 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
   late final TextEditingController _projectController;
   late final TextEditingController _noPpController;
   late final TextEditingController _progressController;
+  late final TextEditingController _panelRemarkController;
+
   late String _originalNoPp;
 
   late Panel _panel;
@@ -95,6 +97,8 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     _noPanelController = TextEditingController(text: _panel.noPanel);
     _noWbsController = TextEditingController(text: _panel.noWbs);
     _projectController = TextEditingController(text: _panel.project);
+    _panelRemarkController = TextEditingController(text: _panel.remarks);
+
     _noPpController = TextEditingController(
       text: _panel.noPp.startsWith('TEMP_PP_') ? '' : _panel.noPp,
     );
@@ -159,6 +163,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     _noPpController.dispose();
     _progressController.removeListener(_updateCanMarkAsSent);
     _progressController.dispose();
+    _panelRemarkController.dispose();
     super.dispose();
   }
 
@@ -231,6 +236,8 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       panelToSave.noWbs = _noWbsController.text.trim();
       panelToSave.project = _projectController.text.trim();
       panelToSave.noPp = _noPpController.text.trim();
+      panelToSave.remarks = _panelRemarkController.text.trim();
+
       panelToSave.percentProgress =
           double.tryParse(_progressController.text.trim()) ?? 0.0;
       panelToSave.startDate = _selectedDate;
@@ -572,8 +579,16 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                       const SizedBox(height: 16),
                       if (_isAdmin)
                         _buildAdminVendorPicker()
-                      else if (_isK3)
+                      else if (_isK3) ...[
+                        // <-- TAMBAHKAN BLOK INI
                         _buildK3VendorDisplay(),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _panelRemarkController,
+                          label: "Panel Remark",
+                          maxLines: 3,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -774,6 +789,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     bool isNumber = false,
     String? suffixText,
     String? Function(String?)? validator,
+    int? maxLines = 1,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

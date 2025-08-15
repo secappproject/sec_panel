@@ -23,6 +23,7 @@ class Panel {
   DateTime? closedDate;
   // [PERUBAHAN] Menambahkan properti baru
   String? panelType;
+  String? remarks;
 
   Panel({
     required this.noPp,
@@ -43,8 +44,8 @@ class Panel {
     this.vendorId,
     this.isClosed = false,
     this.closedDate,
-    // [PERUBAHAN] Menambahkan di constructor
     this.panelType,
+    this.remarks,
   });
 
   // Method ini untuk database lokal (sqflite)
@@ -132,8 +133,8 @@ class Panel {
       vendorId: map['vendor_id'],
       isClosed: isClosedValue,
       closedDate: parseDate(map['closed_date']),
-      // [PERUBAHAN] Membaca dari map
       panelType: map['panel_type'],
+      remarks: map['remarks'], //
     );
   }
 }

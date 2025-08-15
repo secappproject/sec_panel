@@ -11,6 +11,8 @@ class PanelDisplayData {
   final List<String> busbarVendorIds;
   final List<BusbarRemark> busbarRemarks;
   final String componentVendorNames;
+  final String? panelRemarks;
+
   final List<String> componentVendorIds;
   final String paletVendorNames;
   final List<String> paletVendorIds;
@@ -24,6 +26,7 @@ class PanelDisplayData {
     required this.busbarVendorIds,
     required this.busbarRemarks,
     required this.componentVendorNames,
+    required this.panelRemarks,
     required this.componentVendorIds,
     required this.paletVendorNames,
     required this.paletVendorIds,
@@ -69,6 +72,7 @@ class PanelDisplayData {
     return PanelDisplayData(
       panel: Panel.fromMap(panelData),
       panelVendorName: json['panel_vendor_name'] as String? ?? '',
+      panelRemarks: panelData['remarks'] as String?,
       busbarVendorNames: json['busbar_vendor_names'] as String? ?? '',
       // Use the new helper function without the failing 'as String?' cast.
       busbarVendorIds: _parseIdList(json['busbar_vendor_ids']),

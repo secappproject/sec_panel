@@ -488,6 +488,17 @@ class DatabaseHelper {
     return (data as List).map((map) => Busbar.fromMap(map)).toList();
   }
 
+  Future<void> upsertPanelRemark({
+    required String panelNoPp,
+    required String newRemark,
+  }) async {
+    await _apiRequest(
+      'POST',
+      '/panel/remark-vendor',
+      body: {'panel_no_pp': panelNoPp, 'remarks': newRemark},
+    );
+  }
+
   Future<void> upsertBusbarRemarkandVendor({
     required String panelNoPp,
     required String vendorId,

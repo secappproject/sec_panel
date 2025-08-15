@@ -50,6 +50,7 @@ class PanelProgressCard extends StatelessWidget {
   final String corepartVendorName;
   final bool isClosed;
   final DateTime? closedDate;
+  final String? panelRemarks;
   final List<BusbarRemark> busbarRemarks;
 
   const PanelProgressCard({
@@ -78,13 +79,15 @@ class PanelProgressCard extends StatelessWidget {
     required this.corepartVendorName,
     required this.isClosed,
     this.closedDate,
+    this.panelRemarks,
     required this.busbarRemarks,
   });
 
   void _showRemarksBottomSheet(
-    BuildContext context,
-    List<BusbarRemark> remarks,
-  ) {
+    BuildContext context, {
+    required String title,
+    required Map<String, String?> remarksMap,
+  }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -92,7 +95,7 @@ class PanelProgressCard extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => RemarksBottomSheet(remarks: remarks),
+      builder: (_) => RemarksBottomSheet(title: title, remarksMap: remarksMap),
     );
   }
 
@@ -207,7 +210,9 @@ class PanelProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isTemporary = ppNumber.startsWith('TEMP_PP_');
-    final bool hasRemarks = busbarRemarks.isNotEmpty;
+    final bool hasBusbarRemarks = busbarRemarks.isNotEmpty;
+    final bool hasPanelRemarks =
+        panelRemarks != null && panelRemarks!.isNotEmpty;
     final alertInfo = _getAlertInfo();
 
     final String pccDisplayStatus = statusBusbarPcc.isEmpty
@@ -368,6 +373,7 @@ class PanelProgressCard extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 4),
+
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 4,
@@ -388,6 +394,32 @@ class PanelProgressCard extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                              if (hasPanelRemarks) ...[
+                                // <-- TAMBAHKAN BLOK KONDISI INI
+                                const SizedBox(width: 4),
+                                InkWell(
+                                  onTap: () => _showRemarksBottomSheet(
+                                    context,
+                                    title: 'Panel Remarks',
+                                    remarksMap: {panelVendorName: panelRemarks},
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: AppColors.grayLight,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Image.asset(
+                                      'assets/images/remarks.png',
+                                      height: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                           Row(
@@ -426,12 +458,16 @@ class PanelProgressCard extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              if (hasRemarks) ...[
+                              if (hasBusbarRemarks) ...[
                                 const SizedBox(width: 4),
                                 InkWell(
                                   onTap: () => _showRemarksBottomSheet(
                                     context,
-                                    busbarRemarks,
+                                    title: 'Busbar Remarks',
+                                    remarksMap: {
+                                      for (var e in busbarRemarks)
+                                        e.vendorName: e.remark,
+                                    },
                                   ),
                                   borderRadius: BorderRadius.circular(16),
                                   child: Container(
