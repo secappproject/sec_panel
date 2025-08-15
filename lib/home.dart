@@ -98,29 +98,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  // ===========================================================================
-  // FUNGSI-FUNGSI UNTUK MEMBUKA BOTTOM SHEET
-  // ===========================================================================
-
-  void _openAddPanelBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => AddPanelBottomSheet(
-        currentCompany: widget.currentCompany,
-        k3Vendors: _allK3Vendors,
-        // Callback untuk auto-refresh setelah panel baru ditambahkan
-        onPanelAdded: (newlyAddedPanel) {
-          loadInitialData();
-        },
-      ),
-    );
-  }
-
   void _openFilterBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -547,12 +524,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         child: SafeArea(
           child: _isLoading ? _buildSkeletonView() : _buildContentView(),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openAddPanelBottomSheet,
-        backgroundColor: AppColors.schneiderGreen,
-        tooltip: 'Tambah Panel Baru',
-        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

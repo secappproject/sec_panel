@@ -283,13 +283,25 @@ class DatabaseHelper {
     return List<Map<String, dynamic>>.from(data);
   }
 
+  // package:secpanel/helpers/db_helper.dart
+
   Future<List<Map<String, dynamic>>> getColleagueAccountsForDisplay(
     String companyName,
     String currentUsername,
   ) async {
     final endpoint =
         '/users/colleagues/display?company_name=$companyName&current_username=$currentUsername';
-    final List<dynamic> data = await _apiRequest('GET', endpoint);
+
+    // PERBAIKAN 1: Izinkan `data` bisa bernilai null dengan tanda tanya (?).
+    final List<dynamic>? data = await _apiRequest('GET', endpoint);
+
+    // PERBAIKAN 2: Jika data ternyata null (tidak ada kolega),
+    // kembalikan list kosong `[]` yang aman dan tidak membuat crash.
+    if (data == null) {
+      return [];
+    }
+
+    // Jika tidak null, lanjutkan proses seperti biasa.
     return List<Map<String, dynamic>>.from(data);
   }
 
