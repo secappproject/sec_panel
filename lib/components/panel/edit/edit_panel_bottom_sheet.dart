@@ -259,8 +259,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
 
       final vendorsToDelete = oldVendorIds.difference(newVendorIds);
       for (final vendorId in vendorsToDelete) {
-        // Saat menghapus, gunakan No. PP LAMA (_originalNoPp) karena relasinya masih pakai itu
-        await DatabaseHelper.instance.deleteBusbar(_originalNoPp, vendorId);
+        await DatabaseHelper.instance.deleteBusbar(finalPanel.noPp, vendorId);
       }
 
       final vendorsToAdd = newVendorIds.difference(oldVendorIds);
@@ -280,18 +279,12 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       if (oldK3VendorId != newK3VendorId) {
         // Jika vendor lama ada, hapus relasi lamanya
         if (oldK3VendorId != null && oldK3VendorId.isNotEmpty) {
-          // Hapus relasi lama menggunakan No. PP LAMA (_originalNoPp)
-          // karena relasi di DB masih terikat dengan itu sebelum diubah.
-          // NOTE: Ini asumsi, jika changePanelNoPp sudah mengupdate relasi secara cascade,
-          // maka gunakan finalPanel.noPp. Tapi lebih aman pakai _originalNoPp untuk delete.
-          // Mari kita asumsikan cascade ON UPDATE ada di DB dan pakai noPp yang baru.
-          // Jika backend tidak punya ON UPDATE CASCADE, maka harus pakai _originalNoPp
           await DatabaseHelper.instance.deletePalet(
-            _originalNoPp,
+            finalPanel.noPp,
             oldK3VendorId,
           );
           await DatabaseHelper.instance.deleteCorepart(
-            _originalNoPp,
+            finalPanel.noPp,
             oldK3VendorId,
           );
         }
