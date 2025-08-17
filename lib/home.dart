@@ -697,6 +697,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       progressLabel: "${panel.percentProgress?.toInt() ?? 0}%",
                       panelType: panel.panelType ?? "",
                       panelTitle: panel.noPanel ?? "",
+                      panelRemarks: panel.remarks,
                       statusBusbarPcc: panel.statusBusbarPcc ?? "",
                       statusBusbarMcc: panel.statusBusbarMcc ?? "",
                       statusComponent: panel.statusComponent ?? "",

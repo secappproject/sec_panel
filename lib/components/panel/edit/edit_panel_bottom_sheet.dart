@@ -1,3 +1,5 @@
+// lib/components/panel/edit_panel_bottom_sheet.dart
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:secpanel/helpers/db_helper.dart';
@@ -39,7 +41,8 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
   late final TextEditingController _projectController;
   late final TextEditingController _noPpController;
   late final TextEditingController _progressController;
-  late final TextEditingController _panelRemarkController;
+  late final TextEditingController
+  _panelRemarkController; // Controller sudah ada
 
   late String _originalNoPp;
 
@@ -97,6 +100,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     _noPanelController = TextEditingController(text: _panel.noPanel);
     _noWbsController = TextEditingController(text: _panel.noWbs);
     _projectController = TextEditingController(text: _panel.project);
+    // Inisialisasi controller sudah benar
     _panelRemarkController = TextEditingController(text: _panel.remarks);
 
     _noPpController = TextEditingController(
@@ -163,7 +167,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     _noPpController.dispose();
     _progressController.removeListener(_updateCanMarkAsSent);
     _progressController.dispose();
-    _panelRemarkController.dispose();
+    _panelRemarkController.dispose(); // Dispose controller
     super.dispose();
   }
 
@@ -222,7 +226,6 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       });
     }
   }
-  // edit_panel_bottom_sheet.dart
 
   Future<void> _saveChanges() async {
     if (_isLoading || _isSuccess) return;
@@ -236,6 +239,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       panelToSave.noWbs = _noWbsController.text.trim();
       panelToSave.project = _projectController.text.trim();
       panelToSave.noPp = _noPpController.text.trim();
+      // Logika penyimpanan data remark sudah benar
       panelToSave.remarks = _panelRemarkController.text.trim();
 
       panelToSave.percentProgress =
@@ -271,7 +275,6 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
 
       final vendorsToAdd = newVendorIds.difference(oldVendorIds);
       for (final vendorId in vendorsToAdd) {
-        // Saat menambah, gunakan No. PP BARU dari `finalPanel`
         await DatabaseHelper.instance.upsertBusbar(
           Busbar(panelNoPp: finalPanel.noPp, vendor: vendorId),
         );
@@ -282,9 +285,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
           : null;
       final newK3VendorId = _selectedK3VendorId;
 
-      // Cek apakah vendor K3 berubah
       if (oldK3VendorId != newK3VendorId) {
-        // Jika vendor lama ada, hapus relasi lamanya
         if (oldK3VendorId != null && oldK3VendorId.isNotEmpty) {
           await DatabaseHelper.instance.deletePalet(
             finalPanel.noPp,
@@ -296,9 +297,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
           );
         }
 
-        // Jika vendor baru dipilih, tambahkan relasi baru
         if (newK3VendorId != null && newK3VendorId.isNotEmpty) {
-          // Tambah relasi baru menggunakan No. PP BARU (finalPanel.noPp)
           await DatabaseHelper.instance.upsertPalet(
             Palet(panelNoPp: finalPanel.noPp, vendor: newK3VendorId),
           );
@@ -308,16 +307,12 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
         }
       }
 
-      // 5. Urus relasi Component (ini sepertinya statis ke 'warehouse', jadi aman)
+      // 5. Urus relasi Component
       await DatabaseHelper.instance.upsertComponent(
         Component(panelNoPp: finalPanel.noPp, vendor: 'warehouse'),
       );
 
-      await DatabaseHelper.instance.upsertComponent(
-        Component(panelNoPp: finalPanel.noPp, vendor: 'warehouse'),
-      );
-
-      // 5. Update UI
+      // 6. Update UI
       setState(() {
         _isLoading = false;
         _isSuccess = true;
@@ -325,9 +320,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       await Future.delayed(const Duration(milliseconds: 1500));
 
       if (mounted) {
-        widget.onSave(
-          finalPanel,
-        ); // Kembalikan panel final yang datanya paling update
+        widget.onSave(finalPanel);
         Navigator.pop(context);
       }
     } catch (e) {
@@ -574,19 +567,19 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                       _buildTargetDeliveryPicker(),
                       const SizedBox(height: 16),
 
-                      // Bagian untuk menampilkan pilihan/nama vendor
                       if (_isAdmin)
                         _buildAdminVendorPicker()
                       else if (_isK3)
                         _buildK3VendorDisplay(),
 
-                      // Bagian untuk field remark
+                      // ▼▼▼ [PERBAIKAN] MENAMBAHKAN INPUT FIELD REMARK PANEL ▼▼▼
                       if (_isAdmin || _isK3) ...[
                         const SizedBox(height: 16),
                         _buildTextField(
                           controller: _panelRemarkController,
                           label: "Panel Remark",
-                          maxLines: 3,
+                          maxLines:
+                              3, // Membuat input field lebih besar (3 baris)
                         ),
                       ],
                     ],
@@ -684,7 +677,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                   ),
                 ],
 
-                // Bagian Umum (Terlihat oleh semua role yang bisa edit)
+                // Bagian Umum
                 const SizedBox(height: 12),
                 Container(
                   width: MediaQuery.of(context).size.width,
@@ -793,7 +786,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     bool isNumber = false,
     String? suffixText,
     String? Function(String?)? validator,
-    int? maxLines = 1,
+    int? maxLines = 1, // `maxLines` sudah ada, jadi aman digunakan
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -809,6 +802,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
           keyboardType: isNumber ? TextInputType.number : TextInputType.text,
           validator: validator,
+          maxLines: maxLines, // Menggunakan parameter maxLines
           decoration: InputDecoration(
             suffixText: suffixText,
             hintText: 'Masukkan $label',

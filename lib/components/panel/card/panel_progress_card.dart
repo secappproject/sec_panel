@@ -1,7 +1,9 @@
 // lib/components/panel/card/panel_progress_card.dart
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:secpanel/components/alert_box.dart';
+// AlertBox tidak lagi digunakan di sini, bisa dihapus jika tidak ada referensi lain
+// import 'package:secpanel/components/alert_box.dart';
 import 'package:secpanel/components/panel/card/remarks_bottom_sheet.dart';
 import 'package:secpanel/models/approles.dart';
 import 'package:secpanel/models/busbarremark.dart';
@@ -114,30 +116,32 @@ class PanelProgressCard extends StatelessWidget {
       'd MMM yyyy',
       'id_ID',
     ).format(targetDelivery!);
+    // Deskripsi singkat untuk chip
+    String shortDesc = "";
+    if (differenceInDays < 0) {
+      shortDesc = "Telat ${differenceInDays.abs()} hari ($formattedDate)";
+    } else if (differenceInDays == 0) {
+      shortDesc = "Perlu dikirim hari ini ($formattedDate)";
+    } else {
+      shortDesc = "Akan dikirim dalam $differenceInDays hari ($formattedDate)";
+    }
 
     if (differenceInDays < 0) {
-      final daysLate = differenceInDays.abs();
       return AlertInfo(
-        title: "Terlambat",
-        description: "Terlambat $daysLate hari ($formattedDate)",
+        title: "Telat",
+        description: shortDesc,
         imagePath: 'assets/images/alert-danger.png',
-        backgroundColor: const Color.fromARGB(6, 219, 4, 4),
+        backgroundColor: AppColors.red.withOpacity(0.05),
         borderColor: AppColors.red,
         textColor: AppColors.red,
       );
     }
     if (differenceInDays <= 2) {
-      String description;
-      if (differenceInDays == 0) {
-        description = "Target delivery adalah hari ini ($formattedDate)";
-      } else {
-        description = "Sisa $differenceInDays hari lagi ($formattedDate)";
-      }
       return AlertInfo(
         title: "Perlu Dikejar",
-        description: description,
+        description: shortDesc,
         imagePath: 'assets/images/alert-progress.png',
-        backgroundColor: const Color.fromARGB(30, 120, 175, 231),
+        backgroundColor: AppColors.blue.withOpacity(0.1),
         borderColor: AppColors.blue,
         textColor: AppColors.blue,
       );
@@ -172,8 +176,9 @@ class PanelProgressCard extends StatelessWidget {
     final lower = status.toLowerCase();
     if (lower.contains('open')) return 'assets/images/no-status-gray.png';
     if (lower.contains('done')) return 'assets/images/done-green.png';
-    if (lower.contains('on progress'))
+    if (lower.contains('on progress')) {
       return 'assets/images/on-progress-blue.png';
+    }
     return 'assets/images/no-status-gray.png';
   }
 
@@ -186,25 +191,55 @@ class PanelProgressCard extends StatelessWidget {
       ? 'assets/images/done-green.png'
       : 'assets/images/no-status-gray.png';
 
-  String _formatTimeAgo(DateTime date) {
-    final now = DateTime.now();
-    final formattedDate = DateFormat('d MMM yyyy', 'id_ID').format(date);
-    final nowDateOnly = DateTime(now.year, now.month, now.day);
-    final dateOnly = DateTime(date.year, date.month, date.day);
-    final dayDifference = nowDateOnly.difference(dateOnly).inDays;
+  // ▼▼▼ [PERUBAHAN] Widget baru untuk membuat chip status ▼▼▼
+  Widget _buildStatusChip() {
+    AlertInfo? alert;
 
-    if (dayDifference > 0)
-      return '$dayDifference hari yang lalu ($formattedDate)';
-    if (dayDifference < 0)
-      return '${dayDifference.abs()} hari lagi ($formattedDate)';
+    if (isClosed) {
+      alert = AlertInfo(
+        title: "Closed",
+        description: "Closed",
+        imagePath: 'assets/images/alert-success.png',
+        backgroundColor: AppColors.schneiderGreen.withOpacity(0.05),
+        borderColor: AppColors.schneiderGreen,
+        textColor: AppColors.schneiderGreen,
+      );
+    } else {
+      alert = _getAlertInfo();
+    }
 
-    final timeDifference = now.difference(date);
-    if (timeDifference.inHours > 0)
-      return '${timeDifference.inHours} jam yang lalu ($formattedDate)';
-    if (timeDifference.inMinutes > 0)
-      return '${timeDifference.inMinutes} menit yang lalu ($formattedDate)';
+    if (alert == null) {
+      return const SizedBox.shrink(); // Tidak menampilkan apa-apa jika tidak ada alert
+    }
 
-    return 'Baru saja ($formattedDate)';
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, right: 8, left: 8),
+      child: Container(
+        width: double.infinity,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: alert.backgroundColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: alert.borderColor, width: 0.8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(alert.imagePath, height: 14),
+            const SizedBox(width: 6),
+            Text(
+              alert.description,
+              style: TextStyle(
+                color: alert.textColor,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -212,8 +247,7 @@ class PanelProgressCard extends StatelessWidget {
     final bool isTemporary = ppNumber.startsWith('TEMP_PP_');
     final bool hasBusbarRemarks = busbarRemarks.isNotEmpty;
     final bool hasPanelRemarks =
-        panelRemarks != null && panelRemarks!.isNotEmpty;
-    final alertInfo = _getAlertInfo();
+        panelRemarks != null && panelRemarks!.trim().isNotEmpty;
 
     final String pccDisplayStatus = statusBusbarPcc.isEmpty
         ? 'On Progress'
@@ -234,7 +268,6 @@ class PanelProgressCard extends StatelessWidget {
     final bool isFuture =
         startDate != null && startDate!.isAfter(DateTime.now());
 
-    // [PERBAIKAN] Logika diubah untuk memeriksa setiap nilai secara individual
     final String durationLabel = isFuture ? "Mulai Dalam" : "Durasi Proses";
     final String displayDuration = startDate == null
         ? "Belum Diatur"
@@ -250,365 +283,361 @@ class PanelProgressCard extends StatelessWidget {
         ? "Belum Diatur"
         : wbsNumber;
 
-    return Column(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: const BorderRadius.all(Radius.circular(8)),
-            border: Border.all(width: 1, color: AppColors.grayLight),
-          ),
-          width: MediaQuery.of(context).size.width,
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Image.asset(_getProgressImage(), height: 28),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.only(right: 8),
-                          decoration: const BoxDecoration(
-                            border: Border(
-                              right: BorderSide(
-                                color: AppColors.grayNeutral,
-                                width: 1,
-                              ),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                durationLabel,
-                                style: const TextStyle(
-                                  color: AppColors.gray,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 10,
-                                ),
-                              ),
-                              Text(
-                                displayDuration,
-                                style: const TextStyle(
-                                  color: AppColors.black,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Container(
-                          height: 11,
-                          width: MediaQuery.of(context).size.width - 280,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: FractionallySizedBox(
-                            alignment: Alignment.centerLeft,
-                            widthFactor: progress.clamp(0.0, 1.0),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: _getProgressColor(),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          progressLabel,
-                          style: const TextStyle(
-                            color: AppColors.black,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
+          border: Border.all(width: 1, color: AppColors.grayLight),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.08),
+              spreadRadius: 2,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStatusChip(),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(width: 2, color: AppColors.grayLight),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: const BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(width: 1, color: AppColors.grayLight),
-                    top: BorderSide(width: 1, color: AppColors.grayLight),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          width: 1,
-                          color: AppColors.grayLight,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Image.asset(_getProgressImage(), height: 28),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.only(right: 8),
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            right: BorderSide(
+                              color: AppColors.grayNeutral,
+                              width: 1,
+                            ),
+                          ),
                         ),
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              durationLabel,
+                              style: const TextStyle(
+                                color: AppColors.gray,
+                                fontWeight: FontWeight.w400,
+                                fontSize: 10,
+                              ),
+                            ),
+                            Text(
+                              displayDuration,
+                              style: const TextStyle(
+                                color: AppColors.black,
+                                fontWeight: FontWeight.w400,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Row(
                         children: [
-                          Row(
-                            children: [
-                              const Text(
-                                "Panel",
-                                style: TextStyle(
-                                  color: AppColors.gray,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 10,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 2,
-                                ),
+                          Container(
+                            height: 11,
+                            width: MediaQuery.of(context).size.width * 0.25,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: FractionallySizedBox(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: progress.clamp(0.0, 1.0),
+                              child: Container(
                                 decoration: BoxDecoration(
-                                  color: AppColors.grayLight,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  panelVendorName.isEmpty
-                                      ? 'No Vendor'
-                                      : panelVendorName,
-                                  style: const TextStyle(
-                                    color: AppColors.black,
-                                    fontWeight: FontWeight.w400,
-                                    fontSize: 10,
-                                  ),
+                                  color: _getProgressColor(),
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
                               ),
-                              if (hasPanelRemarks) ...[
-                                // <-- TAMBAHKAN BLOK KONDISI INI
-                                const SizedBox(width: 4),
-                                InkWell(
-                                  onTap: () => _showRemarksBottomSheet(
-                                    context,
-                                    title: 'Panel Remarks',
-                                    remarksMap: {panelVendorName: panelRemarks},
-                                  ),
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: AppColors.grayLight,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Image.asset(
-                                      'assets/images/remarks.png',
-                                      height: 16,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
+                            ),
                           ),
-                          Row(
-                            children: [
-                              const Text(
-                                "Busbar",
-                                style: TextStyle(
-                                  color: AppColors.gray,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 10,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Container(
-                                constraints: BoxConstraints(
-                                  maxWidth:
-                                      MediaQuery.of(context).size.width * 0.3,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.grayLight,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  busbarVendorNames.isEmpty
-                                      ? 'No Vendor'
-                                      : busbarVendorNames,
-                                  style: const TextStyle(
-                                    color: AppColors.black,
-                                    fontWeight: FontWeight.w400,
-                                    fontSize: 10,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              if (hasBusbarRemarks) ...[
-                                const SizedBox(width: 4),
-                                InkWell(
-                                  onTap: () => _showRemarksBottomSheet(
-                                    context,
-                                    title: 'Busbar Remarks',
-                                    remarksMap: {
-                                      for (var e in busbarRemarks)
-                                        e.vendorName: e.remark,
-                                    },
-                                  ),
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: AppColors.grayLight,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Image.asset(
-                                      'assets/images/remarks.png',
-                                      height: 16,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
+                          const SizedBox(width: 12),
+                          Text(
+                            progressLabel,
+                            style: const TextStyle(
+                              color: AppColors.black,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
+                      // const SizedBox(height: 4),
+                      // _buildStatusChip(),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      border: Border.all(width: 1, color: AppColors.grayLight),
+                      borderRadius: const BorderRadius.all(Radius.circular(12)),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      displayPanelTitle,
-                      style: const TextStyle(
-                        color: AppColors.black,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              "Panel",
+                              style: TextStyle(
+                                color: AppColors.gray,
+                                fontWeight: FontWeight.w400,
+                                fontSize: 10,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.grayLight,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                panelVendorName.isEmpty
+                                    ? 'No Vendor'
+                                    : panelVendorName,
+                                style: const TextStyle(
+                                  color: AppColors.black,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                            if (hasPanelRemarks) ...[
+                              const SizedBox(width: 4),
+                              InkWell(
+                                onTap: () => _showRemarksBottomSheet(
+                                  context,
+                                  title: 'Panel Remarks',
+                                  remarksMap: {
+                                    panelVendorName.isNotEmpty
+                                            ? panelVendorName
+                                            : 'Panel':
+                                        panelRemarks,
+                                  },
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: AppColors.grayLight,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Image.asset(
+                                    'assets/images/remarks.png',
+                                    height: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            const Text(
+                              "Busbar",
+                              style: TextStyle(
+                                color: AppColors.gray,
+                                fontWeight: FontWeight.w400,
+                                fontSize: 10,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Container(
+                              constraints: BoxConstraints(
+                                maxWidth:
+                                    MediaQuery.of(context).size.width * 0.3,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.grayLight,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                busbarVendorNames.isEmpty
+                                    ? 'No Vendor'
+                                    : busbarVendorNames,
+                                style: const TextStyle(
+                                  color: AppColors.black,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 10,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (hasBusbarRemarks) ...[
+                              const SizedBox(width: 4),
+                              InkWell(
+                                onTap: () => _showRemarksBottomSheet(
+                                  context,
+                                  title: 'Busbar Remarks',
+                                  remarksMap: {
+                                    for (var e in busbarRemarks)
+                                      e.vendorName: e.remark,
+                                  },
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: AppColors.grayLight,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Image.asset(
+                                    'assets/images/remarks.png',
+                                    height: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // ▼▼▼ [PERBAIKAN] Judul dan chip status digabung dalam satu Row ▼▼▼
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          displayPanelTitle,
+                          style: const TextStyle(
+                            color: AppColors.black,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildStatusColumn(
-                            "Busbar Pcc",
-                            pccDisplayStatus,
-                            _getBusbarStatusImage(statusBusbarPcc),
-                          ),
+                      const SizedBox(width: 8),
+                      // _buildStatusChip(),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatusColumn(
+                          "Busbar Pcc",
+                          pccDisplayStatus,
+                          _getBusbarStatusImage(statusBusbarPcc),
                         ),
-                        Expanded(
-                          child: _buildStatusColumn(
-                            "Busbar Mcc",
-                            mccDisplayStatus,
-                            _getBusbarStatusImage(statusBusbarMcc),
-                          ),
+                      ),
+                      Expanded(
+                        child: _buildStatusColumn(
+                          "Busbar Mcc",
+                          mccDisplayStatus,
+                          _getBusbarStatusImage(statusBusbarMcc),
                         ),
-                        SizedBox(
-                          width: 60,
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: _buildEditButton(),
-                          ),
+                      ),
+                      SizedBox(
+                        width: 60,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: _buildEditButton(),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildStatusColumn(
-                            "Component",
-                            componentDisplayStatus,
-                            _getComponentStatusImage(statusComponent),
-                          ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatusColumn(
+                          "Component",
+                          componentDisplayStatus,
+                          _getComponentStatusImage(statusComponent),
                         ),
-                        Expanded(
-                          child: _buildStatusColumn(
-                            "Palet",
-                            paletDisplayStatus,
-                            _getPaletStatusImage(statusPalet),
-                          ),
+                      ),
+                      Expanded(
+                        child: _buildStatusColumn(
+                          "Palet",
+                          paletDisplayStatus,
+                          _getPaletStatusImage(statusPalet),
                         ),
-                        SizedBox(
-                          width: 60,
-                          child: _buildStatusColumn(
-                            "Corepart",
-                            corepartDisplayStatus,
-                            _getCorepartStatusImage(statusCorepart),
-                          ),
+                      ),
+                      SizedBox(
+                        width: 60,
+                        child: _buildStatusColumn(
+                          "Corepart",
+                          corepartDisplayStatus,
+                          _getCorepartStatusImage(statusCorepart),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // ▼▼▼ [PERBAIKAN] Seluruh blok AlertBox di sini dihapus ▼▼▼
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: const BoxDecoration(
+                border: Border(
+                  top: BorderSide(width: 1, color: AppColors.grayLight),
                 ),
               ),
-              if (isClosed && closedDate != null)
-                AlertBox(
-                  title: "Closed",
-                  description: _formatTimeAgo(closedDate!),
-                  imagePath: 'assets/images/alert-success.png',
-                  backgroundColor: const Color.fromARGB(11, 0, 138, 21),
-                  borderColor: AppColors.schneiderGreen,
-                  textColor: AppColors.schneiderGreen,
-                )
-              else if (alertInfo != null)
-                AlertBox(
-                  title: alertInfo.title,
-                  description: alertInfo.description,
-                  imagePath: alertInfo.imagePath,
-                  backgroundColor: alertInfo.backgroundColor,
-                  borderColor: alertInfo.borderColor,
-                  textColor: alertInfo.textColor,
-                )
-              else if (targetDelivery != null)
-                Builder(
-                  builder: (context) {
-                    final diff = targetDelivery!
-                        .difference(DateTime.now())
-                        .inDays;
-                    return AlertBox(
-                      title: "Target Delivery",
-                      description:
-                          "${diff > 0 ? '$diff hari lagi' : 'Target:'} (${DateFormat('d MMM yyyy', 'id_ID').format(targetDelivery!)})",
-                      imagePath: 'assets/images/alert-progress.png',
-                      backgroundColor: const Color.fromARGB(30, 120, 175, 231),
-                      borderColor: AppColors.blue,
-                      textColor: AppColors.blue,
-                    );
-                  },
-                ),
-              Container(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  children: [
-                    _buildInfoRow("Tipe Panel", displayPanelType),
-                    const SizedBox(height: 8),
-                    _buildInfoRow("No. PP", displayPpNumber),
-                    const SizedBox(height: 8),
-                    _buildInfoRow("No. WBS", displayWbsNumber),
-                    const SizedBox(height: 8),
-                    _buildInfoRow("Project", project),
-                  ],
-                ),
+              child: Column(
+                children: [
+                  _buildInfoRow("Tipe Panel", displayPanelType),
+                  const SizedBox(height: 8),
+                  _buildInfoRow("No. PP", displayPpNumber),
+                  const SizedBox(height: 8),
+                  _buildInfoRow("No. WBS", displayWbsNumber),
+                  const SizedBox(height: 8),
+                  _buildInfoRow("Project", project),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -671,12 +700,16 @@ class PanelProgressCard extends StatelessWidget {
             fontSize: 10,
           ),
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            color: AppColors.gray,
-            fontWeight: FontWeight.w400,
-            fontSize: 10,
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: const TextStyle(
+              color: AppColors.gray,
+              fontWeight: FontWeight.w400,
+              fontSize: 10,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

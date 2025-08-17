@@ -21,7 +21,6 @@ class Panel {
   String? vendorId;
   bool isClosed;
   DateTime? closedDate;
-  // [PERUBAHAN] Menambahkan properti baru
   String? panelType;
   String? remarks;
 
@@ -48,7 +47,6 @@ class Panel {
     this.remarks,
   });
 
-  // Method ini untuk database lokal (sqflite)
   Map<String, dynamic> toMap() {
     return {
       'no_pp': noPp,
@@ -67,14 +65,13 @@ class Panel {
       'ao_busbar_mcc': aoBusbarMcc?.toUtc().toIso8601String(),
       'created_by': createdBy,
       'vendor_id': vendorId,
-      'is_closed': isClosed ? 1 : 0, // sqflite pakai integer 1/0
+      'is_closed': isClosed ? 1 : 0,
       'closed_date': closedDate?.toUtc().toIso8601String(),
-      // [PERUBAHAN] Menyimpan ke DB lokal
       'panel_type': panelType,
+      'remarks': remarks, // <-- [PERBAIKAN] Menambahkan field yang hilang
     };
   }
 
-  // [TAMBAHAN] Method ini khusus untuk mengirim data ke API Go (backend)
   Map<String, dynamic> toMapForApi() {
     return {
       'no_pp': noPp,
@@ -93,15 +90,13 @@ class Panel {
       'ao_busbar_mcc': aoBusbarMcc?.toUtc().toIso8601String(),
       'created_by': createdBy,
       'vendor_id': vendorId,
-      'is_closed': isClosed, // API (JSON) pakai boolean true/false
+      'is_closed': isClosed,
       'closed_date': closedDate?.toUtc().toIso8601String(),
-      // [PERUBAHAN] Mengirim ke API
       'panel_type': panelType,
       'remarks': remarks,
     };
   }
 
-  // Factory ini untuk membuat objek dari data database lokal (sqflite)
   factory Panel.fromMap(Map<String, dynamic> map) {
     DateTime? parseDate(String? dateStr) {
       if (dateStr == null) return null;
@@ -135,7 +130,7 @@ class Panel {
       isClosed: isClosedValue,
       closedDate: parseDate(map['closed_date']),
       panelType: map['panel_type'],
-      remarks: map['remarks'], //
+      remarks: map['remarks'],
     );
   }
 }
