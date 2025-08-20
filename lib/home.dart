@@ -275,6 +275,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return PanelFilterStatus.progressRed;
   }
 
+  // home_screen.dart
+
   List<PanelDisplayData> get _panelsAfterPrimaryFilters {
     return _allPanelsData.where((data) {
       final panel = data.panel;
@@ -283,16 +285,33 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         if (query.isEmpty) return true;
         final q = query.toLowerCase();
 
+        final displayPanelVendor = (data.panelVendorName ?? '').isEmpty
+            ? 'no vendor'
+            : data.panelVendorName!.toLowerCase();
+        final displayBusbarVendors = (data.busbarVendorNames ?? '').isEmpty
+            ? 'no vendor'
+            : data.busbarVendorNames!.toLowerCase();
+        final displayComponentVendors =
+            (data.componentVendorNames ?? '').isEmpty
+            ? 'no vendor'
+            : data.componentVendorNames!.toLowerCase();
+        final displayPaletVendors = (data.paletVendorNames ?? '').isEmpty
+            ? 'no vendor'
+            : data.paletVendorNames!.toLowerCase();
+        final displayCorepartVendors = (data.corepartVendorNames ?? '').isEmpty
+            ? 'no vendor'
+            : data.corepartVendorNames!.toLowerCase();
+
         return (panel.noPanel ?? '').toLowerCase().contains(q) ||
             panel.noPp.toLowerCase().contains(q) ||
             (panel.noWbs ?? '').toLowerCase().contains(q) ||
             (panel.project ?? '').toLowerCase().contains(q) ||
             (panel.panelType ?? '').toLowerCase().contains(q) ||
-            (data.panelVendorName ?? '').toLowerCase().contains(q) ||
-            (data.busbarVendorNames ?? '').toLowerCase().contains(q) ||
-            (data.componentVendorNames ?? '').toLowerCase().contains(q) ||
-            (data.paletVendorNames ?? '').toLowerCase().contains(q) ||
-            (data.corepartVendorNames ?? '').toLowerCase().contains(q) ||
+            displayPanelVendor.contains(q) ||
+            displayBusbarVendors.contains(q) ||
+            displayComponentVendors.contains(q) ||
+            displayPaletVendors.contains(q) ||
+            displayCorepartVendors.contains(q) ||
             (panel.statusBusbarPcc ?? '').toLowerCase().contains(q) ||
             (panel.statusBusbarMcc ?? '').toLowerCase().contains(q) ||
             (panel.statusComponent ?? '').toLowerCase().contains(q) ||
@@ -300,10 +319,17 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             (panel.statusCorepart ?? '').toLowerCase().contains(q);
       }
 
-      final matchChips = searchChips.every((chip) => isPanelMatch(chip));
-      final matchActiveText = isPanelMatch(activeSearchText);
+      final allSearchTerms = [
+        ...searchChips,
+        activeSearchText.trim(),
+      ].where((s) => s.isNotEmpty).toList();
 
-      final matchSearch = matchChips && matchActiveText;
+      final bool matchSearch;
+      if (allSearchTerms.isEmpty) {
+        matchSearch = true;
+      } else {
+        matchSearch = allSearchTerms.any((term) => isPanelMatch(term));
+      }
 
       final matchPanelType =
           selectedPanelTypes.isEmpty ||
@@ -312,25 +338,54 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ? (panel.panelType == null || panel.panelType!.isEmpty)
                 : panel.panelType == type,
           );
+
       final matchPanelVendor =
           selectedPanelVendors.isEmpty ||
-          selectedPanelVendors.contains(panel.vendorId);
+          selectedPanelVendors.any((selectedId) {
+            if (selectedId == 'No Vendor') {
+              return panel.vendorId == null || panel.vendorId!.isEmpty;
+            }
+            return panel.vendorId == selectedId;
+          });
+
       final matchBusbarVendor =
           selectedBusbarVendors.isEmpty ||
-          selectedBusbarVendors.any((id) => data.busbarVendorIds.contains(id));
+          selectedBusbarVendors.any((selectedId) {
+            if (selectedId == 'No Vendor') {
+              return data.busbarVendorIds.isEmpty;
+            }
+            return data.busbarVendorIds.contains(selectedId);
+          });
+
       final matchComponentVendor =
           selectedComponentVendors.isEmpty ||
-          selectedComponentVendors.any(
-            (id) => data.componentVendorIds.contains(id),
-          );
+          selectedComponentVendors.any((selectedId) {
+            if (selectedId == 'No Vendor') {
+              return data.componentVendorIds.isEmpty;
+            }
+            return data.componentVendorIds.contains(selectedId);
+          });
+
       final matchPaletVendor =
           selectedPaletVendors.isEmpty ||
-          selectedPaletVendors.any((id) => data.paletVendorIds.contains(id));
+          selectedPaletVendors.any((selectedId) {
+            if (selectedId == 'No Vendor') {
+              return data.paletVendorIds.isEmpty;
+            }
+            return data.paletVendorIds.contains(selectedId);
+          });
+
       final matchCorepartVendor =
           selectedCorepartVendors.isEmpty ||
-          selectedCorepartVendors.any(
-            (id) => data.corepartVendorIds.contains(id),
-          );
+          selectedCorepartVendors.any((selectedId) {
+            if (selectedId == 'No Vendor') {
+              return data.corepartVendorIds.isEmpty;
+            }
+            return data.corepartVendorIds.contains(selectedId);
+          });
+
+      // ... sisa kode tidak berubah
+
       final matchPccStatus =
           selectedPccStatuses.isEmpty ||
           (panel.statusBusbarPcc != null &&
@@ -680,50 +735,122 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                 )
-              : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-                  itemCount: panelsToDisplay.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 16),
-                  itemBuilder: (context, index) {
-                    final data = panelsToDisplay[index];
-                    final panel = data.panel;
-                    return PanelProgressCard(
-                      currentUserRole: widget.currentCompany.role,
-                      targetDelivery: panel.targetDelivery,
-                      duration: _formatDuration(panel.startDate),
-                      progress: (panel.percentProgress ?? 0) / 100.0,
-                      startDate: panel.startDate,
-                      progressLabel: "${panel.percentProgress?.toInt() ?? 0}%",
-                      panelType: panel.panelType ?? "",
-                      panelTitle: panel.noPanel ?? "",
-                      panelRemarks: panel.remarks,
-                      statusBusbarPcc: panel.statusBusbarPcc ?? "",
-                      statusBusbarMcc: panel.statusBusbarMcc ?? "",
-                      statusComponent: panel.statusComponent ?? "",
-                      statusPalet: panel.statusPalet ?? "",
-                      statusCorepart: panel.statusCorepart ?? "",
-                      ppNumber: panel.noPp,
-                      wbsNumber: panel.noWbs ?? "",
-                      project: panel.project ?? "",
-                      onEdit: () {
-                        final role = widget.currentCompany.role;
-                        if (role == AppRole.admin || role == AppRole.k3) {
-                          _openEditPanelBottomSheet(data);
-                        } else if (role == AppRole.k5 ||
-                            role == AppRole.warehouse) {
-                          _openEditStatusBottomSheet(data);
-                        }
-                      },
-                      panelVendorName: data.panelVendorName,
-                      busbarVendorNames: data.busbarVendorNames,
-                      componentVendorName: data.componentVendorNames,
-                      paletVendorName: data.paletVendorNames,
-                      corepartVendorName: data.corepartVendorNames,
-                      isClosed: panel.isClosed,
-                      closedDate: panel.closedDate,
-                      busbarRemarks: data.busbarRemarks,
-                    );
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Tentukan breakpoint untuk beralih ke tampilan grid.
+                    const double gridBreakpoint = 740;
+
+                    if (constraints.maxWidth < gridBreakpoint) {
+                      return ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                        itemCount: panelsToDisplay.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 16),
+                        itemBuilder: (context, index) {
+                          final data = panelsToDisplay[index];
+                          final panel = data.panel;
+                          // Widget card Anda (tidak perlu diubah)
+                          return PanelProgressCard(
+                            currentUserRole: widget.currentCompany.role,
+                            targetDelivery: panel.targetDelivery,
+                            duration: _formatDuration(panel.startDate),
+                            progress: (panel.percentProgress ?? 0) / 100.0,
+                            startDate: panel.startDate,
+                            progressLabel:
+                                "${panel.percentProgress?.toInt() ?? 0}%",
+                            panelType: panel.panelType ?? "",
+                            panelTitle: panel.noPanel ?? "",
+                            panelRemarks: panel.remarks,
+                            statusBusbarPcc: panel.statusBusbarPcc ?? "",
+                            statusBusbarMcc: panel.statusBusbarMcc ?? "",
+                            statusComponent: panel.statusComponent ?? "",
+                            statusPalet: panel.statusPalet ?? "",
+                            statusCorepart: panel.statusCorepart ?? "",
+                            ppNumber: panel.noPp,
+                            wbsNumber: panel.noWbs ?? "",
+                            project: panel.project ?? "",
+                            onEdit: () {
+                              final role = widget.currentCompany.role;
+                              if (role == AppRole.admin || role == AppRole.k3) {
+                                _openEditPanelBottomSheet(data);
+                              } else if (role == AppRole.k5 ||
+                                  role == AppRole.warehouse) {
+                                _openEditStatusBottomSheet(data);
+                              }
+                            },
+                            panelVendorName: data.panelVendorName,
+                            busbarVendorNames: data.busbarVendorNames,
+                            componentVendorName: data.componentVendorNames,
+                            paletVendorName: data.paletVendorNames,
+                            corepartVendorName: data.corepartVendorNames,
+                            isClosed: panel.isClosed,
+                            closedDate: panel.closedDate,
+                            busbarRemarks: data.busbarRemarks,
+                          );
+                        },
+                      );
+                    } else {
+                      // === TAMPILAN GRID UNTUK LAYAR LEBAR (DESKTOP/TABLET) ===
+                      // Hitung jumlah kolom secara dinamis, target lebar per card ~500px
+                      final int crossAxisCount = (constraints.maxWidth / 500)
+                          .floor()
+                          .clamp(2, 4);
+
+                      return GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          // Hapus childAspectRatio dan ganti dengan ini:
+                          mainAxisExtent:
+                              440, // Tentukan tinggi card yang pas, misal 380px
+                        ),
+                        itemCount: panelsToDisplay.length,
+                        itemBuilder: (context, index) {
+                          final data = panelsToDisplay[index];
+                          final panel = data.panel;
+                          // Widget card Anda (tidak perlu diubah)
+                          return PanelProgressCard(
+                            currentUserRole: widget.currentCompany.role,
+                            targetDelivery: panel.targetDelivery,
+                            duration: _formatDuration(panel.startDate),
+                            progress: (panel.percentProgress ?? 0) / 100.0,
+                            startDate: panel.startDate,
+                            progressLabel:
+                                "${panel.percentProgress?.toInt() ?? 0}%",
+                            panelType: panel.panelType ?? "",
+                            panelTitle: panel.noPanel ?? "",
+                            panelRemarks: panel.remarks,
+                            statusBusbarPcc: panel.statusBusbarPcc ?? "",
+                            statusBusbarMcc: panel.statusBusbarMcc ?? "",
+                            statusComponent: panel.statusComponent ?? "",
+                            statusPalet: panel.statusPalet ?? "",
+                            statusCorepart: panel.statusCorepart ?? "",
+                            ppNumber: panel.noPp,
+                            wbsNumber: panel.noWbs ?? "",
+                            project: panel.project ?? "",
+                            onEdit: () {
+                              final role = widget.currentCompany.role;
+                              if (role == AppRole.admin || role == AppRole.k3) {
+                                _openEditPanelBottomSheet(data);
+                              } else if (role == AppRole.k5 ||
+                                  role == AppRole.warehouse) {
+                                _openEditStatusBottomSheet(data);
+                              }
+                            },
+                            panelVendorName: data.panelVendorName,
+                            busbarVendorNames: data.busbarVendorNames,
+                            componentVendorName: data.componentVendorNames,
+                            paletVendorName: data.paletVendorNames,
+                            corepartVendorName: data.corepartVendorNames,
+                            isClosed: panel.isClosed,
+                            closedDate: panel.closedDate,
+                            busbarRemarks: data.busbarRemarks,
+                          );
+                        },
+                      );
+                    }
                   },
                 ),
         ),

@@ -7,12 +7,11 @@ import 'package:secpanel/models/panels.dart';
 class PanelDisplayData {
   final Panel panel;
   final String panelVendorName;
+  final String? panelRemarks; // Properti ini yang akan digunakan UI
   final String busbarVendorNames;
   final List<String> busbarVendorIds;
   final List<BusbarRemark> busbarRemarks;
   final String componentVendorNames;
-  final String? panelRemarks;
-
   final List<String> componentVendorIds;
   final String paletVendorNames;
   final List<String> paletVendorIds;
@@ -22,24 +21,23 @@ class PanelDisplayData {
   PanelDisplayData({
     required this.panel,
     required this.panelVendorName,
+    required this.panelRemarks,
     required this.busbarVendorNames,
     required this.busbarVendorIds,
     required this.busbarRemarks,
     required this.componentVendorNames,
-    required this.panelRemarks,
     required this.componentVendorIds,
     required this.paletVendorNames,
     required this.paletVendorIds,
     required this.corepartVendorNames,
     required this.corepartVendorIds,
   });
+
   factory PanelDisplayData.fromJson(Map<String, dynamic> json) {
-    // This helper function now correctly handles a List<dynamic> from JSON.
-    List<String> _parseIdList(dynamic rawValue) {
+    List<String> parseIdList(dynamic rawValue) {
       if (rawValue is List) {
         return rawValue.map((e) => e.toString()).toList();
       }
-      // Kept for robustness in case the API ever sends a string
       if (rawValue is String && rawValue.isNotEmpty) {
         return rawValue.split(',').where((id) => id.isNotEmpty).toList();
       }
@@ -48,41 +46,31 @@ class PanelDisplayData {
 
     List<BusbarRemark> remarks = [];
     final dynamic rawRemarks = json['busbar_remarks'];
-
-    if (rawRemarks != null) {
-      // This logic is already correct and handles a JSON array for remarks.
-      if (rawRemarks is String && rawRemarks.isNotEmpty) {
-        try {
-          final List<dynamic> decodedRemarks = jsonDecode(rawRemarks);
-          remarks = decodedRemarks
-              .map((r) => BusbarRemark.fromJson(r))
-              .toList();
-        } catch (e) {
-          print("Gagal parse busbar_remarks (string): $e");
-        }
-      } else if (rawRemarks is List) {
-        remarks = rawRemarks
-            .map((r) => BusbarRemark.fromJson(r as Map<String, dynamic>))
-            .toList();
-      }
+    if (rawRemarks is List) {
+      remarks = rawRemarks
+          .map((r) => BusbarRemark.fromJson(r as Map<String, dynamic>))
+          .toList();
     }
 
+    // ▼▼▼ [PERBAIKAN] Logika diubah di sini ▼▼▼
     final panelData = json['panel'] as Map<String, dynamic>? ?? {};
+    // 1. Buat objek Panel terlebih dahulu. Objek ini sekarang berisi remark yang benar.
+    final Panel createdPanel = Panel.fromMap(panelData);
 
     return PanelDisplayData(
-      panel: Panel.fromMap(panelData),
+      panel: createdPanel,
       panelVendorName: json['panel_vendor_name'] as String? ?? '',
-      panelRemarks: panelData['remarks'] as String?,
+      // 2. Gunakan remark dari objek Panel yang sudah dibuat sebagai sumber data utama.
+      panelRemarks: createdPanel.remarks,
       busbarVendorNames: json['busbar_vendor_names'] as String? ?? '',
-      // Use the new helper function without the failing 'as String?' cast.
-      busbarVendorIds: _parseIdList(json['busbar_vendor_ids']),
+      busbarVendorIds: parseIdList(json['busbar_vendor_ids']),
       busbarRemarks: remarks,
       componentVendorNames: json['component_vendor_names'] as String? ?? '',
-      componentVendorIds: _parseIdList(json['component_vendor_ids']),
+      componentVendorIds: parseIdList(json['component_vendor_ids']),
       paletVendorNames: json['palet_vendor_names'] as String? ?? '',
-      paletVendorIds: _parseIdList(json['palet_vendor_ids']),
+      paletVendorIds: parseIdList(json['palet_vendor_ids']),
       corepartVendorNames: json['corepart_vendor_names'] as String? ?? '',
-      corepartVendorIds: _parseIdList(json['corepart_vendor_ids']),
+      corepartVendorIds: parseIdList(json['corepart_vendor_ids']),
     );
   }
 }

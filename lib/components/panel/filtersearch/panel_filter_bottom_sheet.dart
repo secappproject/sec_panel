@@ -686,23 +686,33 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    "Vendor Panel (K3)",
+                    "Vendor Panel (K3) / Palet / Corepart",
                     style: TextStyle(fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
-                    children: widget.allK3Vendors
-                        .map(
-                          (vendor) => _buildOptionButton(
-                            label: vendor.name,
-                            selected: _selectedPanelVendors.contains(vendor.id),
-                            onTap: () => _toggleSelection(
-                              _selectedPanelVendors,
-                              vendor.id,
-                            ),
+                    children: [
+                      // [TAMBAHAN] Opsi untuk filter "No Vendor"
+                      _buildOptionButton(
+                        label: 'No Vendor',
+                        selected: _selectedPanelVendors.contains('No Vendor'),
+                        onTap: () => _toggleSelection(
+                          _selectedPanelVendors,
+                          'No Vendor',
+                        ),
+                      ),
+                      // [MODIFIKASI] Menggunakan spread operator untuk menggabungkan list
+                      ...widget.allK3Vendors.map(
+                        (vendor) => _buildOptionButton(
+                          label: vendor.name,
+                          selected: _selectedPanelVendors.contains(vendor.id),
+                          onTap: () => _toggleSelection(
+                            _selectedPanelVendors,
+                            vendor.id,
                           ),
-                        )
-                        .toList(),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   const Text(
@@ -711,85 +721,124 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                   ),
                   const SizedBox(height: 12),
                   Wrap(
-                    children: widget.allK5Vendors
-                        .map(
-                          (vendor) => _buildOptionButton(
-                            label: vendor.name,
-                            selected: _selectedBusbarVendors.contains(
-                              vendor.id,
-                            ),
-                            onTap: () => _toggleSelection(
-                              _selectedBusbarVendors,
-                              vendor.id,
-                            ),
+                    children: [
+                      // [TAMBAHAN] Opsi untuk filter "No Vendor"
+                      _buildOptionButton(
+                        label: 'No Vendor',
+                        selected: _selectedBusbarVendors.contains('No Vendor'),
+                        onTap: () => _toggleSelection(
+                          _selectedBusbarVendors,
+                          'No Vendor',
+                        ),
+                      ),
+                      // [MODIFIKASI] Menggunakan spread operator untuk menggabungkan list
+                      ...widget.allK5Vendors.map(
+                        (vendor) => _buildOptionButton(
+                          label: vendor.name,
+                          selected: _selectedBusbarVendors.contains(vendor.id),
+                          onTap: () => _toggleSelection(
+                            _selectedBusbarVendors,
+                            vendor.id,
                           ),
-                        )
-                        .toList(),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    "Vendor Komponen (WHS)",
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
+                  // const Text(
+                  //   "Vendor Komponen (WHS)",
+                  //   style: TextStyle(fontWeight: FontWeight.w500),
+                  // ),
+                  // const SizedBox(height: 12),
+                  // Wrap(
+                  //   children: [
+                  //     // [TAMBAHAN] Opsi untuk filter "No Vendor"
+                  //     _buildOptionButton(
+                  //       label: 'No Vendor',
+                  //       selected:
+                  //           _selectedComponentVendors.contains('No Vendor'),
+                  //       onTap: () => _toggleSelection(
+                  //         _selectedComponentVendors,
+                  //         'No Vendor',
+                  //       ),
+                  //     ),
+                  //     // [MODIFIKASI] Menggunakan spread operator untuk menggabungkan list
+                  //     ...widget.allWHSVendors.map(
+                  //       (vendor) => _buildOptionButton(
+                  //         label: vendor.name,
+                  //         selected: _selectedComponentVendors.contains(
+                  //           vendor.id,
+                  //         ),
+                  //         onTap: () => _toggleSelection(
+                  //           _selectedComponentVendors,
+                  //           vendor.id,
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
                   const SizedBox(height: 12),
-                  Wrap(
-                    children: widget.allWHSVendors
-                        .map(
-                          (vendor) => _buildOptionButton(
-                            label: vendor.name,
-                            selected: _selectedComponentVendors.contains(
-                              vendor.id,
-                            ),
-                            onTap: () => _toggleSelection(
-                              _selectedComponentVendors,
-                              vendor.id,
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    "Vendor Palet (K3)",
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    children: widget.allK3Vendors
-                        .map(
-                          (vendor) => _buildOptionButton(
-                            label: vendor.name,
-                            selected: _selectedPaletVendors.contains(vendor.id),
-                            onTap: () => _toggleSelection(
-                              _selectedPaletVendors,
-                              vendor.id,
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    "Vendor Corepart (K3)",
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    children: widget.allK3Vendors
-                        .map(
-                          (vendor) => _buildOptionButton(
-                            label: vendor.name,
-                            selected: _selectedCorepartVendors.contains(
-                              vendor.id,
-                            ),
-                            onTap: () => _toggleSelection(
-                              _selectedCorepartVendors,
-                              vendor.id,
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
+                  // const Text(
+                  //   "Vendor Palet (K3)",
+                  //   style: TextStyle(fontWeight: FontWeight.w500),
+                  // ),
+                  // const SizedBox(height: 12),
+                  // Wrap(
+                  //   children: [
+                  //     // [TAMBAHAN] Opsi untuk filter "No Vendor"
+                  //     _buildOptionButton(
+                  //       label: 'No Vendor',
+                  //       selected: _selectedPaletVendors.contains('No Vendor'),
+                  //       onTap: () => _toggleSelection(
+                  //         _selectedPaletVendors,
+                  //         'No Vendor',
+                  //       ),
+                  //     ),
+                  //     // [MODIFIKASI] Menggunakan spread operator untuk menggabungkan list
+                  //     ...widget.allK3Vendors.map(
+                  //       (vendor) => _buildOptionButton(
+                  //         label: vendor.name,
+                  //         selected: _selectedPaletVendors.contains(vendor.id),
+                  //         onTap: () => _toggleSelection(
+                  //           _selectedPaletVendors,
+                  //           vendor.id,
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
+                  // const SizedBox(height: 12),
+                  // const Text(
+                  //   "Vendor Corepart (K3)",
+                  //   style: TextStyle(fontWeight: FontWeight.w500),
+                  // ),
+                  // const SizedBox(height: 12),
+                  // Wrap(
+                  //   children: [
+                  //     // [TAMBAHAN] Opsi untuk filter "No Vendor"
+                  //     _buildOptionButton(
+                  //       label: 'No Vendor',
+                  //       selected:
+                  //           _selectedCorepartVendors.contains('No Vendor'),
+                  //       onTap: () => _toggleSelection(
+                  //         _selectedCorepartVendors,
+                  //         'No Vendor',
+                  //       ),
+                  //     ),
+                  //     // [MODIFIKASI] Menggunakan spread operator untuk menggabungkan list
+                  //     ...widget.allK3Vendors.map(
+                  //       (vendor) => _buildOptionButton(
+                  //         label: vendor.name,
+                  //         selected:
+                  //             _selectedCorepartVendors.contains(vendor.id),
+                  //         onTap: () => _toggleSelection(
+                  //           _selectedCorepartVendors,
+                  //           vendor.id,
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
                   const SizedBox(height: 12),
                   const Text(
                     "Urut Berdasarkan",

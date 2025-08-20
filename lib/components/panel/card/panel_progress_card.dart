@@ -102,8 +102,17 @@ class PanelProgressCard extends StatelessWidget {
   }
 
   AlertInfo? _getAlertInfo() {
-    if (isClosed || targetDelivery == null) return null;
-
+    // Jika targetDelivery tidak diatur atau tidak valid
+    if (targetDelivery == null) {
+      return AlertInfo(
+        title: "Belum Diatur",
+        description: "Target pengiriman belum diatur",
+        imagePath: 'assets/images/alert-warning.png',
+        backgroundColor: AppColors.orange.withOpacity(0.1),
+        borderColor: AppColors.orange,
+        textColor: AppColors.orange,
+      );
+    }
     final now = DateTime.now();
     final nowDateOnly = DateTime(now.year, now.month, now.day);
     final targetDateOnly = DateTime(
@@ -136,7 +145,7 @@ class PanelProgressCard extends StatelessWidget {
         textColor: AppColors.red,
       );
     }
-    if (differenceInDays <= 2) {
+    if (differenceInDays >= 0) {
       return AlertInfo(
         title: "Perlu Dikejar",
         description: shortDesc,
@@ -146,7 +155,16 @@ class PanelProgressCard extends StatelessWidget {
         textColor: AppColors.blue,
       );
     }
-    return null;
+    if (differenceInDays >= 0) {
+      return AlertInfo(
+        title: "Perlu Dikejar",
+        description: shortDesc,
+        imagePath: 'assets/images/alert-progress.png',
+        backgroundColor: AppColors.blue.withOpacity(0.1),
+        borderColor: AppColors.blue,
+        textColor: AppColors.blue,
+      );
+    }
   }
 
   Color _getProgressColor() {
@@ -191,7 +209,6 @@ class PanelProgressCard extends StatelessWidget {
       ? 'assets/images/done-green.png'
       : 'assets/images/no-status-gray.png';
 
-  // ▼▼▼ [PERUBAHAN] Widget baru untuk membuat chip status ▼▼▼
   Widget _buildStatusChip() {
     AlertInfo? alert;
 
@@ -232,8 +249,8 @@ class PanelProgressCard extends StatelessWidget {
               alert.description,
               style: TextStyle(
                 color: alert.textColor,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
+                fontSize: 11,
+                fontWeight: FontWeight.w300,
               ),
             ),
           ],
@@ -291,14 +308,14 @@ class PanelProgressCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: const BorderRadius.all(Radius.circular(8)),
           border: Border.all(width: 1, color: AppColors.grayLight),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.08),
-              spreadRadius: 2,
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          // boxShadow: [
+          //   BoxShadow(
+          //     color: Colors.grey.withOpacity(0.08),
+          //     spreadRadius: 1,
+          //     blurRadius: 0.5,
+          //     offset: const Offset(0, 2),
+          //   ),
+          // ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,8 +352,8 @@ class PanelProgressCard extends StatelessWidget {
                               durationLabel,
                               style: const TextStyle(
                                 color: AppColors.gray,
-                                fontWeight: FontWeight.w400,
-                                fontSize: 10,
+                                fontWeight: FontWeight.w300,
+                                fontSize: 11,
                               ),
                             ),
                             Text(
@@ -359,7 +376,7 @@ class PanelProgressCard extends StatelessWidget {
                         children: [
                           Container(
                             height: 11,
-                            width: MediaQuery.of(context).size.width * 0.25,
+                            width: MediaQuery.of(context).size.width * 0.17,
                             decoration: BoxDecoration(
                               color: Colors.grey[300],
                               borderRadius: BorderRadius.circular(20),
@@ -413,8 +430,8 @@ class PanelProgressCard extends StatelessWidget {
                               "Panel",
                               style: TextStyle(
                                 color: AppColors.gray,
-                                fontWeight: FontWeight.w400,
-                                fontSize: 10,
+                                fontWeight: FontWeight.w300,
+                                fontSize: 11,
                               ),
                             ),
                             const SizedBox(width: 4),
@@ -434,7 +451,7 @@ class PanelProgressCard extends StatelessWidget {
                                 style: const TextStyle(
                                   color: AppColors.black,
                                   fontWeight: FontWeight.w400,
-                                  fontSize: 10,
+                                  fontSize: 12,
                                 ),
                               ),
                             ),
@@ -476,8 +493,8 @@ class PanelProgressCard extends StatelessWidget {
                               "Busbar",
                               style: TextStyle(
                                 color: AppColors.gray,
-                                fontWeight: FontWeight.w400,
-                                fontSize: 10,
+                                fontWeight: FontWeight.w300,
+                                fontSize: 11,
                               ),
                             ),
                             const SizedBox(width: 4),
@@ -501,7 +518,7 @@ class PanelProgressCard extends StatelessWidget {
                                 style: const TextStyle(
                                   color: AppColors.black,
                                   fontWeight: FontWeight.w400,
-                                  fontSize: 10,
+                                  fontSize: 12,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -615,7 +632,6 @@ class PanelProgressCard extends StatelessWidget {
                 ],
               ),
             ),
-            // ▼▼▼ [PERBAIKAN] Seluruh blok AlertBox di sini dihapus ▼▼▼
             Container(
               padding: const EdgeInsets.all(12),
               decoration: const BoxDecoration(
@@ -649,8 +665,8 @@ class PanelProgressCard extends StatelessWidget {
           title,
           style: const TextStyle(
             color: AppColors.gray,
-            fontWeight: FontWeight.w400,
-            fontSize: 10,
+            fontWeight: FontWeight.w300,
+            fontSize: 11,
           ),
         ),
         const SizedBox(height: 4),
@@ -661,7 +677,7 @@ class PanelProgressCard extends StatelessWidget {
               style: const TextStyle(
                 color: AppColors.black,
                 fontWeight: FontWeight.w400,
-                fontSize: 10,
+                fontSize: 12,
               ),
             ),
             const SizedBox(width: 4),
@@ -697,7 +713,7 @@ class PanelProgressCard extends StatelessWidget {
           style: const TextStyle(
             color: AppColors.gray,
             fontWeight: FontWeight.w300,
-            fontSize: 10,
+            fontSize: 11,
           ),
         ),
         Expanded(
@@ -707,7 +723,7 @@ class PanelProgressCard extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.gray,
               fontWeight: FontWeight.w400,
-              fontSize: 10,
+              fontSize: 12,
             ),
             overflow: TextOverflow.ellipsis,
           ),

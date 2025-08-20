@@ -67,7 +67,7 @@ class SearchField extends StatelessWidget {
             fontWeight: FontWeight.w400,
           ),
           decoration: InputDecoration(
-            hintText: 'Cari + Enter PP/WBS/Panel/Project...',
+            hintText: 'Cari & Enter PP/WBS/Panel/Project...',
             hintStyle: const TextStyle(
               color: AppColors.gray,
               fontSize: 12,

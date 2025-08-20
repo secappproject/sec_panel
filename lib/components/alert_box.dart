@@ -37,7 +37,7 @@ class AlertBox extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 12,
                   color: textColor,
                   fontWeight: FontWeight.w500,
                 ),
@@ -45,7 +45,7 @@ class AlertBox extends StatelessWidget {
               Text(
                 description,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 12,
                   color: textColor,
                   fontWeight: FontWeight.w300,
                 ),
