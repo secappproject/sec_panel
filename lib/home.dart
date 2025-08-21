@@ -328,7 +328,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (allSearchTerms.isEmpty) {
         matchSearch = true;
       } else {
-        matchSearch = allSearchTerms.any((term) => isPanelMatch(term));
+        matchSearch = allSearchTerms.every((term) => isPanelMatch(term));
       }
 
       final matchPanelType =
