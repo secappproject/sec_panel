@@ -369,7 +369,7 @@ class DatabaseHelper {
   }
 
   Future<int> updatePanel(Panel panel) async {
-    await _apiRequest('POST', '/panels', body: panel.toMapForApi());
+    await _apiRequest('PUT', '/panels', body: panel.toMapForApi());
     return 1;
   }
 
