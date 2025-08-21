@@ -648,6 +648,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                     ),
                   ),
                   const SizedBox(height: 12),
+
                   // Container Komponen
                   Container(
                     width: MediaQuery.of(context).size.width,
@@ -677,6 +678,49 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                   ),
                 ],
 
+                // Bagian Khusus K3
+                if (_isK3 &&
+                    _selectedPanelType != null &&
+                    _selectedPanelType!.startsWith('MCC')) ...[
+                  const SizedBox(height: 12),
+                  // Container Busbar
+                  Container(
+                    width: MediaQuery.of(context).size.width,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.grayLight, width: 1),
+                      borderRadius: const BorderRadius.all(Radius.circular(12)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionHeader("Busbar"),
+                        _buildMultiSelectorBusbarVendor(),
+                        const SizedBox(height: 16),
+                        _buildSelectorSection(
+                          label: "Status Busbar MCC",
+                          options: Map.fromEntries(
+                            busbarStatusOptions.map((s) => MapEntry(s, s)),
+                          ),
+                          selectedValue: _selectedBusbarMccStatus,
+                          onTap: (val) => setState(() {
+                            _selectedBusbarMccStatus = val;
+                            _updateCanMarkAsSent();
+                          }),
+                          isEnabled: _selectedBusbarVendorIds.isNotEmpty,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildDatePickerField(
+                          label: "Acknowledgement Order MCC",
+                          selectedDate: _aoBusbarMcc,
+                          onDateChanged: (date) =>
+                              setState(() => _aoBusbarMcc = date),
+                          icon: Icons.assignment_turned_in_outlined,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 // Bagian Umum
                 const SizedBox(height: 12),
                 Container(
