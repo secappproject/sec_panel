@@ -368,27 +368,6 @@ class DatabaseHelper {
     return 1;
   }
 
-  Future<void> updateStatusAO(Panel panel) async {
-    // Tentukan endpoint dengan no_pp dari panel yang akan diupdate.
-    final endpoint = '/panel/${panel.noPp}/status-ao';
-
-    // Siapkan body request dengan data yang relevan dari objek panel.
-    final body = {
-      'status_busbar_pcc': panel.statusBusbarPcc,
-      'status_busbar_mcc': panel.statusBusbarMcc,
-      'status_component': panel.statusComponent,
-      // Konversi DateTime ke format string ISO 8601 agar bisa diterima oleh backend Go.
-      'ao_busbar_pcc': panel.aoBusbarPcc?.toUtc().toIso8601String(),
-      'ao_busbar_mcc': panel.aoBusbarMcc?.toUtc().toIso8601String(),
-    };
-
-    // Hapus field yang nilainya null agar tidak ikut dikirim.
-    body.removeWhere((key, value) => value == null);
-
-    // Kirim request PUT ke backend menggunakan helper _apiRequest.
-    await _apiRequest('PUT', endpoint, body: body);
-  }
-
   Future<Panel> changePanelNoPp(String oldNoPp, Panel updatedPanel) async {
     final responseData = await _apiRequest(
       'PUT',
@@ -527,6 +506,44 @@ class DatabaseHelper {
         'panel_no_pp': panelNoPp,
         'vendor': vendorId,
         'remarks': newRemark,
+      },
+    );
+  }
+
+  Future<void> upsertStatusAOK5({
+    required String panelNoPp,
+    required String vendorId,
+    required String aoBusbarPcc,
+    required String aoBusbarMcc,
+    required String statusBusbarPcc,
+    required String statusBusbarMcc,
+  }) async {
+    await _apiRequest(
+      'POST',
+      '/panel/status-ao-k5',
+      body: {
+        'panel_no_pp': panelNoPp,
+        'vendor': vendorId,
+        'ao_busbar_pcc': aoBusbarPcc,
+        'ao_busbar_mcc': aoBusbarMcc,
+        'status_busbar_pcc': statusBusbarPcc,
+        'status_busbar_mcc': statusBusbarMcc,
+      },
+    );
+  }
+
+  Future<void> upsertStatusWHS({
+    required String panelNoPp,
+    required String vendorId,
+    required String statusComponent,
+  }) async {
+    await _apiRequest(
+      'POST',
+      '/panel/status-whs',
+      body: {
+        'panel_no_pp': panelNoPp,
+        'vendor': vendorId,
+        'status_component': statusComponent,
       },
     );
   }

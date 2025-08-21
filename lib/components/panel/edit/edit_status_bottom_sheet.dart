@@ -105,7 +105,17 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
           panelToUpdate.aoBusbarPcc = _aoBusbarPcc;
           panelToUpdate.aoBusbarMcc = _aoBusbarMcc;
 
-          await DatabaseHelper.instance.updatePanel(panelToUpdate);
+          String? aoBusbarMcc = _aoBusbarMcc?.toIso8601String() ?? '';
+          String? aoBusbarPcc = _aoBusbarPcc?.toIso8601String() ?? '';
+
+          await DatabaseHelper.instance.upsertStatusAOK5(
+            panelNoPp: widget.panelData.panel.noPp,
+            vendorId: widget.currentCompany.id,
+            aoBusbarPcc: aoBusbarPcc,
+            aoBusbarMcc: aoBusbarMcc,
+            statusBusbarPcc: _selectedPccStatus ?? '',
+            statusBusbarMcc: _selectedMccStatus ?? '',
+          );
 
           // Remark yang diisi oleh user K5 saat ini akan disimpan untuk vendornya sendiri
           await DatabaseHelper.instance.upsertBusbarRemarkandVendor(
@@ -115,7 +125,11 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
           );
         } else if (_isWHS) {
           panelToUpdate.statusComponent = _selectedComponentStatus;
-          await DatabaseHelper.instance.updatePanel(panelToUpdate);
+          await DatabaseHelper.instance.upsertStatusWHS(
+            panelNoPp: widget.panelData.panel.noPp,
+            vendorId: widget.currentCompany.id,
+            statusComponent: _selectedComponentStatus ?? '',
+          );
         }
       }
       if (mounted) {
