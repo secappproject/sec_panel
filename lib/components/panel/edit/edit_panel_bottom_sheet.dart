@@ -681,7 +681,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                 // Bagian Khusus K3
                 if (_isK3 &&
                     _selectedPanelType != null &&
-                    _selectedPanelType!.startsWith('MCC')) ...[
+                    _selectedPanelType!.startsWith('MCCW')) ...[
                   const SizedBox(height: 12),
                   // Container Busbar
                   Container(
