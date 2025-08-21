@@ -329,7 +329,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
                     Row(
                       children: [
                         Container(
-                          width: MediaQuery.of(context).size.width - 280,
+                          width: MediaQuery.of(context).size.width * 0.18,
                           height: 11,
                           decoration: BoxDecoration(
                             color: AppColors.gray.withOpacity(0.3),
@@ -418,12 +418,29 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
+                      "Tipe Panel",
+                      style: TextStyle(fontSize: 12, color: AppColors.gray),
+                    ),
+                    // [PERBAIKAN 1] Menambahkan 'style:'
+                    Text(
+                      panel.panelType ?? "Belum Diatur",
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
                       "No. PP",
                       style: TextStyle(fontSize: 12, color: AppColors.gray),
                     ),
                     // [PERBAIKAN 1] Menambahkan 'style:'
                     Text(
-                      isTemporary ? "" : panel.noPp,
+                      panel.noPp.startsWith('TEMP_PP_')
+                          ? 'Belum Diatur'
+                          : panel.noPp,
                       style: const TextStyle(fontSize: 12),
                     ),
                   ],
@@ -438,7 +455,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
                     ),
                     // [PERBAIKAN 2] Menambahkan 'style:'
                     Text(
-                      isTemporary ? "" : (panel.noWbs ?? ""),
+                      panel.noWbs ?? "Belum Diatur",
                       style: const TextStyle(fontSize: 12),
                     ),
                   ],

@@ -104,7 +104,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     _panelRemarkController = TextEditingController(text: _panel.remarks);
 
     _noPpController = TextEditingController(
-      text: _panel.noPp.startsWith('TEMP_PP_') ? '' : _panel.noPp,
+      text: _panel.noPp.startsWith('TEMP_PP_') ? 'Belum Diatur' : _panel.noPp,
     );
     _progressController = TextEditingController(
       text: _panel.percentProgress?.toInt().toString() ?? '0',
