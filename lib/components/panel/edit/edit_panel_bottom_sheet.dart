@@ -750,11 +750,11 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                         const Padding(
                           padding: EdgeInsets.only(top: 8.0),
                           child: Text(
-                            "Atur vendor panel terlebih dahulu",
+                            "Bisa diatur setelah vendor panel ditugaskan",
                             style: TextStyle(
                               color: AppColors.gray,
                               fontSize: 12,
-                              fontStyle: FontStyle.italic,
+                              fontWeight: FontWeight.w300,
                             ),
                           ),
                         ),
@@ -789,11 +789,11 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                         const Padding(
                           padding: EdgeInsets.only(top: 8.0),
                           child: Text(
-                            "Atur vendor panel terlebih dahulu",
+                            "Bisa diatur setelah vendor panel ditugaskan",
                             style: TextStyle(
                               color: AppColors.gray,
                               fontSize: 12,
-                              fontStyle: FontStyle.italic,
+                              fontWeight: FontWeight.w300,
                             ),
                           ),
                         ),
@@ -1204,8 +1204,12 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Vendor Panel",
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+          "Vendor Panel (K3)",
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.black,
+          ),
         ),
         const SizedBox(height: 8),
         Container(
@@ -1214,16 +1218,48 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
           decoration: BoxDecoration(
             color: AppColors.grayLight.withOpacity(0.5),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.grayLight),
           ),
-          child: Text(
-            widget.currentCompany.name,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w300,
-              color: AppColors.gray,
-            ),
-          ),
+          child: widget.panelData.paletVendorIds.isEmpty
+              // KONDISI 1: Belum ada vendor yang ditugaskan
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "No Vendor",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.gray,
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: AppColors.gray,
+                      size: 16,
+                    ),
+                    Expanded(
+                      child: Text(
+                        widget.currentCompany.name, // Nama vendor K5 yg login
+                        textAlign: TextAlign.end,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.schneiderGreen,
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              // KONDISI 2: Sudah ada vendor yang ditugaskan
+              : Text(
+                  widget.currentCompany.name,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.black,
+                  ),
+                ),
         ),
       ],
     );

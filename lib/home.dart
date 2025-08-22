@@ -275,8 +275,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return PanelFilterStatus.progressRed;
   }
 
-  // home_screen.dart
-
   List<PanelDisplayData> get _panelsAfterPrimaryFilters {
     return _allPanelsData.where((data) {
       final panel = data.panel;
@@ -384,8 +382,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             return data.corepartVendorIds.contains(selectedId);
           });
 
-      // ... sisa kode tidak berubah
-
       final matchPccStatus =
           selectedPccStatuses.isEmpty ||
           (panel.statusBusbarPcc != null &&
@@ -459,8 +455,17 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     switch (_tabController.index) {
       case 0:
         break;
-      case 1:
-        if (role == AppRole.k5) {
+      case 1: // Tab "Open Vendor"
+        if (role == AppRole.k3) {
+          // --- PERUBAHAN ---
+          // Untuk K3 (Panel Vendor), tampilkan panel yang belum punya vendor panel.
+          tabFilteredPanels = tabFilteredPanels
+              .where(
+                (data) =>
+                    data.panel.vendorId == null || data.panel.vendorId!.isEmpty,
+              )
+              .toList();
+        } else if (role == AppRole.k5) {
           tabFilteredPanels = tabFilteredPanels
               .where((data) => data.busbarVendorIds.isEmpty)
               .toList();
@@ -469,9 +474,12 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               .where((data) => data.componentVendorIds.isEmpty)
               .toList();
         } else {
+          // Untuk Admin dan Viewer (default)
           tabFilteredPanels = tabFilteredPanels
               .where(
                 (data) =>
+                    data.panel.vendorId == null ||
+                    data.panel.vendorId!.isEmpty ||
                     data.busbarVendorIds.isEmpty ||
                     data.componentVendorIds.isEmpty ||
                     data.paletVendorIds.isEmpty ||
@@ -486,14 +494,25 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           bool isReadyToDelivery =
               (panel.percentProgress ?? 0) >= 100 && !panel.isClosed;
           bool isClosed = panel.isClosed;
-          bool isOpenVendor = (role == AppRole.k5)
-              ? data.busbarVendorIds.isEmpty
-              : (role == AppRole.warehouse)
-              ? data.componentVendorIds.isEmpty
-              : (data.busbarVendorIds.isEmpty ||
-                    data.componentVendorIds.isEmpty ||
-                    data.paletVendorIds.isEmpty ||
-                    data.corepartVendorIds.isEmpty);
+          // --- PERUBAHAN ---
+          // Logika isOpenVendor disesuaikan dengan role
+          bool isOpenVendor;
+          if (role == AppRole.k3) {
+            isOpenVendor =
+                data.panel.vendorId == null || data.panel.vendorId!.isEmpty;
+          } else if (role == AppRole.k5) {
+            isOpenVendor = data.busbarVendorIds.isEmpty;
+          } else if (role == AppRole.warehouse) {
+            isOpenVendor = data.componentVendorIds.isEmpty;
+          } else {
+            isOpenVendor =
+                data.panel.vendorId == null ||
+                data.panel.vendorId!.isEmpty ||
+                data.busbarVendorIds.isEmpty ||
+                data.componentVendorIds.isEmpty ||
+                data.paletVendorIds.isEmpty ||
+                data.corepartVendorIds.isEmpty;
+          }
           return !isOpenVendor && !isReadyToDelivery && !isClosed;
         }).toList();
         break;
@@ -589,31 +608,52 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final role = widget.currentCompany.role;
 
     final allCount = baseFilteredList.length;
-    final openVendorCount = baseFilteredList
-        .where(
-          (data) => (role == AppRole.k5)
-              ? data.busbarVendorIds.isEmpty
-              : (role == AppRole.warehouse)
-              ? data.componentVendorIds.isEmpty
-              : (data.busbarVendorIds.isEmpty ||
-                    data.componentVendorIds.isEmpty ||
-                    data.paletVendorIds.isEmpty ||
-                    data.corepartVendorIds.isEmpty),
-        )
-        .length;
+
+    // --- PERUBAHAN ---
+    // Logika perhitungan count untuk "Open Vendor" disesuaikan per role.
+    final openVendorCount = baseFilteredList.where((data) {
+      if (role == AppRole.k3) {
+        return data.panel.vendorId == null || data.panel.vendorId!.isEmpty;
+      }
+      if (role == AppRole.k5) {
+        return data.busbarVendorIds.isEmpty;
+      }
+      if (role == AppRole.warehouse) {
+        return data.componentVendorIds.isEmpty;
+      }
+      // Default untuk Admin/Viewer
+      return data.panel.vendorId == null ||
+          data.panel.vendorId!.isEmpty ||
+          data.busbarVendorIds.isEmpty ||
+          data.componentVendorIds.isEmpty ||
+          data.paletVendorIds.isEmpty ||
+          data.corepartVendorIds.isEmpty;
+    }).length;
+
+    // --- PERUBAHAN ---
+    // Logika perhitungan count untuk "Need to Track" disesuaikan per role.
     final onGoingPanelCount = baseFilteredList.where((data) {
       final panel = data.panel;
       bool isReady = (panel.percentProgress ?? 0) >= 100 && !panel.isClosed;
-      bool isOpen = (role == AppRole.k5)
-          ? data.busbarVendorIds.isEmpty
-          : (role == AppRole.warehouse)
-          ? data.componentVendorIds.isEmpty
-          : (data.busbarVendorIds.isEmpty ||
-                data.componentVendorIds.isEmpty ||
-                data.paletVendorIds.isEmpty ||
-                data.corepartVendorIds.isEmpty);
+      bool isOpen;
+      if (role == AppRole.k3) {
+        isOpen = data.panel.vendorId == null || data.panel.vendorId!.isEmpty;
+      } else if (role == AppRole.k5) {
+        isOpen = data.busbarVendorIds.isEmpty;
+      } else if (role == AppRole.warehouse) {
+        isOpen = data.componentVendorIds.isEmpty;
+      } else {
+        isOpen =
+            data.panel.vendorId == null ||
+            data.panel.vendorId!.isEmpty ||
+            data.busbarVendorIds.isEmpty ||
+            data.componentVendorIds.isEmpty ||
+            data.paletVendorIds.isEmpty ||
+            data.corepartVendorIds.isEmpty;
+      }
       return !isOpen && !isReady && !panel.isClosed;
     }).length;
+
     final readyToDeliveryCount = baseFilteredList
         .where(
           (data) =>
@@ -737,7 +777,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 )
               : LayoutBuilder(
                   builder: (context, constraints) {
-                    // Tentukan breakpoint untuk beralih ke tampilan grid.
                     const double gridBreakpoint = 740;
 
                     if (constraints.maxWidth < gridBreakpoint) {
@@ -749,7 +788,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         itemBuilder: (context, index) {
                           final data = panelsToDisplay[index];
                           final panel = data.panel;
-                          // Widget card Anda (tidak perlu diubah)
                           return PanelProgressCard(
                             currentUserRole: widget.currentCompany.role,
                             targetDelivery: panel.targetDelivery,
@@ -790,8 +828,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         },
                       );
                     } else {
-                      // === TAMPILAN GRID UNTUK LAYAR LEBAR (DESKTOP/TABLET) ===
-                      // Hitung jumlah kolom secara dinamis, target lebar per card ~500px
                       final int crossAxisCount = (constraints.maxWidth / 500)
                           .floor()
                           .clamp(2, 4);
@@ -802,15 +838,12 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           crossAxisCount: crossAxisCount,
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 16,
-                          // Hapus childAspectRatio dan ganti dengan ini:
-                          mainAxisExtent:
-                              440, // Tentukan tinggi card yang pas, misal 380px
+                          mainAxisExtent: 440,
                         ),
                         itemCount: panelsToDisplay.length,
                         itemBuilder: (context, index) {
                           final data = panelsToDisplay[index];
                           final panel = data.panel;
-                          // Widget card Anda (tidak perlu diubah)
                           return PanelProgressCard(
                             currentUserRole: widget.currentCompany.role,
                             targetDelivery: panel.targetDelivery,

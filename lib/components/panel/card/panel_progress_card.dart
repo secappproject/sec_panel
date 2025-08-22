@@ -215,7 +215,8 @@ class PanelProgressCard extends StatelessWidget {
     if (isClosed) {
       alert = AlertInfo(
         title: "Closed",
-        description: "Closed",
+        description:
+            "Closed ${DateFormat('d MMM yyyy', 'id_ID').format(closedDate ?? DateTime.now())} (Target: ${targetDelivery != null ? DateFormat('d MMM yyyy', 'id_ID').format(targetDelivery!) : 'belum diatur'})",
         imagePath: 'assets/images/alert-success.png',
         backgroundColor: AppColors.schneiderGreen.withOpacity(0.05),
         borderColor: AppColors.schneiderGreen,
