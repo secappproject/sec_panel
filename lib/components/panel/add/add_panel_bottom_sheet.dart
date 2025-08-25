@@ -519,7 +519,15 @@ class _AddPanelBottomSheetState extends State<AddPanelBottomSheet> {
             return _buildOptionButton(
               label: vendor.name,
               selected: _selectedK3VendorId == vendor.id,
-              onTap: () => setState(() => _selectedK3VendorId = vendor.id),
+              onTap: () {
+                setState(() {
+                  if (_selectedK3VendorId == vendor.id) {
+                    _selectedPanelType = null;
+                  } else {
+                    _selectedK3VendorId = vendor.id;
+                  }
+                });
+              },
             );
           }).toList(),
         ),
