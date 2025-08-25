@@ -489,7 +489,15 @@ class _AddPanelBottomSheetState extends State<AddPanelBottomSheet> {
             return _buildOptionButton(
               label: type,
               selected: _selectedPanelType == type,
-              onTap: () => setState(() => _selectedPanelType = type),
+              onTap: () {
+                setState(() {
+                  if (_selectedPanelType == type) {
+                    _selectedPanelType = null;
+                  } else {
+                    _selectedPanelType = type;
+                  }
+                });
+              },
             );
           }).toList(),
         ),

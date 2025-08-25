@@ -1211,7 +1211,15 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
         widget.k3Vendors.map((v) => MapEntry(v.id, v.name)),
       ),
       selectedValue: _selectedK3VendorId,
-      onTap: (val) => setState(() => _selectedK3VendorId = val),
+      onTap: (val) {
+        setState(() {
+          if (_selectedK3VendorId == val) {
+            _selectedK3VendorId = null;
+          } else {
+            _selectedK3VendorId = val;
+          }
+        });
+      },
     );
   }
 
