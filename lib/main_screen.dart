@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:secpanel/components/bulkdelete/bulk_delete_screen.dart';
 import 'package:secpanel/components/export/export_bottom_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -206,33 +207,50 @@ class _MainScreenState extends State<MainScreen> {
 
       final fileName = "ExportDataPanel_$timestamp.$extension";
       String? selectedPath;
-      if (!kIsWeb &&
-          (Platform.isAndroid ||
-              Platform.isIOS ||
-              Platform.isWindows ||
-              Platform.isMacOS)) {
-        selectedPath = await FilePicker.platform.getDirectoryPath();
-      }
+      if (kIsWeb) {
+        // --- Logika untuk WEB ---
+        final xFile = XFile.fromData(
+          Uint8List.fromList(fileBytes ?? []),
+          mimeType: format == 'Excel'
+              ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+              : 'application/json',
+          name: fileName,
+        );
+        await Share.shareXFiles([xFile], text: 'File Extract Data');
+        successMessage = "File $fileName siap untuk di-download.";
+      } else {
+        // --- Logika untuk MOBILE & DESKTOP ---
+        // 1. Minta izin terlebih dahulu
+        var status = await Permission.storage.status;
+        if (!status.isGranted) {
+          status = await Permission.storage.request();
+        }
 
-      if (selectedPath != null) {
-        final path = "$selectedPath/$fileName";
-        if (fileBytes != null) {
-          final file = File(path)..createSync(recursive: true);
-          await file.writeAsBytes(fileBytes);
-          successMessage = "File berhasil disimpan: $fileName";
-          if (Platform.isIOS || Platform.isMacOS) {
-            await Share.shareXFiles([XFile(path)], text: 'File Extract Data');
+        if (status.isGranted) {
+          // 2. Jika izin diberikan, buka pemilih direktori
+          final selectedPath = await FilePicker.platform.getDirectoryPath();
+
+          if (selectedPath != null) {
+            final path = "$selectedPath/$fileName";
+            final file = File(path);
+            await file.writeAsBytes(fileBytes);
+            successMessage = "File berhasil disimpan di: $path";
+
+            // Opsi untuk langsung membuka/share file setelah disimpan
+            if (Platform.isIOS || Platform.isAndroid) {
+              await Share.shareXFiles([XFile(path)], text: 'File Extract Data');
+            }
+          } else {
+            errorMessage = "Extract dibatalkan: Tidak ada folder yang dipilih.";
           }
         } else {
-          throw Exception("Gagal membuat data file.");
+          errorMessage = "Extract gagal: Izin akses penyimpanan ditolak.";
         }
-      } else if (!kIsWeb) {
-        errorMessage = "Extract dibatalkan: Tidak ada folder yang dipilih.";
       }
     } catch (e) {
-      errorMessage = "Extract gagal: $e";
+      errorMessage = "Extract gagal: ${e.toString()}";
     } finally {
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) Navigator.of(context).pop(); // Menutup dialog loading
     }
 
     if (mounted) {
