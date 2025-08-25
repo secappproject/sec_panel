@@ -246,7 +246,13 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
           double.tryParse(_progressController.text.trim()) ?? 0.0;
       panelToSave.startDate = _selectedDate;
       panelToSave.targetDelivery = _selectedTargetDeliveryDate;
-      panelToSave.vendorId = _selectedK3VendorId;
+      if (_isK3 &&
+          (_selectedK3VendorId == null || _selectedK3VendorId!.isEmpty)) {
+        panelToSave.vendorId = widget.currentCompany.id;
+      } else {
+        // Jika tidak, gunakan vendor yang sudah terpilih (logika untuk Admin)
+        panelToSave.vendorId = _selectedK3VendorId;
+      }
       panelToSave.panelType = _selectedPanelType;
       panelToSave.isClosed = _isClosed;
       panelToSave.closedDate = _closedDate;
