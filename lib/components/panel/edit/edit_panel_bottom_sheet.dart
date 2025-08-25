@@ -896,7 +896,11 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
               selected: _selectedPanelType == type,
               onTap: () {
                 setState(() {
-                  _selectedPanelType = type;
+                  if (_selectedPanelType == type) {
+                    _selectedPanelType = null;
+                  } else {
+                    _selectedPanelType = type;
+                  }
                 });
                 _updateCanMarkAsSent();
               },
