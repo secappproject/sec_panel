@@ -233,7 +233,7 @@ class _MainScreenState extends State<MainScreen> {
           if (selectedPath != null) {
             final path = "$selectedPath/$fileName";
             final file = File(path);
-            await file.writeAsBytes(fileBytes);
+            await file.writeAsBytes(fileBytes ?? []);
             successMessage = "File berhasil disimpan di: $path";
 
             // Opsi untuk langsung membuka/share file setelah disimpan
