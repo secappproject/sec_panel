@@ -106,6 +106,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     _noPpController = TextEditingController(
       text: _panel.noPp.startsWith('TEMP_PP_') ? 'Belum Diatur' : _panel.noPp,
     );
+
     _progressController = TextEditingController(
       text: _panel.percentProgress?.toInt().toString() ?? '0',
     );
@@ -238,7 +239,12 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       panelToSave.noPanel = _noPanelController.text.trim();
       panelToSave.noWbs = _noWbsController.text.trim();
       panelToSave.project = _projectController.text.trim();
-      panelToSave.noPp = _noPpController.text.trim();
+      final String noPpFromInput = _noPpController.text.trim();
+      if (noPpFromInput == 'Belum Diatur') {
+        panelToSave.noPp = _originalNoPp;
+      } else {
+        panelToSave.noPp = noPpFromInput;
+      }
       // Logika penyimpanan data remark sudah benar
       panelToSave.remarks = _panelRemarkController.text.trim();
 
