@@ -422,20 +422,20 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ));
 
       if (!matchSearch ||
-          !matchPanelType ||
-          !matchPanelVendor ||
-          !matchBusbarVendor ||
-          !matchComponentVendor ||
-          !matchPaletVendor ||
-          !matchCorepartVendor ||
-          !matchPccStatus ||
-          !matchMccStatus ||
-          !matchComponent ||
-          !matchPalet ||
-          !matchCorepart ||
-          !matchStartDate ||
-          !matchDeliveryDate ||
-          !matchClosedDate) {
+          (!matchPanelType &
+              !matchPanelVendor &
+              !matchBusbarVendor &
+              !matchComponentVendor &
+              !matchPaletVendor &
+              !matchCorepartVendor &
+              !matchPccStatus &
+              !matchMccStatus &
+              !matchComponent &
+              !matchPalet &
+              !matchCorepart &
+              !matchStartDate &
+              !matchDeliveryDate &
+              !matchClosedDate)) {
         return false;
       }
 
