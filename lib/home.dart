@@ -274,11 +274,13 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
     return PanelFilterStatus.progressRed;
   }
+  // home_screen.dart
 
   List<PanelDisplayData> get _panelsAfterPrimaryFilters {
     return _allPanelsData.where((data) {
       final panel = data.panel;
 
+      // Helper function untuk pencarian (tidak berubah)
       bool isPanelMatch(String query) {
         if (query.isEmpty) return true;
         final q = query.toLowerCase();
@@ -317,19 +319,17 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             (panel.statusCorepart ?? '').toLowerCase().contains(q);
       }
 
+      // --- EVALUASI SEMUA FILTER SECARA TERPISAH ---
+
       final allSearchTerms = [
         ...searchChips,
         activeSearchText.trim(),
       ].where((s) => s.isNotEmpty).toList();
+      final bool matchSearch =
+          allSearchTerms.isEmpty ||
+          allSearchTerms.every((term) => isPanelMatch(term));
 
-      final bool matchSearch;
-      if (allSearchTerms.isEmpty) {
-        matchSearch = true;
-      } else {
-        matchSearch = allSearchTerms.every((term) => isPanelMatch(term));
-      }
-
-      final matchPanelType =
+      final bool matchPanelType =
           selectedPanelTypes.isEmpty ||
           selectedPanelTypes.any(
             (type) => type == 'Belum Diatur'
@@ -337,7 +337,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 : panel.panelType == type,
           );
 
-      final matchPanelVendor =
+      final bool matchPanelVendor =
           selectedPanelVendors.isEmpty ||
           selectedPanelVendors.any((selectedId) {
             if (selectedId == 'No Vendor') {
@@ -346,74 +346,74 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             return panel.vendorId == selectedId;
           });
 
-      final matchBusbarVendor =
+      final bool matchBusbarVendor =
           selectedBusbarVendors.isEmpty ||
           selectedBusbarVendors.any((selectedId) {
-            if (selectedId == 'No Vendor') {
-              return data.busbarVendorIds.isEmpty;
-            }
+            if (selectedId == 'No Vendor') return data.busbarVendorIds.isEmpty;
             return data.busbarVendorIds.contains(selectedId);
           });
 
-      final matchComponentVendor =
+      final bool matchComponentVendor =
           selectedComponentVendors.isEmpty ||
           selectedComponentVendors.any((selectedId) {
-            if (selectedId == 'No Vendor') {
+            if (selectedId == 'No Vendor')
               return data.componentVendorIds.isEmpty;
-            }
             return data.componentVendorIds.contains(selectedId);
           });
 
-      final matchPaletVendor =
+      final bool matchPaletVendor =
           selectedPaletVendors.isEmpty ||
           selectedPaletVendors.any((selectedId) {
-            if (selectedId == 'No Vendor') {
-              return data.paletVendorIds.isEmpty;
-            }
+            if (selectedId == 'No Vendor') return data.paletVendorIds.isEmpty;
             return data.paletVendorIds.contains(selectedId);
           });
 
-      final matchCorepartVendor =
+      final bool matchCorepartVendor =
           selectedCorepartVendors.isEmpty ||
           selectedCorepartVendors.any((selectedId) {
-            if (selectedId == 'No Vendor') {
+            if (selectedId == 'No Vendor')
               return data.corepartVendorIds.isEmpty;
-            }
             return data.corepartVendorIds.contains(selectedId);
           });
 
-      final matchPccStatus =
+      final bool matchPccStatus =
           selectedPccStatuses.isEmpty ||
           (panel.statusBusbarPcc != null &&
               selectedPccStatuses.contains(panel.statusBusbarPcc));
-      final matchMccStatus =
+
+      final bool matchMccStatus =
           selectedMccStatuses.isEmpty ||
           (panel.statusBusbarMcc != null &&
               selectedMccStatuses.contains(panel.statusBusbarMcc));
-      final matchComponent =
+
+      final bool matchComponent =
           selectedComponents.isEmpty ||
           selectedComponents.contains(panel.statusComponent);
-      final matchPalet =
+
+      final bool matchPalet =
           selectedPalet.isEmpty || selectedPalet.contains(panel.statusPalet);
-      final matchCorepart =
+
+      final bool matchCorepart =
           selectedCorepart.isEmpty ||
           selectedCorepart.contains(panel.statusCorepart);
 
-      final matchStartDate =
+      final bool matchStartDate =
           startDateRange == null ||
           (panel.startDate != null &&
               !panel.startDate!.isBefore(startDateRange!.start) &&
               !panel.startDate!.isAfter(
                 startDateRange!.end.add(const Duration(days: 1)),
               ));
-      final matchDeliveryDate =
+
+      final bool matchDeliveryDate =
           deliveryDateRange == null ||
           (panel.targetDelivery != null &&
               !panel.targetDelivery!.isBefore(deliveryDateRange!.start) &&
               !panel.targetDelivery!.isAfter(
                 deliveryDateRange!.end.add(const Duration(days: 1)),
               ));
-      final matchClosedDate =
+
+      final bool matchClosedDate =
           closedDateRange == null ||
           (panel.closedDate != null &&
               !panel.closedDate!.isBefore(closedDateRange!.start) &&
@@ -421,30 +421,37 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 closedDateRange!.end.add(const Duration(days: 1)),
               ));
 
-      if (!matchSearch &&
-          !matchPanelType &&
-          !matchPanelVendor &&
-          !matchBusbarVendor &&
-          !matchComponentVendor &&
-          !matchPaletVendor &&
-          !matchCorepartVendor &&
-          !matchPccStatus &&
-          !matchMccStatus &&
-          !matchComponent &&
-          !matchPalet &&
-          !matchCorepart &&
-          !matchStartDate &&
-          !matchDeliveryDate &&
-          !matchClosedDate) {
-        return false;
+      // --- LOGIKA BARU UNTUK STATUS DAN ARSIP ---
+      final panelStatus = _getPanelFilterStatus(panel);
+      final bool matchStatusAndArchive;
+
+      if (panelStatus == PanelFilterStatus.closedArchived) {
+        // Jika panel ini adalah arsip, kelolosannya HANYA ditentukan oleh switch.
+        matchStatusAndArchive = includeArchived;
+      } else {
+        // Jika bukan arsip, kelolosannya ditentukan oleh filter status panel biasa.
+        // Jika tidak ada filter status yang dipilih, maka dianggap lolos.
+        matchStatusAndArchive =
+            selectedPanelStatuses.isEmpty ||
+            selectedPanelStatuses.contains(panelStatus);
       }
 
-      final panelStatus = _getPanelFilterStatus(panel);
-      if (panelStatus == PanelFilterStatus.closedArchived) {
-        return includeArchived;
-      }
-      return selectedPanelStatuses.isEmpty ||
-          selectedPanelStatuses.contains(panelStatus);
+      return matchSearch &&
+          matchPanelType &&
+          matchPanelVendor &&
+          matchBusbarVendor &&
+          matchComponentVendor &&
+          matchPaletVendor &&
+          matchCorepartVendor &&
+          matchPccStatus &&
+          matchMccStatus &&
+          matchComponent &&
+          matchPalet &&
+          matchCorepart &&
+          matchStartDate &&
+          matchDeliveryDate &&
+          matchClosedDate &&
+          matchStatusAndArchive;
     }).toList();
   }
 
