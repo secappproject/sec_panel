@@ -111,9 +111,11 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _processExport(Map<String, dynamic> exportData) async {
     final homeScreenState = homeScreenKey.currentState;
     if (homeScreenState == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Gagal memuat filter aktif.")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Gagal memuat filter aktif.")),
+        );
+      }
       return;
     }
 
@@ -122,13 +124,14 @@ class _MainScreenState extends State<MainScreen> {
     final format = exportData['format'] as String;
 
     if (!exportPanel && !exportUser) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Tidak ada data yang dipilih untuk di-extract.'),
             backgroundColor: Colors.orange,
           ),
         );
+      }
       return;
     }
 
@@ -171,6 +174,22 @@ class _MainScreenState extends State<MainScreen> {
             includeUserData: exportUser,
             currentUser: currentUser,
             filteredPanels: panelsToExport,
+            startDateRange: homeScreenState.startDateRange,
+            deliveryDateRange: homeScreenState.deliveryDateRange,
+            closedDateRange: homeScreenState.closedDateRange,
+            selectedPanelTypes: homeScreenState.selectedPanelTypes,
+            selectedPanelVendors: homeScreenState.selectedPanelVendors,
+            selectedBusbarVendors: homeScreenState.selectedBusbarVendors,
+            selectedComponentVendors: homeScreenState.selectedComponentVendors,
+            selectedPaletVendors: homeScreenState.selectedPaletVendors,
+            selectedCorepartVendors: homeScreenState.selectedCorepartVendors,
+            selectedPccStatuses: homeScreenState.selectedPccStatuses,
+            selectedMccStatuses: homeScreenState.selectedMccStatuses,
+            selectedComponents: homeScreenState.selectedComponents,
+            selectedPalet: homeScreenState.selectedPalet,
+            selectedCorepart: homeScreenState.selectedCorepart,
+            selectedPanelStatuses: homeScreenState.selectedPanelStatuses,
+            includeArchived: homeScreenState.includeArchived,
           );
           fileBytes = excel.encode();
           break;
@@ -207,63 +226,45 @@ class _MainScreenState extends State<MainScreen> {
       }
 
       final fileName = "ExportDataPanel_$timestamp.$extension";
-      String? selectedPath;
-      if (kIsWeb) {
-        // --- Logika BARU & LEBIH SEDERHANA untuk WEB ---
-        MimeType mimeType = MimeType.other;
-        if (format == 'Excel') {
-          mimeType = MimeType.microsoftExcel;
-        } else if (format == 'JSON') {
-          mimeType = MimeType.json;
-        }
 
-        // Perintah ini akan langsung membuka dialog "Save As..." di browser
+      // Logika penyimpanan dikembalikan ke versi lama
+      if (kIsWeb) {
+        MimeType mimeType = MimeType.other;
+        if (format == 'Excel') mimeType = MimeType.microsoftExcel;
+        if (format == 'JSON') mimeType = MimeType.json;
+
         await FileSaver.instance.saveFile(
           name: fileName,
           bytes: Uint8List.fromList(fileBytes ?? []),
           ext: extension,
           mimeType: mimeType,
         );
-
-        // Pesan suksesnya bisa lebih relevan sekarang
         successMessage = "Dialog penyimpanan file telah dibuka.";
       } else {
-        // --- Logika untuk MOBILE & DESKTOP ---
-        // 1. Minta izin terlebih dahulu
-        var status = await Permission.storage.status;
-        if (!status.isGranted) {
-          status = await Permission.storage.request();
-        }
+        // Langsung panggil FilePicker tanpa cek permission manual
+        final selectedPath = await FilePicker.platform.getDirectoryPath();
 
-        if (status.isGranted) {
-          // 2. Jika izin diberikan, buka pemilih direktori
-          final selectedPath = await FilePicker.platform.getDirectoryPath();
+        if (selectedPath != null) {
+          final path = "$selectedPath/$fileName";
+          final file = File(path);
+          await file.writeAsBytes(fileBytes ?? []);
+          successMessage = "File berhasil disimpan di: $path";
 
-          if (selectedPath != null) {
-            final path = "$selectedPath/$fileName";
-            final file = File(path);
-            await file.writeAsBytes(fileBytes ?? []);
-            successMessage = "File berhasil disimpan di: $path";
-
-            // Opsi untuk langsung membuka/share file setelah disimpan
-            if (Platform.isIOS || Platform.isAndroid) {
-              await Share.shareXFiles([XFile(path)], text: 'File Extract Data');
-            }
-          } else {
-            errorMessage = "Extract dibatalkan: Tidak ada folder yang dipilih.";
+          if (Platform.isIOS || Platform.isAndroid) {
+            await Share.shareXFiles([XFile(path)], text: 'File Extract Data');
           }
         } else {
-          errorMessage = "Extract gagal: Izin akses penyimpanan ditolak.";
+          errorMessage = "Extract dibatalkan: Tidak ada folder yang dipilih.";
         }
       }
     } catch (e) {
       errorMessage = "Extract gagal: ${e.toString()}";
     } finally {
-      if (mounted) Navigator.of(context).pop(); // Menutup dialog loading
+      if (mounted) Navigator.of(context).pop();
     }
 
     if (mounted) {
-      if (successMessage != null)
+      if (successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(successMessage),
@@ -271,10 +272,12 @@ class _MainScreenState extends State<MainScreen> {
             backgroundColor: AppColors.schneiderGreen,
           ),
         );
-      if (errorMessage != null)
+      }
+      if (errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
         );
+      }
     }
   }
 

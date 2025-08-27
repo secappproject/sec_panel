@@ -701,13 +701,28 @@ class DatabaseHelper {
     }
   }
 
-  // [PERBAIKAN 2] Perbarui fungsi utama untuk menggunakan struktur data yang baru
-  // ▼▼▼ FUNGSI generateCustomExportExcel ▼▼▼
   Future<Excel> generateCustomExportExcel({
     required bool includePanelData,
     required bool includeUserData,
     required Company currentUser,
     required List<PanelDisplayData> filteredPanels, // Data dari UI
+    // ▼▼▼ TAMBAHKAN SEMUA PARAMETER FILTER INI ▼▼▼
+    DateTimeRange? startDateRange,
+    DateTimeRange? deliveryDateRange,
+    DateTimeRange? closedDateRange,
+    List<String>? selectedPanelTypes,
+    List<String>? selectedPanelVendors,
+    List<String>? selectedBusbarVendors,
+    List<String>? selectedComponentVendors,
+    List<String>? selectedPaletVendors,
+    List<String>? selectedCorepartVendors,
+    List<String>? selectedPccStatuses,
+    List<String>? selectedMccStatuses,
+    List<String>? selectedComponents,
+    List<String>? selectedPalet,
+    List<String>? selectedCorepart,
+    List<PanelFilterStatus>? selectedPanelStatuses,
+    bool? includeArchived,
   }) async {
     final excel = Excel.createExcel();
     excel.delete('Sheet1');
@@ -719,8 +734,12 @@ class DatabaseHelper {
     if (includePanelData) {
       final panelSheet = excel['Panel'];
       final panelHeaders = [
-        'PP Panel', 'Panel No', 'WBS', 'PROJECT',
-        'Panel Remarks', 'Busbar Remarks', // Kolom baru
+        'PP Panel',
+        'Panel No',
+        'WBS',
+        'PROJECT',
+        'Panel Remarks',
+        'Busbar Remarks',
         'Plan Start',
         'Actual Delivery ke SEC',
         'Panel',
@@ -730,10 +749,12 @@ class DatabaseHelper {
         'Status Palet',
         'Status Busbar PCC',
         'Status Busbar MCC',
-        'AO Busbar PCC', 'AO Busbar MCC',
+        'AO Busbar PCC',
+        'AO Busbar MCC',
       ];
       panelSheet.appendRow(panelHeaders.map((h) => TextCellValue(h)).toList());
 
+      // Bagian ini sudah benar, tidak perlu diubah.
       for (final panelData in filteredPanels) {
         final panel = panelData.panel;
         panelSheet.appendRow([
@@ -743,8 +764,7 @@ class DatabaseHelper {
           TextCellValue(panel.noPanel ?? ''),
           TextCellValue(panel.noWbs ?? ''),
           TextCellValue(panel.project ?? ''),
-          TextCellValue(panel.remarks ?? ''), // Data remarks panel
-          // Gunakan properti dan helper yang sudah diperbarui
+          TextCellValue(panel.remarks ?? ''),
           TextCellValue(_formatBusbarRemarks(panelData.busbarRemarks)),
           TextCellValue(formatDate(panel.targetDelivery) ?? ''),
           TextCellValue(formatDate(panel.closedDate) ?? ''),
@@ -762,8 +782,29 @@ class DatabaseHelper {
     }
 
     if (includeUserData) {
-      // Bagian ini tidak berubah, tetapi saya sertakan untuk kelengkapan
-      final data = await getFilteredDataForExport(currentUser: currentUser);
+      // ▼▼▼ DI SINI PERBAIKANNYA ▼▼▼
+      // Panggil getFilteredDataForExport dengan semua filter yang sudah diterima
+      final data = await getFilteredDataForExport(
+        currentUser: currentUser,
+        startDateRange: startDateRange,
+        deliveryDateRange: deliveryDateRange,
+        closedDateRange: closedDateRange,
+        selectedPanelTypes: selectedPanelTypes,
+        selectedPanelVendors: selectedPanelVendors,
+        selectedBusbarVendors: selectedBusbarVendors,
+        selectedComponentVendors: selectedComponentVendors,
+        selectedPaletVendors: selectedPaletVendors,
+        selectedCorepartVendors: selectedCorepartVendors,
+        selectedPccStatuses: selectedPccStatuses,
+        selectedMccStatuses: selectedMccStatuses,
+        selectedComponents: selectedComponents,
+        selectedPalet: selectedPalet,
+        selectedCorepart: selectedCorepart,
+        selectedPanelStatuses: selectedPanelStatuses,
+        includeArchived: includeArchived,
+      );
+      // ▲▲▲ AKHIR PERBAIKAN ▲▲▲
+
       final companyAccounts =
           (data['companyAccounts'] as List<dynamic>?)?.cast<CompanyAccount>() ??
           [];
