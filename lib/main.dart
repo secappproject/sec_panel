@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
       // timeoutDuration: const Duration(minutes: 15),
       child: MaterialApp(
         navigatorKey: navigatorKey, // Pasang navigator key ke MaterialApp
-        title: 'SEC Panel',
+        title: '3SUTORPro',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primaryColor: AppColors.schneiderGreen,
