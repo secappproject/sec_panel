@@ -421,8 +421,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 closedDateRange!.end.add(const Duration(days: 1)),
               ));
 
-      if (!matchSearch ||
-          (!matchPanelType &
+      if (!matchSearch &&
+          !matchPanelType &
               !matchPanelVendor &
               !matchBusbarVendor &
               !matchComponentVendor &
@@ -435,7 +435,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               !matchCorepart &
               !matchStartDate &
               !matchDeliveryDate &
-              !matchClosedDate)) {
+              !matchClosedDate) {
         return false;
       }
 
