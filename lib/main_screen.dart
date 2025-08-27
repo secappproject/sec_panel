@@ -239,7 +239,8 @@ class _MainScreenState extends State<MainScreen> {
           ext: extension,
           mimeType: mimeType,
         );
-        successMessage = "Dialog penyimpanan file telah dibuka.";
+        successMessage =
+            "File $fileName berhasil diunduh dan tersimpan otomatis di folder Download.";
       } else {
         // Langsung panggil FilePicker tanpa cek permission manual
         final selectedPath = await FilePicker.platform.getDirectoryPath();
