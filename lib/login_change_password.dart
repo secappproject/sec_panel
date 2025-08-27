@@ -173,7 +173,7 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Image.asset('assets/images/logo.png', height: 44),
+              Image.asset('assets/images/logo.jpeg', height: 44),
               const SizedBox(height: 24),
               // [PERBAIKAN 1] Judul besar untuk tampilan web
               Container(
@@ -224,7 +224,7 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
             ),
           ),
           const SizedBox(height: 24),
-          Image.asset('assets/images/logo.png', height: 44),
+          Image.asset('assets/images/logo.jpeg', height: 44),
           const SizedBox(height: 24),
           // [PERBAIKAN 1] Judul besar untuk tampilan web
           const Text(
