@@ -1,3 +1,4 @@
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:secpanel/components/bulkdelete/bulk_delete_screen.dart';
@@ -208,16 +209,24 @@ class _MainScreenState extends State<MainScreen> {
       final fileName = "ExportDataPanel_$timestamp.$extension";
       String? selectedPath;
       if (kIsWeb) {
-        // --- Logika untuk WEB ---
-        final xFile = XFile.fromData(
-          Uint8List.fromList(fileBytes ?? []),
-          mimeType: format == 'Excel'
-              ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-              : 'application/json',
+        // --- Logika BARU & LEBIH SEDERHANA untuk WEB ---
+        MimeType mimeType = MimeType.other;
+        if (format == 'Excel') {
+          mimeType = MimeType.microsoftExcel;
+        } else if (format == 'JSON') {
+          mimeType = MimeType.json;
+        }
+
+        // Perintah ini akan langsung membuka dialog "Save As..." di browser
+        await FileSaver.instance.saveFile(
           name: fileName,
+          bytes: Uint8List.fromList(fileBytes ?? []),
+          ext: extension,
+          mimeType: mimeType,
         );
-        await Share.shareXFiles([xFile], text: 'File Extract Data');
-        successMessage = "File $fileName siap untuk di-download.";
+
+        // Pesan suksesnya bisa lebih relevan sekarang
+        successMessage = "Dialog penyimpanan file telah dibuka.";
       } else {
         // --- Logika untuk MOBILE & DESKTOP ---
         // 1. Minta izin terlebih dahulu

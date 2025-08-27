@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:secpanel/components/panel/filtersearch/panel_filter_bottom_sheet.dart';
 import 'package:secpanel/models/approles.dart';
 import 'package:secpanel/models/busbar.dart';
+import 'package:secpanel/models/busbarremark.dart';
 import 'package:secpanel/models/company.dart';
 import 'package:secpanel/models/companyaccount.dart';
 import 'package:secpanel/models/component.dart';
@@ -683,13 +684,30 @@ class DatabaseHelper {
     };
   }
 
-  // ▼▼▼ FUNGSI 2: generateCustomExportExcel ▼▼▼
-  // Fungsi ini menerima daftar panel yang SUDAH DIFILTER dari UI.
+  String _formatBusbarRemarks(List<BusbarRemark> remarks) {
+    if (remarks.isEmpty) {
+      return '';
+    }
+    try {
+      return remarks
+          .map((remark) {
+            final vendorName = remark.vendorName;
+            final remarkText = remark.remark;
+            return '$vendorName: "$remarkText"';
+          })
+          .join('; '); // Pisahkan setiap remark dengan titik koma
+    } catch (e) {
+      return 'Error formatting remarks';
+    }
+  }
+
+  // [PERBAIKAN 2] Perbarui fungsi utama untuk menggunakan struktur data yang baru
+  // ▼▼▼ FUNGSI generateCustomExportExcel ▼▼▼
   Future<Excel> generateCustomExportExcel({
     required bool includePanelData,
     required bool includeUserData,
     required Company currentUser,
-    required List<PanelDisplayData> filteredPanels,
+    required List<PanelDisplayData> filteredPanels, // Data dari UI
   }) async {
     final excel = Excel.createExcel();
     excel.delete('Sheet1');
@@ -701,10 +719,8 @@ class DatabaseHelper {
     if (includePanelData) {
       final panelSheet = excel['Panel'];
       final panelHeaders = [
-        'PP Panel',
-        'Panel No',
-        'WBS',
-        'PROJECT',
+        'PP Panel', 'Panel No', 'WBS', 'PROJECT',
+        'Panel Remarks', 'Busbar Remarks', // Kolom baru
         'Plan Start',
         'Actual Delivery ke SEC',
         'Panel',
@@ -714,38 +730,39 @@ class DatabaseHelper {
         'Status Palet',
         'Status Busbar PCC',
         'Status Busbar MCC',
-        'AO Busbar PCC',
-        'AO Busbar MCC',
+        'AO Busbar PCC', 'AO Busbar MCC',
       ];
       panelSheet.appendRow(panelHeaders.map((h) => TextCellValue(h)).toList());
 
       for (final panelData in filteredPanels) {
         final panel = panelData.panel;
-        panelSheet.appendRow(
-          [
-            TextCellValue(
-              panel.noPp.startsWith('TEMP_') ? 'Belum Diatur' : panel.noPp,
-            ),
-            TextCellValue(panel.noPanel ?? ''),
-            TextCellValue(panel.noWbs ?? ''),
-            TextCellValue(panel.project ?? ''),
-            TextCellValue(formatDate(panel.targetDelivery) ?? ''),
-            TextCellValue(formatDate(panel.closedDate) ?? ''),
-            TextCellValue(panelData.panelVendorName),
-            TextCellValue(panelData.busbarVendorNames),
-            TextCellValue(panel.percentProgress?.toStringAsFixed(0) ?? '0'),
-            TextCellValue(panel.statusCorepart ?? ''),
-            TextCellValue(panel.statusPalet ?? ''),
-            TextCellValue(panel.statusBusbarPcc ?? ''),
-            TextCellValue(panel.statusBusbarMcc ?? ''),
-            TextCellValue(formatDate(panel.aoBusbarPcc) ?? ''),
-            TextCellValue(formatDate(panel.aoBusbarMcc) ?? ''),
-          ].map((c) => c ?? TextCellValue('')).toList(),
-        );
+        panelSheet.appendRow([
+          TextCellValue(
+            panel.noPp.startsWith('TEMP_') ? 'Belum Diatur' : panel.noPp,
+          ),
+          TextCellValue(panel.noPanel ?? ''),
+          TextCellValue(panel.noWbs ?? ''),
+          TextCellValue(panel.project ?? ''),
+          TextCellValue(panel.remarks ?? ''), // Data remarks panel
+          // Gunakan properti dan helper yang sudah diperbarui
+          TextCellValue(_formatBusbarRemarks(panelData.busbarRemarks)),
+          TextCellValue(formatDate(panel.targetDelivery) ?? ''),
+          TextCellValue(formatDate(panel.closedDate) ?? ''),
+          TextCellValue(panelData.panelVendorName),
+          TextCellValue(panelData.busbarVendorNames),
+          TextCellValue(panel.percentProgress?.toStringAsFixed(0) ?? '0'),
+          TextCellValue(panel.statusCorepart ?? ''),
+          TextCellValue(panel.statusPalet ?? ''),
+          TextCellValue(panel.statusBusbarPcc ?? ''),
+          TextCellValue(panel.statusBusbarMcc ?? ''),
+          TextCellValue(formatDate(panel.aoBusbarPcc) ?? ''),
+          TextCellValue(formatDate(panel.aoBusbarMcc) ?? ''),
+        ]);
       }
     }
 
     if (includeUserData) {
+      // Bagian ini tidak berubah, tetapi saya sertakan untuk kelengkapan
       final data = await getFilteredDataForExport(currentUser: currentUser);
       final companyAccounts =
           (data['companyAccounts'] as List<dynamic>?)?.cast<CompanyAccount>() ??
@@ -766,8 +783,6 @@ class DatabaseHelper {
     return excel;
   }
 
-  // ▼▼▼ FUNGSI 3: generateCustomExportJson ▼▼▼
-  // Fungsi ini meneruskan SEMUA filter yang ada di UI ke backend.
   Future<String> generateCustomExportJson({
     required bool includePanelData,
     required bool includeUserData,
@@ -797,18 +812,14 @@ class DatabaseHelper {
       'company_id': currentUser.id,
     };
 
-    // Gunakan fungsi yang sama persis dengan getFilteredDataForExport untuk membangun parameter
-    // ... (kode ini sengaja diduplikasi agar jelas, bisa juga dibuat fungsi helper terpisah)
+    // Logika pembangunan parameter sama persis dengan getFilteredDataForExport
     void addListToParams(String key, List<String>? list) {
-      if (list != null && list.isNotEmpty) {
-        queryParams[key] = list.join(',');
-      }
+      if (list != null && list.isNotEmpty) queryParams[key] = list.join(',');
     }
 
     void addEnumListToParams(String key, List<dynamic>? list) {
-      if (list != null && list.isNotEmpty) {
+      if (list != null && list.isNotEmpty)
         queryParams[key] = list.map((e) => e.name).join(',');
-      }
     }
 
     if (startDateRange != null) {
@@ -819,6 +830,7 @@ class DatabaseHelper {
           .toUtc()
           .toIso8601String();
     }
+    // ... (Tambahkan semua if dan addListToParams lainnya seperti di fungsi pertama) ...
     if (deliveryDateRange != null) {
       queryParams['delivery_date_start'] = deliveryDateRange.start
           .toUtc()
@@ -838,7 +850,6 @@ class DatabaseHelper {
     if (includeArchived != null) {
       queryParams['include_archived'] = includeArchived.toString();
     }
-
     addListToParams('panel_types', selectedPanelTypes);
     addListToParams('panel_vendors', selectedPanelVendors);
     addListToParams('busbar_vendors', selectedBusbarVendors);
@@ -887,7 +898,6 @@ class DatabaseHelper {
         .where((e) => e.value)
         .map((e) => e.key)
         .join(',');
-
     Map<String, String> queryParams = {
       'tables': tables,
       'role': currentUser.role.name,
@@ -896,15 +906,12 @@ class DatabaseHelper {
 
     // Gunakan lagi logika penambahan parameter yang sama
     void addListToParams(String key, List<String>? list) {
-      if (list != null && list.isNotEmpty) {
-        queryParams[key] = list.join(',');
-      }
+      if (list != null && list.isNotEmpty) queryParams[key] = list.join(',');
     }
 
     void addEnumListToParams(String key, List<dynamic>? list) {
-      if (list != null && list.isNotEmpty) {
+      if (list != null && list.isNotEmpty)
         queryParams[key] = list.map((e) => e.name).join(',');
-      }
     }
 
     if (startDateRange != null) {
@@ -915,6 +922,7 @@ class DatabaseHelper {
           .toUtc()
           .toIso8601String();
     }
+    // ... (Tambahkan semua if dan addListToParams lainnya seperti di fungsi pertama) ...
     if (deliveryDateRange != null) {
       queryParams['delivery_date_start'] = deliveryDateRange.start
           .toUtc()
@@ -934,7 +942,6 @@ class DatabaseHelper {
     if (includeArchived != null) {
       queryParams['include_archived'] = includeArchived.toString();
     }
-
     addListToParams('panel_types', selectedPanelTypes);
     addListToParams('panel_vendors', selectedPanelVendors);
     addListToParams('busbar_vendors', selectedBusbarVendors);
