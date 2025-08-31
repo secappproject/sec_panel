@@ -23,7 +23,6 @@ class Panel {
   DateTime? closedDate;
   String? panelType;
   String? remarks;
-  final String? busbarRemarksJson;
 
   Panel({
     required this.noPp,
@@ -46,7 +45,6 @@ class Panel {
     this.closedDate,
     this.panelType,
     this.remarks,
-    this.busbarRemarksJson,
   });
 
   Map<String, dynamic> toMap() {
