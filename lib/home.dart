@@ -49,12 +49,19 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<String> selectedComponents = [];
   List<String> selectedPalet = [];
   List<String> selectedCorepart = [];
+  List<String> selectedPanelTypes = [];
+
   DateTimeRange? startDateRange;
   DateTimeRange? deliveryDateRange;
   DateTimeRange? closedDateRange;
-  List<String> selectedPanelTypes = [];
   DateTimeRange? pccClosedDateRange;
   DateTimeRange? mccClosedDateRange;
+
+  DateFilterType startDateStatus = DateFilterType.any;
+  DateFilterType deliveryDateStatus = DateFilterType.any;
+  DateFilterType closedDateStatus = DateFilterType.any;
+  DateFilterType pccClosedDateStatus = DateFilterType.any;
+  DateFilterType mccClosedDateStatus = DateFilterType.any;
 
   @override
   void initState() {
@@ -109,8 +116,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) => PanelFilterBottomSheet(
-        pccClosedDateRange: pccClosedDateRange,
-        mccClosedDateRange: mccClosedDateRange,
         selectedPccStatuses: selectedPccStatuses,
         selectedMccStatuses: selectedMccStatuses,
         selectedComponents: selectedComponents,
@@ -127,18 +132,17 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         selectedComponentVendors: selectedComponentVendors,
         selectedPaletVendors: selectedPaletVendors,
         selectedCorepartVendors: selectedCorepartVendors,
+        selectedPanelTypes: selectedPanelTypes,
         startDateRange: startDateRange,
         deliveryDateRange: deliveryDateRange,
         closedDateRange: closedDateRange,
-        selectedPanelTypes: selectedPanelTypes,
-        onPanelTypesChanged: (value) =>
-            setState(() => selectedPanelTypes = value),
-        onStartDateRangeChanged: (value) =>
-            setState(() => startDateRange = value),
-        onDeliveryDateRangeChanged: (value) =>
-            setState(() => deliveryDateRange = value),
-        onClosedDateRangeChanged: (value) =>
-            setState(() => closedDateRange = value),
+        pccClosedDateRange: pccClosedDateRange,
+        mccClosedDateRange: mccClosedDateRange,
+        startDateStatus: startDateStatus,
+        deliveryDateStatus: deliveryDateStatus,
+        closedDateStatus: closedDateStatus,
+        pccClosedDateStatus: pccClosedDateStatus,
+        mccClosedDateStatus: mccClosedDateStatus,
         onPccStatusesChanged: (value) =>
             setState(() => selectedPccStatuses = value),
         onMccStatusesChanged: (value) =>
@@ -162,10 +166,28 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             setState(() => selectedPaletVendors = value),
         onCorepartVendorsChanged: (value) =>
             setState(() => selectedCorepartVendors = value),
+        onPanelTypesChanged: (value) =>
+            setState(() => selectedPanelTypes = value),
+        onStartDateRangeChanged: (value) =>
+            setState(() => startDateRange = value),
+        onDeliveryDateRangeChanged: (value) =>
+            setState(() => deliveryDateRange = value),
+        onClosedDateRangeChanged: (value) =>
+            setState(() => closedDateRange = value),
         onPccClosedDateRangeChanged: (value) =>
             setState(() => pccClosedDateRange = value),
         onMccClosedDateRangeChanged: (value) =>
             setState(() => mccClosedDateRange = value),
+        onStartDateStatusChanged: (value) =>
+            setState(() => startDateStatus = value),
+        onDeliveryDateStatusChanged: (value) =>
+            setState(() => deliveryDateStatus = value),
+        onClosedDateStatusChanged: (value) =>
+            setState(() => closedDateStatus = value),
+        onPccClosedDateStatusChanged: (value) =>
+            setState(() => pccClosedDateStatus = value),
+        onMccClosedDateStatusChanged: (value) =>
+            setState(() => mccClosedDateStatus = value),
         onReset: () {
           setState(() {
             searchChips = [];
@@ -188,6 +210,13 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             startDateRange = null;
             deliveryDateRange = null;
             closedDateRange = null;
+            pccClosedDateRange = null;
+            mccClosedDateRange = null;
+            startDateStatus = DateFilterType.any;
+            deliveryDateStatus = DateFilterType.any;
+            closedDateStatus = DateFilterType.any;
+            pccClosedDateStatus = DateFilterType.any;
+            mccClosedDateStatus = DateFilterType.any;
           });
         },
       ),
@@ -206,11 +235,11 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         panelData: dataToEdit,
         currentCompany: widget.currentCompany,
         k3Vendors: _allK3Vendors,
-        onSave: (updatedPanel) => loadInitialData(), // Panggil refresh
+        onSave: (updatedPanel) => loadInitialData(),
         onDelete: () async {
           Navigator.of(context).pop();
           await DatabaseHelper.instance.deletePanel(dataToEdit.panel.noPp);
-          loadInitialData(); // Panggil refresh
+          loadInitialData();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -243,14 +272,10 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         panelVendorName: dataToEdit.panelVendorName,
         busbarVendorNames: dataToEdit.busbarVendorNames,
         currentCompany: widget.currentCompany,
-        onSave: () => loadInitialData(), // Panggil refresh
+        onSave: () => loadInitialData(),
       ),
     );
   }
-
-  // ===========================================================================
-  // LOGIKA UNTUK FILTERING DAN SORTING
-  // ===========================================================================
 
   String _formatDuration(DateTime? startDate) {
     if (startDate == null) return "Belum Diatur";
@@ -282,17 +307,14 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
     return PanelFilterStatus.progressRed;
   }
-  // home_screen.dart
 
   List<PanelDisplayData> get _panelsAfterPrimaryFilters {
     return _allPanelsData.where((data) {
       final panel = data.panel;
 
-      // Helper function untuk pencarian (tidak berubah)
       bool isPanelMatch(String query) {
         if (query.isEmpty) return true;
         final q = query.toLowerCase();
-
         final displayPanelVendor = (data.panelVendorName ?? '').isEmpty
             ? 'no vendor'
             : data.panelVendorName!.toLowerCase();
@@ -309,7 +331,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         final displayCorepartVendors = (data.corepartVendorNames ?? '').isEmpty
             ? 'no vendor'
             : data.corepartVendorNames!.toLowerCase();
-
         return (panel.noPanel ?? '').toLowerCase().contains(q) ||
             panel.noPp.toLowerCase().contains(q) ||
             (panel.noWbs ?? '').toLowerCase().contains(q) ||
@@ -362,8 +383,9 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       final bool matchComponentVendor =
           selectedComponentVendors.isEmpty ||
           selectedComponentVendors.any((selectedId) {
-            if (selectedId == 'No Vendor')
+            if (selectedId == 'No Vendor') {
               return data.componentVendorIds.isEmpty;
+            }
             return data.componentVendorIds.contains(selectedId);
           });
 
@@ -377,8 +399,9 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       final bool matchCorepartVendor =
           selectedCorepartVendors.isEmpty ||
           selectedCorepartVendors.any((selectedId) {
-            if (selectedId == 'No Vendor')
+            if (selectedId == 'No Vendor') {
               return data.corepartVendorIds.isEmpty;
+            }
             return data.corepartVendorIds.contains(selectedId);
           });
 
@@ -403,55 +426,55 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           selectedCorepart.isEmpty ||
           selectedCorepart.contains(panel.statusCorepart);
 
-      final bool matchStartDate =
-          startDateRange == null ||
-          (panel.startDate != null &&
-              !panel.startDate!.isBefore(startDateRange!.start) &&
-              !panel.startDate!.isAfter(
-                startDateRange!.end.add(const Duration(days: 1)),
-              ));
+      bool checkDate(
+        DateFilterType status,
+        DateTimeRange? range,
+        DateTime? date,
+      ) {
+        switch (status) {
+          case DateFilterType.notSet:
+            return date == null;
+          case DateFilterType.set:
+            return range == null ||
+                (date != null &&
+                    !date.isBefore(range.start) &&
+                    !date.isAfter(range.end.add(const Duration(days: 1))));
+          case DateFilterType.any:
+            return true;
+        }
+      }
 
-      final bool matchDeliveryDate =
-          deliveryDateRange == null ||
-          (panel.targetDelivery != null &&
-              !panel.targetDelivery!.isBefore(deliveryDateRange!.start) &&
-              !panel.targetDelivery!.isAfter(
-                deliveryDateRange!.end.add(const Duration(days: 1)),
-              ));
-
-      final bool matchClosedDate =
-          closedDateRange == null ||
-          (panel.closedDate != null &&
-              !panel.closedDate!.isBefore(closedDateRange!.start) &&
-              !panel.closedDate!.isAfter(
-                closedDateRange!.end.add(const Duration(days: 1)),
-              ));
-
-      final bool matchPccClosedDate =
-          pccClosedDateRange == null ||
-          (panel.closeDateBusbarPcc != null &&
-              !panel.closeDateBusbarPcc!.isBefore(pccClosedDateRange!.start) &&
-              !panel.closeDateBusbarPcc!.isAfter(
-                pccClosedDateRange!.end.add(const Duration(days: 1)),
-              ));
-
-      final bool matchMccClosedDate =
-          mccClosedDateRange == null ||
-          (panel.closeDateBusbarMcc != null &&
-              !panel.closeDateBusbarMcc!.isBefore(mccClosedDateRange!.start) &&
-              !panel.closeDateBusbarMcc!.isAfter(
-                mccClosedDateRange!.end.add(const Duration(days: 1)),
-              ));
+      final bool matchStartDate = checkDate(
+        startDateStatus,
+        startDateRange,
+        panel.startDate,
+      );
+      final bool matchDeliveryDate = checkDate(
+        deliveryDateStatus,
+        deliveryDateRange,
+        panel.targetDelivery,
+      );
+      final bool matchClosedDate = checkDate(
+        closedDateStatus,
+        closedDateRange,
+        panel.closedDate,
+      );
+      final bool matchPccClosedDate = checkDate(
+        pccClosedDateStatus,
+        pccClosedDateRange,
+        panel.closeDateBusbarPcc,
+      );
+      final bool matchMccClosedDate = checkDate(
+        mccClosedDateStatus,
+        mccClosedDateRange,
+        panel.closeDateBusbarMcc,
+      );
 
       final panelStatus = _getPanelFilterStatus(panel);
       final bool matchStatusAndArchive;
-
       if (panelStatus == PanelFilterStatus.closedArchived) {
-        // Jika panel ini adalah arsip, kelolosannya HANYA ditentukan oleh switch.
         matchStatusAndArchive = includeArchived;
       } else {
-        // Jika bukan arsip, kelolosannya ditentukan oleh filter status panel biasa.
-        // Jika tidak ada filter status yang dipilih, maka dianggap lolos.
         matchStatusAndArchive =
             selectedPanelStatuses.isEmpty ||
             selectedPanelStatuses.contains(panelStatus);
@@ -485,10 +508,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     switch (_tabController.index) {
       case 0:
         break;
-      case 1: // Tab "Open Vendor"
+      case 1:
         if (role == AppRole.k3) {
-          // --- PERUBAHAN ---
-          // Untuk K3 (Panel Vendor), tampilkan panel yang belum punya vendor panel.
           tabFilteredPanels = tabFilteredPanels
               .where(
                 (data) =>
@@ -504,7 +525,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               .where((data) => data.componentVendorIds.isEmpty)
               .toList();
         } else {
-          // Untuk Admin dan Viewer (default)
           tabFilteredPanels = tabFilteredPanels
               .where(
                 (data) =>
@@ -524,8 +544,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           bool isReadyToDelivery =
               (panel.percentProgress ?? 0) >= 100 && !panel.isClosed;
           bool isClosed = panel.isClosed;
-          // --- PERUBAHAN ---
-          // Logika isOpenVendor disesuaikan dengan role
           bool isOpenVendor;
           if (role == AppRole.k3) {
             isOpenVendor =
@@ -614,10 +632,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     return tabFilteredPanels;
   }
-
-  // ===========================================================================
-  // BUILD METHOD UTAMA
-  // ===========================================================================
 
   @override
   Widget build(BuildContext context) {

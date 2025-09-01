@@ -27,6 +27,8 @@ enum PanelFilterStatus {
   closedArchived,
 }
 
+enum DateFilterType { notSet, set, any }
+
 class PanelFilterBottomSheet extends StatefulWidget {
   final List<String> selectedPccStatuses;
   final List<String> selectedMccStatuses;
@@ -44,10 +46,19 @@ class PanelFilterBottomSheet extends StatefulWidget {
   final List<String> selectedComponentVendors;
   final List<String> selectedPaletVendors;
   final List<String> selectedCorepartVendors;
+  final List<String> selectedPanelTypes;
+
   final DateTimeRange? startDateRange;
   final DateTimeRange? deliveryDateRange;
   final DateTimeRange? closedDateRange;
-  final List<String> selectedPanelTypes; // Properti baru
+  final DateTimeRange? pccClosedDateRange;
+  final DateTimeRange? mccClosedDateRange;
+
+  final DateFilterType startDateStatus;
+  final DateFilterType deliveryDateStatus;
+  final DateFilterType closedDateStatus;
+  final DateFilterType pccClosedDateStatus;
+  final DateFilterType mccClosedDateStatus;
 
   final Function(List<String>) onPccStatusesChanged;
   final Function(List<String>) onMccStatusesChanged;
@@ -62,14 +73,20 @@ class PanelFilterBottomSheet extends StatefulWidget {
   final Function(List<String>) onComponentVendorsChanged;
   final Function(List<String>) onPaletVendorsChanged;
   final Function(List<String>) onCorepartVendorsChanged;
+  final Function(List<String>) onPanelTypesChanged;
+
   final Function(DateTimeRange?) onStartDateRangeChanged;
   final Function(DateTimeRange?) onDeliveryDateRangeChanged;
   final Function(DateTimeRange?) onClosedDateRangeChanged;
-  final Function(List<String>) onPanelTypesChanged;
-  final DateTimeRange? pccClosedDateRange;
-  final DateTimeRange? mccClosedDateRange;
   final Function(DateTimeRange?) onPccClosedDateRangeChanged;
   final Function(DateTimeRange?) onMccClosedDateRangeChanged;
+
+  final Function(DateFilterType) onStartDateStatusChanged;
+  final Function(DateFilterType) onDeliveryDateStatusChanged;
+  final Function(DateFilterType) onClosedDateStatusChanged;
+  final Function(DateFilterType) onPccClosedDateStatusChanged;
+  final Function(DateFilterType) onMccClosedDateStatusChanged;
+
   final VoidCallback onReset;
 
   const PanelFilterBottomSheet({
@@ -103,18 +120,28 @@ class PanelFilterBottomSheet extends StatefulWidget {
     required this.onComponentVendorsChanged,
     required this.onPaletVendorsChanged,
     required this.onCorepartVendorsChanged,
+    required this.selectedPanelTypes,
+    required this.onPanelTypesChanged,
     required this.startDateRange,
     required this.deliveryDateRange,
-    required this.onStartDateRangeChanged,
-    required this.onDeliveryDateRangeChanged,
     required this.closedDateRange,
-    required this.onClosedDateRangeChanged,
-    required this.selectedPanelTypes, // Diperlukan di constructor
-    required this.onPanelTypesChanged, // Diperlukan di constructor
     required this.pccClosedDateRange,
     required this.mccClosedDateRange,
+    required this.onStartDateRangeChanged,
+    required this.onDeliveryDateRangeChanged,
+    required this.onClosedDateRangeChanged,
     required this.onPccClosedDateRangeChanged,
     required this.onMccClosedDateRangeChanged,
+    required this.startDateStatus,
+    required this.deliveryDateStatus,
+    required this.closedDateStatus,
+    required this.pccClosedDateStatus,
+    required this.mccClosedDateStatus,
+    required this.onStartDateStatusChanged,
+    required this.onDeliveryDateStatusChanged,
+    required this.onClosedDateStatusChanged,
+    required this.onPccClosedDateStatusChanged,
+    required this.onMccClosedDateStatusChanged,
     required this.onReset,
   });
 
@@ -136,12 +163,19 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
   late List<String> _selectedComponentVendors;
   late List<String> _selectedPaletVendors;
   late List<String> _selectedCorepartVendors;
+  late List<String> _selectedPanelTypes;
+
   late DateTimeRange? _startDateRange;
   late DateTimeRange? _deliveryDateRange;
   late DateTimeRange? _closedDateRange;
-  late List<String> _selectedPanelTypes;
   late DateTimeRange? _pccClosedDateRange;
   late DateTimeRange? _mccClosedDateRange;
+
+  late DateFilterType _startDateStatus;
+  late DateFilterType _deliveryDateStatus;
+  late DateFilterType _closedDateStatus;
+  late DateFilterType _pccClosedDateStatus;
+  late DateFilterType _mccClosedDateStatus;
 
   final List<String> busbarStatusOptions = [
     "Close",
@@ -168,14 +202,65 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
     _selectedComponentVendors = List.from(widget.selectedComponentVendors);
     _selectedPaletVendors = List.from(widget.selectedPaletVendors);
     _selectedCorepartVendors = List.from(widget.selectedCorepartVendors);
+    _selectedPanelTypes = List.from(widget.selectedPanelTypes);
+
     _startDateRange = widget.startDateRange;
     _deliveryDateRange = widget.deliveryDateRange;
     _closedDateRange = widget.closedDateRange;
     _pccClosedDateRange = widget.pccClosedDateRange;
     _mccClosedDateRange = widget.mccClosedDateRange;
-    _selectedPanelTypes = List.from(
-      widget.selectedPanelTypes,
-    ); // Inisialisasi state baru
+
+    _startDateStatus = widget.startDateStatus;
+    _deliveryDateStatus = widget.deliveryDateStatus;
+    _closedDateStatus = widget.closedDateStatus;
+    _pccClosedDateStatus = widget.pccClosedDateStatus;
+    _mccClosedDateStatus = widget.mccClosedDateStatus;
+  }
+
+  void _applyFilters() {
+    widget.onPccStatusesChanged(_selectedPccStatuses);
+    widget.onMccStatusesChanged(_selectedMccStatuses);
+    widget.onComponentsChanged(_selectedComponents);
+    widget.onPaletChanged(_selectedPalet);
+    widget.onCorepartChanged(_selectedCorepart);
+    widget.onIncludeArchivedChanged(_includeArchived);
+    widget.onSortChanged(_selectedSort);
+    widget.onPanelStatusesChanged(_selectedPanelStatuses);
+    widget.onPanelVendorsChanged(_selectedPanelVendors);
+    widget.onBusbarVendorsChanged(_selectedBusbarVendors);
+    widget.onComponentVendorsChanged(_selectedComponentVendors);
+    widget.onPaletVendorsChanged(_selectedPaletVendors);
+    widget.onCorepartVendorsChanged(_selectedCorepartVendors);
+    widget.onPanelTypesChanged(_selectedPanelTypes);
+
+    widget.onStartDateRangeChanged(_startDateRange);
+    widget.onDeliveryDateRangeChanged(_deliveryDateRange);
+    widget.onClosedDateRangeChanged(_closedDateRange);
+    widget.onPccClosedDateRangeChanged(_pccClosedDateRange);
+    widget.onMccClosedDateRangeChanged(_mccClosedDateRange);
+
+    widget.onStartDateStatusChanged(_startDateStatus);
+    widget.onDeliveryDateStatusChanged(_deliveryDateStatus);
+    widget.onClosedDateStatusChanged(_closedDateStatus);
+    widget.onPccClosedDateStatusChanged(_pccClosedDateStatus);
+    widget.onMccClosedDateStatusChanged(_mccClosedDateStatus);
+
+    Navigator.pop(context);
+  }
+
+  void _resetFilters() {
+    widget.onReset();
+    Navigator.pop(context);
+  }
+
+  void _toggleSelection(List list, dynamic value) {
+    setState(() {
+      if (list.contains(value)) {
+        list.remove(value);
+      } else {
+        list.add(value);
+      }
+    });
   }
 
   Widget _buildOptionButton({
@@ -223,48 +308,12 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
     );
   }
 
-  void _applyFilters() {
-    widget.onPccStatusesChanged(_selectedPccStatuses);
-    widget.onMccStatusesChanged(_selectedMccStatuses);
-    widget.onComponentsChanged(_selectedComponents);
-    widget.onPaletChanged(_selectedPalet);
-    widget.onCorepartChanged(_selectedCorepart);
-    widget.onIncludeArchivedChanged(_includeArchived);
-    widget.onSortChanged(_selectedSort);
-    widget.onPanelStatusesChanged(_selectedPanelStatuses);
-    widget.onPanelVendorsChanged(_selectedPanelVendors);
-    widget.onBusbarVendorsChanged(_selectedBusbarVendors);
-    widget.onComponentVendorsChanged(_selectedComponentVendors);
-    widget.onPaletVendorsChanged(_selectedPaletVendors);
-    widget.onCorepartVendorsChanged(_selectedCorepartVendors);
-    widget.onStartDateRangeChanged(_startDateRange);
-    widget.onDeliveryDateRangeChanged(_deliveryDateRange);
-    widget.onClosedDateRangeChanged(_closedDateRange);
-    widget.onPanelTypesChanged(_selectedPanelTypes);
-    widget.onPccClosedDateRangeChanged(_pccClosedDateRange);
-    widget.onMccClosedDateRangeChanged(_mccClosedDateRange);
-    Navigator.pop(context);
-  }
-
-  void _resetFilters() {
-    widget.onReset();
-    Navigator.pop(context);
-  }
-
-  void _toggleSelection(List list, dynamic value) {
-    setState(() {
-      if (list.contains(value)) {
-        list.remove(value);
-      } else {
-        list.add(value);
-      }
-    });
-  }
-
-  Widget _buildDateRangePicker({
+  Widget _buildDateField({
     required String title,
     required DateTimeRange? currentRange,
     required Function(DateTimeRange?) onRangeChanged,
+    required DateFilterType currentStatus,
+    required Function(DateFilterType) onStatusChanged,
   }) {
     final dateFormat = DateFormat('d MMM yyyy');
 
@@ -335,6 +384,9 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
       );
       if (newRange != null) {
         onRangeChanged(newRange);
+        if (currentStatus != DateFilterType.set) {
+          onStatusChanged(DateFilterType.set);
+        }
       }
     }
 
@@ -343,47 +395,72 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
       children: [
         Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
         const SizedBox(height: 12),
-        InkWell(
-          onTap: pickDateRange,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.grayLight),
+        Row(
+          children: [
+            Checkbox(
+              value: currentStatus == DateFilterType.notSet,
+              onChanged: (bool? value) {
+                onStatusChanged(
+                  value! ? DateFilterType.notSet : DateFilterType.any,
+                );
+              },
+              activeColor: AppColors.schneiderGreen,
             ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.calendar_today_outlined,
-                  size: 20,
-                  color: AppColors.gray,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    currentRange == null
-                        ? 'Pilih Rentang Tanggal'
-                        : '${dateFormat.format(currentRange.start)} - ${dateFormat.format(currentRange.end)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w300,
-                      color: currentRange != null
-                          ? AppColors.black
-                          : AppColors.gray,
+            const Text(
+              "Hanya tampilkan yang belum diatur",
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        InkWell(
+          onTap: currentStatus != DateFilterType.notSet ? pickDateRange : null,
+          borderRadius: BorderRadius.circular(8),
+          child: Opacity(
+            opacity: currentStatus != DateFilterType.notSet ? 1.0 : 0.5,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.grayLight),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.calendar_today_outlined,
+                    size: 20,
+                    color: AppColors.gray,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      currentRange == null
+                          ? 'Pilih Rentang Tanggal'
+                          : '${dateFormat.format(currentRange.start)} - ${dateFormat.format(currentRange.end)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w300,
+                        color: currentRange != null
+                            ? AppColors.black
+                            : AppColors.gray,
+                      ),
                     ),
                   ),
-                ),
-                if (currentRange != null)
-                  InkWell(
-                    onTap: () => onRangeChanged(null),
-                    child: const Icon(
-                      Icons.clear,
-                      size: 20,
-                      color: AppColors.gray,
+                  if (currentRange != null &&
+                      currentStatus != DateFilterType.notSet)
+                    InkWell(
+                      onTap: () {
+                        onRangeChanged(null);
+                        onStatusChanged(DateFilterType.any);
+                      },
+                      child: const Icon(
+                        Icons.clear,
+                        size: 20,
+                        color: AppColors.gray,
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -481,50 +558,54 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  _buildDateRangePicker(
+                  _buildDateField(
                     title: "Range Tanggal Mulai Pengerjaan",
                     currentRange: _startDateRange,
-                    onRangeChanged: (range) {
-                      setState(() {
-                        _startDateRange = range;
-                      });
-                    },
+                    onRangeChanged: (range) =>
+                        setState(() => _startDateRange = range),
+                    currentStatus: _startDateStatus,
+                    onStatusChanged: (status) =>
+                        setState(() => _startDateStatus = status),
                   ),
                   const SizedBox(height: 24),
-                  _buildDateRangePicker(
+                  _buildDateField(
                     title: "Range Target Delivery Panel",
                     currentRange: _deliveryDateRange,
-                    onRangeChanged: (range) {
-                      setState(() {
-                        _deliveryDateRange = range;
-                      });
-                    },
+                    onRangeChanged: (range) =>
+                        setState(() => _deliveryDateRange = range),
+                    currentStatus: _deliveryDateStatus,
+                    onStatusChanged: (status) =>
+                        setState(() => _deliveryDateStatus = status),
                   ),
                   const SizedBox(height: 24),
-                  _buildDateRangePicker(
+                  _buildDateField(
                     title: "Range Delivered Panel",
                     currentRange: _closedDateRange,
-                    onRangeChanged: (range) {
-                      setState(() {
-                        _closedDateRange = range;
-                      });
-                    },
+                    onRangeChanged: (range) =>
+                        setState(() => _closedDateRange = range),
+                    currentStatus: _closedDateStatus,
+                    onStatusChanged: (status) =>
+                        setState(() => _closedDateStatus = status),
                   ),
                   const SizedBox(height: 24),
-                  _buildDateRangePicker(
+                  _buildDateField(
                     title: "Range Busbar MCC Closed",
                     currentRange: _mccClosedDateRange,
-                    onRangeChanged: (range) {
-                      setState(() => _mccClosedDateRange = range);
-                    },
+                    onRangeChanged: (range) =>
+                        setState(() => _mccClosedDateRange = range),
+                    currentStatus: _mccClosedDateStatus,
+                    onStatusChanged: (status) =>
+                        setState(() => _mccClosedDateStatus = status),
                   ),
                   const SizedBox(height: 24),
-                  _buildDateRangePicker(
+                  _buildDateField(
                     title: "Range Busbar PCC Closed",
                     currentRange: _pccClosedDateRange,
-                    onRangeChanged: (range) {
-                      setState(() => _pccClosedDateRange = range);
-                    },
+                    onRangeChanged: (range) =>
+                        setState(() => _pccClosedDateRange = range),
+                    currentStatus: _pccClosedDateStatus,
+                    onStatusChanged: (status) =>
+                        setState(() => _pccClosedDateStatus = status),
                   ),
                   const SizedBox(height: 24),
                   const Text(
@@ -722,7 +803,6 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                   const SizedBox(height: 12),
                   Wrap(
                     children: [
-                      // [TAMBAHAN] Opsi untuk filter "No Vendor"
                       _buildOptionButton(
                         label: 'No Vendor',
                         selected: _selectedPanelVendors.contains('No Vendor'),
@@ -731,7 +811,6 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                           'No Vendor',
                         ),
                       ),
-                      // [MODIFIKASI] Menggunakan spread operator untuk menggabungkan list
                       ...widget.allK3Vendors.map(
                         (vendor) => _buildOptionButton(
                           label: vendor.name,
@@ -752,7 +831,6 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                   const SizedBox(height: 12),
                   Wrap(
                     children: [
-                      // [TAMBAHAN] Opsi untuk filter "No Vendor"
                       _buildOptionButton(
                         label: 'No Vendor',
                         selected: _selectedBusbarVendors.contains('No Vendor'),
@@ -761,7 +839,6 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                           'No Vendor',
                         ),
                       ),
-                      // [MODIFIKASI] Menggunakan spread operator untuk menggabungkan list
                       ...widget.allK5Vendors.map(
                         (vendor) => _buildOptionButton(
                           label: vendor.name,
@@ -774,101 +851,6 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  // const Text(
-                  //   "Vendor Komponen (WHS)",
-                  //   style: TextStyle(fontWeight: FontWeight.w500),
-                  // ),
-                  // const SizedBox(height: 12),
-                  // Wrap(
-                  //   children: [
-                  //     // [TAMBAHAN] Opsi untuk filter "No Vendor"
-                  //     _buildOptionButton(
-                  //       label: 'No Vendor',
-                  //       selected:
-                  //           _selectedComponentVendors.contains('No Vendor'),
-                  //       onTap: () => _toggleSelection(
-                  //         _selectedComponentVendors,
-                  //         'No Vendor',
-                  //       ),
-                  //     ),
-                  //     // [MODIFIKASI] Menggunakan spread operator untuk menggabungkan list
-                  //     ...widget.allWHSVendors.map(
-                  //       (vendor) => _buildOptionButton(
-                  //         label: vendor.name,
-                  //         selected: _selectedComponentVendors.contains(
-                  //           vendor.id,
-                  //         ),
-                  //         onTap: () => _toggleSelection(
-                  //           _selectedComponentVendors,
-                  //           vendor.id,
-                  //         ),
-                  //       ),
-                  //     ),
-                  //   ],
-                  // ),
-                  const SizedBox(height: 12),
-                  // const Text(
-                  //   "Vendor Palet (K3)",
-                  //   style: TextStyle(fontWeight: FontWeight.w500),
-                  // ),
-                  // const SizedBox(height: 12),
-                  // Wrap(
-                  //   children: [
-                  //     // [TAMBAHAN] Opsi untuk filter "No Vendor"
-                  //     _buildOptionButton(
-                  //       label: 'No Vendor',
-                  //       selected: _selectedPaletVendors.contains('No Vendor'),
-                  //       onTap: () => _toggleSelection(
-                  //         _selectedPaletVendors,
-                  //         'No Vendor',
-                  //       ),
-                  //     ),
-                  //     // [MODIFIKASI] Menggunakan spread operator untuk menggabungkan list
-                  //     ...widget.allK3Vendors.map(
-                  //       (vendor) => _buildOptionButton(
-                  //         label: vendor.name,
-                  //         selected: _selectedPaletVendors.contains(vendor.id),
-                  //         onTap: () => _toggleSelection(
-                  //           _selectedPaletVendors,
-                  //           vendor.id,
-                  //         ),
-                  //       ),
-                  //     ),
-                  //   ],
-                  // ),
-                  // const SizedBox(height: 12),
-                  // const Text(
-                  //   "Vendor Corepart (K3)",
-                  //   style: TextStyle(fontWeight: FontWeight.w500),
-                  // ),
-                  // const SizedBox(height: 12),
-                  // Wrap(
-                  //   children: [
-                  //     // [TAMBAHAN] Opsi untuk filter "No Vendor"
-                  //     _buildOptionButton(
-                  //       label: 'No Vendor',
-                  //       selected:
-                  //           _selectedCorepartVendors.contains('No Vendor'),
-                  //       onTap: () => _toggleSelection(
-                  //         _selectedCorepartVendors,
-                  //         'No Vendor',
-                  //       ),
-                  //     ),
-                  //     // [MODIFIKASI] Menggunakan spread operator untuk menggabungkan list
-                  //     ...widget.allK3Vendors.map(
-                  //       (vendor) => _buildOptionButton(
-                  //         label: vendor.name,
-                  //         selected:
-                  //             _selectedCorepartVendors.contains(vendor.id),
-                  //         onTap: () => _toggleSelection(
-                  //           _selectedCorepartVendors,
-                  //           vendor.id,
-                  //         ),
-                  //       ),
-                  //     ),
-                  //   ],
-                  // ),
                   const SizedBox(height: 12),
                   const Text(
                     "Urut Berdasarkan",
