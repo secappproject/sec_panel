@@ -65,7 +65,11 @@ class PanelFilterBottomSheet extends StatefulWidget {
   final Function(DateTimeRange?) onStartDateRangeChanged;
   final Function(DateTimeRange?) onDeliveryDateRangeChanged;
   final Function(DateTimeRange?) onClosedDateRangeChanged;
-  final Function(List<String>) onPanelTypesChanged; // Properti baru
+  final Function(List<String>) onPanelTypesChanged;
+  final DateTimeRange? pccClosedDateRange;
+  final DateTimeRange? mccClosedDateRange;
+  final Function(DateTimeRange?) onPccClosedDateRangeChanged;
+  final Function(DateTimeRange?) onMccClosedDateRangeChanged;
   final VoidCallback onReset;
 
   const PanelFilterBottomSheet({
@@ -107,6 +111,10 @@ class PanelFilterBottomSheet extends StatefulWidget {
     required this.onClosedDateRangeChanged,
     required this.selectedPanelTypes, // Diperlukan di constructor
     required this.onPanelTypesChanged, // Diperlukan di constructor
+    required this.pccClosedDateRange,
+    required this.mccClosedDateRange,
+    required this.onPccClosedDateRangeChanged,
+    required this.onMccClosedDateRangeChanged,
     required this.onReset,
   });
 
@@ -131,7 +139,9 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
   late DateTimeRange? _startDateRange;
   late DateTimeRange? _deliveryDateRange;
   late DateTimeRange? _closedDateRange;
-  late List<String> _selectedPanelTypes; // State baru
+  late List<String> _selectedPanelTypes;
+  late DateTimeRange? _pccClosedDateRange;
+  late DateTimeRange? _mccClosedDateRange;
 
   final List<String> busbarStatusOptions = [
     "Close",
@@ -161,6 +171,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
     _startDateRange = widget.startDateRange;
     _deliveryDateRange = widget.deliveryDateRange;
     _closedDateRange = widget.closedDateRange;
+    _pccClosedDateRange = widget.pccClosedDateRange;
+    _mccClosedDateRange = widget.mccClosedDateRange;
     _selectedPanelTypes = List.from(
       widget.selectedPanelTypes,
     ); // Inisialisasi state baru
@@ -228,7 +240,9 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
     widget.onStartDateRangeChanged(_startDateRange);
     widget.onDeliveryDateRangeChanged(_deliveryDateRange);
     widget.onClosedDateRangeChanged(_closedDateRange);
-    widget.onPanelTypesChanged(_selectedPanelTypes); // Terapkan filter
+    widget.onPanelTypesChanged(_selectedPanelTypes);
+    widget.onPccClosedDateRangeChanged(_pccClosedDateRange);
+    widget.onMccClosedDateRangeChanged(_mccClosedDateRange);
     Navigator.pop(context);
   }
 
@@ -478,7 +492,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                   ),
                   const SizedBox(height: 24),
                   _buildDateRangePicker(
-                    title: "Range Target Delivery",
+                    title: "Range Target Delivery Panel",
                     currentRange: _deliveryDateRange,
                     onRangeChanged: (range) {
                       setState(() {
@@ -488,12 +502,28 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                   ),
                   const SizedBox(height: 24),
                   _buildDateRangePicker(
-                    title: "Range Waktu Sampai (Closed Date)",
+                    title: "Range Delivered Panel",
                     currentRange: _closedDateRange,
                     onRangeChanged: (range) {
                       setState(() {
                         _closedDateRange = range;
                       });
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  _buildDateRangePicker(
+                    title: "Range Busbar MCC Closed",
+                    currentRange: _mccClosedDateRange,
+                    onRangeChanged: (range) {
+                      setState(() => _mccClosedDateRange = range);
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  _buildDateRangePicker(
+                    title: "Range Busbar PCC Closed",
+                    currentRange: _pccClosedDateRange,
+                    onRangeChanged: (range) {
+                      setState(() => _pccClosedDateRange = range);
                     },
                   ),
                   const SizedBox(height: 24),

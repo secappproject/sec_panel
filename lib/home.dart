@@ -53,6 +53,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   DateTimeRange? deliveryDateRange;
   DateTimeRange? closedDateRange;
   List<String> selectedPanelTypes = [];
+  DateTimeRange? pccClosedDateRange;
+  DateTimeRange? mccClosedDateRange;
 
   @override
   void initState() {
@@ -107,6 +109,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) => PanelFilterBottomSheet(
+        pccClosedDateRange: pccClosedDateRange,
+        mccClosedDateRange: mccClosedDateRange,
         selectedPccStatuses: selectedPccStatuses,
         selectedMccStatuses: selectedMccStatuses,
         selectedComponents: selectedComponents,
@@ -158,6 +162,10 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             setState(() => selectedPaletVendors = value),
         onCorepartVendorsChanged: (value) =>
             setState(() => selectedCorepartVendors = value),
+        onPccClosedDateRangeChanged: (value) =>
+            setState(() => pccClosedDateRange = value),
+        onMccClosedDateRangeChanged: (value) =>
+            setState(() => mccClosedDateRange = value),
         onReset: () {
           setState(() {
             searchChips = [];
@@ -319,8 +327,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             (panel.statusCorepart ?? '').toLowerCase().contains(q);
       }
 
-      // --- EVALUASI SEMUA FILTER SECARA TERPISAH ---
-
       final allSearchTerms = [
         ...searchChips,
         activeSearchText.trim(),
@@ -421,7 +427,22 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 closedDateRange!.end.add(const Duration(days: 1)),
               ));
 
-      // --- LOGIKA BARU UNTUK STATUS DAN ARSIP ---
+      final bool matchPccClosedDate =
+          pccClosedDateRange == null ||
+          (panel.closeDateBusbarPcc != null &&
+              !panel.closeDateBusbarPcc!.isBefore(pccClosedDateRange!.start) &&
+              !panel.closeDateBusbarPcc!.isAfter(
+                pccClosedDateRange!.end.add(const Duration(days: 1)),
+              ));
+
+      final bool matchMccClosedDate =
+          mccClosedDateRange == null ||
+          (panel.closeDateBusbarMcc != null &&
+              !panel.closeDateBusbarMcc!.isBefore(mccClosedDateRange!.start) &&
+              !panel.closeDateBusbarMcc!.isAfter(
+                mccClosedDateRange!.end.add(const Duration(days: 1)),
+              ));
+
       final panelStatus = _getPanelFilterStatus(panel);
       final bool matchStatusAndArchive;
 
@@ -451,6 +472,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           matchStartDate &&
           matchDeliveryDate &&
           matchClosedDate &&
+          matchPccClosedDate &&
+          matchMccClosedDate &&
           matchStatusAndArchive;
     }).toList();
   }

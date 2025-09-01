@@ -23,6 +23,8 @@ class Panel {
   DateTime? closedDate;
   String? panelType;
   String? remarks;
+  DateTime? closeDateBusbarPcc;
+  DateTime? closeDateBusbarMcc;
 
   Panel({
     required this.noPp,
@@ -45,6 +47,8 @@ class Panel {
     this.closedDate,
     this.panelType,
     this.remarks,
+    this.closeDateBusbarPcc,
+    this.closeDateBusbarMcc,
   });
 
   Map<String, dynamic> toMap() {
@@ -68,7 +72,9 @@ class Panel {
       'is_closed': isClosed ? 1 : 0,
       'closed_date': closedDate?.toUtc().toIso8601String(),
       'panel_type': panelType,
-      'remarks': remarks, // <-- [PERBAIKAN] Menambahkan field yang hilang
+      'remarks': remarks,
+      'close_date_busbar_pcc': closeDateBusbarPcc?.toUtc().toIso8601String(),
+      'close_date_busbar_mcc': closeDateBusbarMcc?.toUtc().toIso8601String(),
     };
   }
 
@@ -94,6 +100,8 @@ class Panel {
       'closed_date': closedDate?.toUtc().toIso8601String(),
       'panel_type': panelType,
       'remarks': remarks,
+      'close_date_busbar_pcc': closeDateBusbarPcc?.toUtc().toIso8601String(),
+      'close_date_busbar_mcc': closeDateBusbarMcc?.toUtc().toIso8601String(),
     };
   }
 
@@ -131,6 +139,8 @@ class Panel {
       closedDate: parseDate(map['closed_date']),
       panelType: map['panel_type'],
       remarks: map['remarks'],
+      closeDateBusbarPcc: parseDate(map['close_date_busbar_pcc']),
+      closeDateBusbarMcc: parseDate(map['close_date_busbar_mcc']),
     );
   }
 }

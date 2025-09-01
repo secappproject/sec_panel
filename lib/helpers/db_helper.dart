@@ -751,6 +751,8 @@ class DatabaseHelper {
         'Status Palet',
         'Status Busbar PCC',
         'Status Busbar MCC',
+        'Close Date Busbar PCC',
+        'Close Date Busbar MCC',
         'AO Busbar PCC',
         'AO Busbar MCC',
       ];
@@ -779,6 +781,8 @@ class DatabaseHelper {
           TextCellValue(panel.statusPalet ?? ''),
           TextCellValue(panel.statusBusbarPcc ?? ''),
           TextCellValue(panel.statusBusbarMcc ?? ''),
+          TextCellValue(formatDate(panel.closeDateBusbarPcc) ?? ''),
+          TextCellValue(formatDate(panel.closeDateBusbarMcc) ?? ''),
           TextCellValue(formatDate(panel.aoBusbarPcc) ?? ''),
           TextCellValue(formatDate(panel.aoBusbarMcc) ?? ''),
         ]);
@@ -786,8 +790,6 @@ class DatabaseHelper {
     }
 
     if (includeUserData) {
-      // ▼▼▼ DI SINI PERBAIKANNYA ▼▼▼
-      // Panggil getFilteredDataForExport dengan semua filter yang sudah diterima
       final data = await getFilteredDataForExport(
         currentUser: currentUser,
         startDateRange: startDateRange,

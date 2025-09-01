@@ -300,6 +300,7 @@ class PanelProgressCard extends StatelessWidget {
     final String displayWbsNumber = wbsNumber.isEmpty
         ? "Belum Diatur"
         : wbsNumber;
+    final String displayProject = project.isEmpty ? "Belum Diatur" : project;
 
     return Padding(
       padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
@@ -648,7 +649,7 @@ class PanelProgressCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   _buildInfoRow("No. WBS", displayWbsNumber),
                   const SizedBox(height: 8),
-                  _buildInfoRow("Project", project),
+                  _buildInfoRow("Project", displayProject),
                 ],
               ),
             ),

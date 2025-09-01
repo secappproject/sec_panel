@@ -1,5 +1,3 @@
-// lib/components/panel/edit_panel_bottom_sheet.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:secpanel/helpers/db_helper.dart';
@@ -41,8 +39,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
   late final TextEditingController _projectController;
   late final TextEditingController _noPpController;
   late final TextEditingController _progressController;
-  late final TextEditingController
-  _panelRemarkController; // Controller sudah ada
+  late final TextEditingController _panelRemarkController;
 
   late String _originalNoPp;
 
@@ -81,6 +78,9 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
 
   DateTime? _aoBusbarPcc;
   DateTime? _aoBusbarMcc;
+  // ▼▼▼ [BARU] State untuk tanggal close busbar ▼▼▼
+  DateTime? _closeDateBusbarPcc;
+  DateTime? _closeDateBusbarMcc;
 
   final List<String> busbarStatusOptions = [
     "On Progress",
@@ -100,7 +100,6 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     _noPanelController = TextEditingController(text: _panel.noPanel);
     _noWbsController = TextEditingController(text: _panel.noWbs);
     _projectController = TextEditingController(text: _panel.project);
-    // Inisialisasi controller sudah benar
     _panelRemarkController = TextEditingController(text: _panel.remarks);
 
     _noPpController = TextEditingController(
@@ -130,6 +129,9 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
 
     _aoBusbarPcc = _panel.aoBusbarPcc;
     _aoBusbarMcc = _panel.aoBusbarMcc;
+    // ▼▼▼ [BARU] Inisialisasi state tanggal close busbar ▼▼▼
+    _closeDateBusbarPcc = _panel.closeDateBusbarPcc;
+    _closeDateBusbarMcc = _panel.closeDateBusbarMcc;
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _updateCanMarkAsSent());
     _progressController.addListener(_updateCanMarkAsSent);
@@ -168,7 +170,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     _noPpController.dispose();
     _progressController.removeListener(_updateCanMarkAsSent);
     _progressController.dispose();
-    _panelRemarkController.dispose(); // Dispose controller
+    _panelRemarkController.dispose();
     super.dispose();
   }
 
@@ -234,7 +236,6 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Siapkan objek panel dengan semua data dari form
       final panelToSave = Panel.fromMap(_panel.toMap());
       panelToSave.noPanel = _noPanelController.text.trim();
       panelToSave.noWbs = _noWbsController.text.trim();
@@ -245,7 +246,6 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       } else {
         panelToSave.noPp = noPpFromInput;
       }
-      // Logika penyimpanan data remark sudah benar
       panelToSave.remarks = _panelRemarkController.text.trim();
 
       panelToSave.percentProgress =
@@ -256,7 +256,6 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
           (_selectedK3VendorId == null || _selectedK3VendorId!.isEmpty)) {
         panelToSave.vendorId = widget.currentCompany.id;
       } else {
-        // Jika tidak, gunakan vendor yang sudah terpilih (logika untuk Admin)
         panelToSave.vendorId = _selectedK3VendorId;
       }
       panelToSave.panelType = _selectedPanelType;
@@ -269,14 +268,15 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       panelToSave.statusCorepart = _selectedCorepartStatus;
       panelToSave.aoBusbarPcc = _aoBusbarPcc;
       panelToSave.aoBusbarMcc = _aoBusbarMcc;
+      // ▼▼▼ [BARU] Menyertakan tanggal close busbar saat menyimpan ▼▼▼
+      panelToSave.closeDateBusbarPcc = _closeDateBusbarPcc;
+      panelToSave.closeDateBusbarMcc = _closeDateBusbarMcc;
 
-      // 2. Panggil API dan TANGKAP HASILNYA
       final Panel finalPanel = await DatabaseHelper.instance.changePanelNoPp(
         _originalNoPp,
         panelToSave,
       );
 
-      // 3. Urus relasi Busbar secara terpisah menggunakan no_pp yang BENAR
       final oldVendorIds = Set<String>.from(widget.panelData.busbarVendorIds);
       final newVendorIds = Set<String>.from(_selectedBusbarVendorIds);
 
@@ -291,7 +291,6 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
           Busbar(panelNoPp: finalPanel.noPp, vendor: vendorId),
         );
       }
-      // 4. Urus relasi Palet & Corepart dengan memeriksa perubahan vendor K3
       final oldK3VendorId = widget.panelData.paletVendorIds.isNotEmpty
           ? widget.panelData.paletVendorIds.first
           : null;
@@ -319,12 +318,10 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
         }
       }
 
-      // 5. Urus relasi Component
       await DatabaseHelper.instance.upsertComponent(
         Component(panelNoPp: finalPanel.noPp, vendor: 'warehouse'),
       );
 
-      // 6. Update UI
       setState(() {
         _isLoading = false;
         _isSuccess = true;
@@ -584,14 +581,12 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                       else if (_isK3)
                         _buildK3VendorDisplay(),
 
-                      // ▼▼▼ [PERBAIKAN] MENAMBAHKAN INPUT FIELD REMARK PANEL ▼▼▼
                       if (_isAdmin || _isK3) ...[
                         const SizedBox(height: 16),
                         _buildTextField(
                           controller: _panelRemarkController,
                           label: "Panel Remark",
-                          maxLines:
-                              3, // Membuat input field lebih besar (3 baris)
+                          maxLines: 3,
                         ),
                       ],
                     ],
@@ -623,9 +618,25 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                           selectedValue: _selectedBusbarPccStatus,
                           onTap: (val) => setState(() {
                             _selectedBusbarPccStatus = val;
+                            // ▼▼▼ [BARU] Logika otomatisasi tanggal ▼▼▼
+                            if (val == 'Close') {
+                              _closeDateBusbarPcc = DateTime.now();
+                            } else {
+                              _closeDateBusbarPcc = null;
+                            }
                             _updateCanMarkAsSent();
                           }),
                           isEnabled: _selectedBusbarVendorIds.isNotEmpty,
+                        ),
+                        const SizedBox(height: 16),
+                        // ▼▼▼ [BARU] Field Tanggal Close Busbar PCC ▼▼▼
+                        _buildDatePickerField(
+                          label: "Close Date Busbar PCC",
+                          selectedDate: _closeDateBusbarPcc,
+                          onDateChanged: (date) =>
+                              setState(() => _closeDateBusbarPcc = date),
+                          icon: Icons.event_available,
+                          isEnabled: _selectedBusbarPccStatus == 'Close',
                         ),
                         const SizedBox(height: 16),
                         _buildDatePickerField(
@@ -644,9 +655,25 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                           selectedValue: _selectedBusbarMccStatus,
                           onTap: (val) => setState(() {
                             _selectedBusbarMccStatus = val;
+                            // ▼▼▼ [BARU] Logika otomatisasi tanggal ▼▼▼
+                            if (val == 'Close') {
+                              _closeDateBusbarMcc = DateTime.now();
+                            } else {
+                              _closeDateBusbarMcc = null;
+                            }
                             _updateCanMarkAsSent();
                           }),
                           isEnabled: _selectedBusbarVendorIds.isNotEmpty,
+                        ),
+                        const SizedBox(height: 16),
+                        // ▼▼▼ [BARU] Field Tanggal Close Busbar MCC ▼▼▼
+                        _buildDatePickerField(
+                          label: "Close Date Busbar MCC",
+                          selectedDate: _closeDateBusbarMcc,
+                          onDateChanged: (date) =>
+                              setState(() => _closeDateBusbarMcc = date),
+                          icon: Icons.event_available,
+                          isEnabled: _selectedBusbarMccStatus == 'Close',
                         ),
                         const SizedBox(height: 16),
                         _buildDatePickerField(
@@ -908,7 +935,6 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                       children: [
                         SizedBox(
                           width: MediaQuery.of(context).size.width,
-
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -976,7 +1002,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     bool isNumber = false,
     String? suffixText,
     String? Function(String?)? validator,
-    int? maxLines = 1, // `maxLines` sudah ada, jadi aman digunakan
+    int? maxLines = 1,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -992,7 +1018,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
           keyboardType: isNumber ? TextInputType.number : TextInputType.text,
           validator: validator,
-          maxLines: maxLines, // Menggunakan parameter maxLines
+          maxLines: maxLines,
           decoration: InputDecoration(
             suffixText: suffixText,
             hintText: 'Masukkan $label',
@@ -1198,7 +1224,6 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       );
       if (date == null) return;
 
-      // Time picker logic has been removed.
       setState(() => _selectedDate = date);
     }
 
@@ -1211,7 +1236,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
         ),
         const SizedBox(height: 8),
         InkWell(
-          onTap: pickDate, // Using the new date-only picker function
+          onTap: pickDate,
           borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -1257,11 +1282,13 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     );
   }
 
+  // ▼▼▼ [MODIFIKASI] Menambahkan parameter isEnabled ▼▼▼
   Widget _buildDatePickerField({
     required String label,
     required DateTime? selectedDate,
     required ValueChanged<DateTime> onDateChanged,
     required IconData icon,
+    bool isEnabled = true,
   }) {
     Future<void> pickDate() async {
       final date = await showDatePicker(
@@ -1288,22 +1315,33 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: isEnabled ? AppColors.black : AppColors.gray,
+          ),
         ),
         const SizedBox(height: 8),
         InkWell(
-          onTap: pickDate,
+          onTap: isEnabled ? pickDate : null,
           borderRadius: BorderRadius.circular(8),
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
+              color: isEnabled ? Colors.white : Colors.grey.shade100,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.grayLight),
+              border: Border.all(
+                color: isEnabled ? AppColors.grayLight : Colors.grey.shade300,
+              ),
             ),
             child: Row(
               children: [
-                Icon(icon, size: 20, color: AppColors.gray),
+                Icon(
+                  icon,
+                  size: 20,
+                  color: isEnabled ? AppColors.gray : Colors.grey.shade400,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   selectedDate != null
@@ -1313,7 +1351,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                     fontSize: 12,
                     fontWeight: FontWeight.w300,
                     color: selectedDate != null
-                        ? AppColors.black
+                        ? (isEnabled ? AppColors.black : AppColors.gray)
                         : AppColors.gray,
                   ),
                 ),
@@ -1365,7 +1403,6 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
             borderRadius: BorderRadius.circular(8),
           ),
           child: widget.panelData.paletVendorIds.isEmpty
-              // KONDISI 1: Belum ada vendor yang ditugaskan
               ? Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -1384,7 +1421,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                     ),
                     Expanded(
                       child: Text(
-                        widget.currentCompany.name, // Nama vendor K5 yg login
+                        widget.currentCompany.name,
                         textAlign: TextAlign.end,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -1396,7 +1433,6 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                     ),
                   ],
                 )
-              // KONDISI 2: Sudah ada vendor yang ditugaskan
               : Text(
                   widget.currentCompany.name,
                   style: const TextStyle(
