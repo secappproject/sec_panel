@@ -75,7 +75,7 @@ class SearchField extends StatelessWidget {
             ),
             prefixIcon: const Icon(
               Icons.search,
-              color: AppColors.schneiderGreen,
+              color: AppColors.gray,
               size: 20,
             ),
             border: OutlineInputBorder(

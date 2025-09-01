@@ -765,10 +765,10 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         border: Border.all(color: AppColors.grayLight),
                       ),
                       child: Image.asset(
-                        'assets/images/filter-green.png',
+                        'assets/images/filter-gray.png',
                         width: 20,
                         height: 20,
-                        color: AppColors.schneiderGreen,
+                        color: AppColors.gray,
                       ),
                     ),
                   ),
