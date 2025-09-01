@@ -688,6 +688,90 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 12),
+
+                  Container(
+                    width: MediaQuery.of(context).size.width,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.grayLight, width: 1),
+                      borderRadius: const BorderRadius.all(Radius.circular(12)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionHeader("Palet"),
+                        _buildSelectorSection(
+                          label: "Status Palet",
+                          options: Map.fromEntries(
+                            paletCorepartStatusOptions.map(
+                              (s) => MapEntry(s, s),
+                            ),
+                          ),
+                          selectedValue: _selectedPaletStatus,
+                          onTap: (val) => setState(() {
+                            _selectedPaletStatus = val;
+                            _updateCanMarkAsSent();
+                          }),
+                          isEnabled: _selectedK3VendorId != null,
+                        ),
+                        if (_selectedK3VendorId == null)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              "Bisa diatur setelah vendor panel ditugaskan",
+                              style: TextStyle(
+                                color: AppColors.gray,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w300,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  Container(
+                    width: MediaQuery.of(context).size.width,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.grayLight, width: 1),
+                      borderRadius: const BorderRadius.all(Radius.circular(12)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionHeader("Corepart"),
+                        _buildSelectorSection(
+                          label: "Status Corepart",
+                          options: Map.fromEntries(
+                            paletCorepartStatusOptions.map(
+                              (s) => MapEntry(s, s),
+                            ),
+                          ),
+                          selectedValue: _selectedCorepartStatus,
+                          onTap: (val) => setState(() {
+                            _selectedCorepartStatus = val;
+                            _updateCanMarkAsSent();
+                          }),
+                          isEnabled: _selectedK3VendorId != null,
+                        ),
+                        if (_selectedK3VendorId == null)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              "Bisa diatur setelah vendor panel ditugaskan",
+                              style: TextStyle(
+                                color: AppColors.gray,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w300,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ],
 
                 // Bagian Khusus K3
@@ -729,89 +813,139 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                               setState(() => _aoBusbarMcc = date),
                           icon: Icons.assignment_turned_in_outlined,
                         ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionHeader("Palet"),
+                              _buildSelectorSection(
+                                label: "Status Palet",
+                                options: Map.fromEntries(
+                                  paletCorepartStatusOptions.map(
+                                    (s) => MapEntry(s, s),
+                                  ),
+                                ),
+                                selectedValue: _selectedPaletStatus,
+                                onTap: (val) => setState(() {
+                                  _selectedPaletStatus = val;
+                                  _updateCanMarkAsSent();
+                                }),
+                                isEnabled: _selectedK3VendorId != null,
+                              ),
+                              if (_selectedK3VendorId == null)
+                                const Padding(
+                                  padding: EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    "Bisa diatur setelah vendor panel ditugaskan",
+                                    style: TextStyle(
+                                      color: AppColors.gray,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w300,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionHeader("Corepart"),
+                              _buildSelectorSection(
+                                label: "Status Corepart",
+                                options: Map.fromEntries(
+                                  paletCorepartStatusOptions.map(
+                                    (s) => MapEntry(s, s),
+                                  ),
+                                ),
+                                selectedValue: _selectedCorepartStatus,
+                                onTap: (val) => setState(() {
+                                  _selectedCorepartStatus = val;
+                                  _updateCanMarkAsSent();
+                                }),
+                                isEnabled: _selectedK3VendorId != null,
+                              ),
+                              if (_selectedK3VendorId == null)
+                                const Padding(
+                                  padding: EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    "Bisa diatur setelah vendor panel ditugaskan",
+                                    style: TextStyle(
+                                      color: AppColors.gray,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w300,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ],
-                // Bagian Umum
-                const SizedBox(height: 12),
-                Container(
-                  width: MediaQuery.of(context).size.width,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.grayLight, width: 1),
-                    borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader("Palet"),
-                      _buildSelectorSection(
-                        label: "Status Palet",
-                        options: Map.fromEntries(
-                          paletCorepartStatusOptions.map((s) => MapEntry(s, s)),
-                        ),
-                        selectedValue: _selectedPaletStatus,
-                        onTap: (val) => setState(() {
-                          _selectedPaletStatus = val;
-                          _updateCanMarkAsSent();
-                        }),
-                        isEnabled: _selectedK3VendorId != null,
-                      ),
-                      if (_selectedK3VendorId == null)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            "Bisa diatur setelah vendor panel ditugaskan",
-                            style: TextStyle(
-                              color: AppColors.gray,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w300,
-                            ),
+
+                if (_isK3 &&
+                    _selectedPanelType != null &&
+                    (_selectedPanelType!.startsWith('MCCF') ||
+                        _selectedPanelType!.startsWith('PCC'))) ...[
+                  const SizedBox(height: 12),
+                  // Container Busbar
+                  Container(
+                    width: MediaQuery.of(context).size.width,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.grayLight, width: 1),
+                      borderRadius: const BorderRadius.all(Radius.circular(12)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width,
+
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionHeader("Palet"),
+                              _buildSelectorSection(
+                                label: "Status Palet",
+                                options: Map.fromEntries(
+                                  paletCorepartStatusOptions.map(
+                                    (s) => MapEntry(s, s),
+                                  ),
+                                ),
+                                selectedValue: _selectedPaletStatus,
+                                onTap: (val) => setState(() {
+                                  _selectedPaletStatus = val;
+                                  _updateCanMarkAsSent();
+                                }),
+                                isEnabled: _selectedK3VendorId != null,
+                              ),
+                              if (_selectedK3VendorId == null)
+                                const Padding(
+                                  padding: EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    "Bisa diatur setelah vendor panel ditugaskan",
+                                    style: TextStyle(
+                                      color: AppColors.gray,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w300,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  width: MediaQuery.of(context).size.width,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.grayLight, width: 1),
-                    borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader("Corepart"),
-                      _buildSelectorSection(
-                        label: "Status Corepart",
-                        options: Map.fromEntries(
-                          paletCorepartStatusOptions.map((s) => MapEntry(s, s)),
-                        ),
-                        selectedValue: _selectedCorepartStatus,
-                        onTap: (val) => setState(() {
-                          _selectedCorepartStatus = val;
-                          _updateCanMarkAsSent();
-                        }),
-                        isEnabled: _selectedK3VendorId != null,
-                      ),
-                      if (_selectedK3VendorId == null)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            "Bisa diatur setelah vendor panel ditugaskan",
-                            style: TextStyle(
-                              color: AppColors.gray,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w300,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+                ],
                 const SizedBox(height: 12),
                 _buildActionButtons(),
               ],
@@ -1042,7 +1176,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
   }
 
   Widget _buildDateTimePicker() {
-    Future<void> pickDateTime() async {
+    Future<void> pickDate() async {
       final now = DateTime.now();
       final initialPickerDate = _selectedDate ?? now;
 
@@ -1064,21 +1198,8 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       );
       if (date == null) return;
 
-      final time = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(initialPickerDate),
-      );
-      if (time == null) return;
-
-      setState(
-        () => _selectedDate = DateTime(
-          date.year,
-          date.month,
-          date.day,
-          time.hour,
-          time.minute,
-        ),
-      );
+      // Time picker logic has been removed.
+      setState(() => _selectedDate = date);
     }
 
     return Column(
@@ -1090,7 +1211,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
         ),
         const SizedBox(height: 8),
         InkWell(
-          onTap: pickDateTime,
+          onTap: pickDate, // Using the new date-only picker function
           borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -1108,8 +1229,8 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                 const SizedBox(width: 8),
                 Text(
                   _selectedDate != null
-                      ? DateFormat('d MMM yyyy HH:mm').format(_selectedDate!)
-                      : 'Pilih Tanggal & Waktu',
+                      ? DateFormat('d MMM yyyy').format(_selectedDate!)
+                      : 'Pilih Tanggal',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w300,
