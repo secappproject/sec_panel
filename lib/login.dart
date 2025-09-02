@@ -181,14 +181,14 @@ class _LoginPageState extends State<LoginPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 50),
-        Image.asset('assets/images/logo.jpeg', height: 44),
+        Image.asset('assets/images/logo.jpeg', height: 120),
         const SizedBox(height: 24),
         const Text(
-          'Masuk Akun',
+          'Login',
           style: TextStyle(
             fontFamily: 'Lexend',
             fontWeight: FontWeight.w400,
-            fontSize: 32,
+            fontSize: 24,
             color: AppColors.black,
           ),
         ),

@@ -101,10 +101,11 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
               scrolledUnderElevation: 0,
               iconTheme: const IconThemeData(color: Colors.black),
               title: const Text(
-                'Masuk & Ubah Password',
+                'Change Password',
                 style: TextStyle(
                   color: Colors.black,
                   fontFamily: 'Lexend',
+                  fontSize: 24,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -173,17 +174,17 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Image.asset('assets/images/logo.jpeg', height: 44),
+              Image.asset('assets/images/logo.jpeg', height: 120),
               const SizedBox(height: 24),
               // [PERBAIKAN 1] Judul besar untuk tampilan web
               Container(
                 width: MediaQuery.of(context).size.width,
                 child: const Text(
-                  'Masuk & Ubah Password',
+                  'Change Password',
                   style: TextStyle(
                     fontFamily: 'Lexend',
                     fontWeight: FontWeight.w400,
-                    fontSize: 32,
+                    fontSize: 24,
                     color: AppColors.black,
                   ),
                 ),
@@ -224,15 +225,15 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
             ),
           ),
           const SizedBox(height: 24),
-          Image.asset('assets/images/logo.jpeg', height: 44),
+          Image.asset('assets/images/logo.jpeg', height: 120),
           const SizedBox(height: 24),
           // [PERBAIKAN 1] Judul besar untuk tampilan web
           const Text(
-            'Lupa Password',
+            'Change Password',
             style: TextStyle(
               fontFamily: 'Lexend',
               fontWeight: FontWeight.w400,
-              fontSize: 32,
+              fontSize: 24,
               color: AppColors.black,
             ),
           ),
