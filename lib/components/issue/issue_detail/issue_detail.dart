@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:secpanel/components/issue/issue_detail/issue_detail_card.dart';
-import 'package:secpanel/models/issuetest.dart';
 import 'package:secpanel/theme/colors.dart';
 
 class IssueDetailBottomSheet extends StatelessWidget {
-  final Issue issue;
+  final int issueId;
+  final VoidCallback onUpdate;
 
-  const IssueDetailBottomSheet({super.key, required this.issue});
+  const IssueDetailBottomSheet({
+    super.key,
+    required this.issueId,
+    required this.onUpdate,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,8 +25,7 @@ class IssueDetailBottomSheet extends StatelessWidget {
             color: AppColors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          child: ListView(
-            controller: scrollController,
+          child: Column(
             children: [
               // Handle (garis abu-abu di atas)
               Center(
@@ -36,8 +39,20 @@ class IssueDetailBottomSheet extends StatelessWidget {
                   ),
                 ),
               ),
-              // Konten utama sekarang memanggil IssueDetailCard
-              IssueDetailCard(issue: issue, scaffoldContext: context),
+              // Konten utama
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  children: [
+                    // FIX: Pass the required arguments to IssueDetailCard
+                    IssueDetailCard(
+                      issueId: issueId,
+                      onUpdate: onUpdate,
+                      scaffoldContext: context,
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         );

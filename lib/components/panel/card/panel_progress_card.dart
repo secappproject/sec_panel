@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:secpanel/components/issue/panel_issue_screen.dart';
 // AlertBox tidak lagi digunakan di sini, bisa dihapus jika tidak ada referensi lain
 // import 'package:secpanel/components/alert_box.dart';
 import 'package:secpanel/components/panel/card/remarks_bottom_sheet.dart';
@@ -490,7 +491,19 @@ class PanelProgressCard extends StatelessWidget {
                           ],
                         ),
                         InkWell(
-                          onTap: () => (),
+                          onTap: () {
+                            // The actual navigation logic
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PanelIssuesScreen(
+                                  panelNoPp: ppNumber,
+                                  panelVendor: panelVendorName,
+                                  busbarVendor: busbarVendorNames,
+                                ),
+                              ),
+                            );
+                          },
                           borderRadius: BorderRadius.circular(16),
                           child: Container(
                             padding: const EdgeInsets.only(

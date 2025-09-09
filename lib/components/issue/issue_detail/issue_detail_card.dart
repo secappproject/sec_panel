@@ -1,17 +1,24 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:secpanel/components/issue/issue_detail/delete_issue.dart';
 import 'package:secpanel/components/issue/issue_detail/issue_form_bottom_sheet.dart';
 import 'package:secpanel/components/issue/panel_issue_screen.dart';
-import 'package:secpanel/models/issuetest.dart';
+import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/theme/colors.dart';
 
+import '../../../models/issue.dart';
+
 class IssueDetailCard extends StatefulWidget {
-  final Issue issue;
+  final int issueId;
+  final VoidCallback onUpdate;
   final BuildContext scaffoldContext;
 
   const IssueDetailCard({
     super.key,
-    required this.issue,
+    required this.issueId,
+    required this.onUpdate,
     required this.scaffoldContext,
   });
 
@@ -20,33 +27,94 @@ class IssueDetailCard extends StatefulWidget {
 }
 
 class _IssueDetailCardState extends State<IssueDetailCard> {
-  late bool isSolved;
-  late final List<LogEntry> activityLogs;
+  IssueWithPhotos? _issue;
+  bool _isLoading = true;
+  String? _errorMessage;
+  late bool _isSolved;
 
   @override
   void initState() {
     super.initState();
-    isSolved = widget.issue.status == 'solved';
-    activityLogs = [
-      LogEntry(
-        user: admin,
-        action: 'membuat issue',
-        timestamp: DateTime.now().subtract(const Duration(days: 4)),
-      ),
-      LogEntry(
-        user: abacusUser,
-        action: 'mengubah issue',
-        timestamp: DateTime.now().subtract(const Duration(days: 4)),
-      ),
-      LogEntry(
-        user: admin,
-        action: 'menandai solved',
-        timestamp: DateTime.now().subtract(const Duration(days: 4)),
-      ),
-    ];
+    _loadIssueDetails();
   }
 
-  void _showFullScreenImage(String imagePath) {
+  Future<void> _loadIssueDetails() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
+    try {
+      final issueDetails = await DatabaseHelper.instance.getIssueById(
+        widget.issueId,
+      );
+      if (mounted) {
+        setState(() {
+          _issue = issueDetails;
+          _isSolved = _issue!.status == 'solved';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = "Gagal memuat detail isu: $e";
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _showDeleteConfirmation() {
+    Navigator.pop(context); // Tutup bottom sheet detail
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DeleteConfirmationBottomSheet(
+        issueTitle: _issue!.title,
+        onConfirmDelete: () async {
+          Navigator.pop(ctx); // Tutup konfirmasi
+          try {
+            await DatabaseHelper.instance.deleteIssue(_issue!.id);
+            PanelIssuesScreen.showSnackBar('Issue berhasil dihapus.');
+            widget.onUpdate(); // Refresh list utama
+          } catch (e) {
+            PanelIssuesScreen.showSnackBar(
+              'Gagal menghapus isu: $e',
+              isError: true,
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  Future<void> _toggleSolvedStatus() async {
+    if (_issue == null) return;
+    final newStatus = _isSolved ? 'unsolved' : 'solved';
+
+    setState(() => _isSolved = !_isSolved); // Optimistic UI
+
+    try {
+      const username = 'flutter_user';
+      final issueData = {
+        'issue_title': _issue!.title,
+        'issue_description': _issue!.description,
+        'issue_type': _issue!.type,
+        'issue_status': newStatus,
+        'updated_by': username,
+      };
+
+      await DatabaseHelper.instance.updateIssue(_issue!.id, issueData);
+      widget.onUpdate();
+    } catch (e) {
+      setState(() => _isSolved = !_isSolved); // Revert on error
+      PanelIssuesScreen.showSnackBar('Gagal update status: $e', isError: true);
+    }
+  }
+
+  void _showFullScreenImage(Uint8List imageBytes) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -55,7 +123,7 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
         child: GestureDetector(
           onTap: () => Navigator.of(context).pop(),
           child: InteractiveViewer(
-            child: Image.asset(imagePath, fit: BoxFit.contain),
+            child: Image.memory(imageBytes, fit: BoxFit.contain),
           ),
         ),
       ),
@@ -64,6 +132,26 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(_errorMessage!),
+        ),
+      );
+    }
+    if (_issue == null) {
+      return const Center(child: Text("Data isu tidak ditemukan."));
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
@@ -74,8 +162,8 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
           _buildActionButtons(),
           const SizedBox(height: 24),
           _buildDetails(),
-          const SizedBox(height: 16),
-          _buildPhotos(),
+          if (_issue!.photos.isNotEmpty) const SizedBox(height: 16),
+          if (_issue!.photos.isNotEmpty) _buildPhotos(),
           const SizedBox(height: 24),
           _buildActivityLog(),
           const SizedBox(height: 24),
@@ -85,10 +173,10 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
   }
 
   Widget _buildHeader() {
-    final creator = widget.issue.lastLog.user;
-    final actionDetails = _getActionDetails(
-      'membuat issue',
-    ); // Icon untuk header adalah 'create'
+    final creator = _issue!.logs.isNotEmpty
+        ? _issue!.logs.first.user
+        : User(id: _issue!.createdBy, name: _issue!.createdBy);
+    final actionDetails = _getActionDetails('membuat issue');
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -129,7 +217,7 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.issue.title,
+                _issue!.title,
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -164,9 +252,9 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
           mainAxisSize: MainAxisSize.min,
           children: [
             GestureDetector(
-              onTap: () => setState(() => isSolved = !isSolved),
+              onTap: _toggleSolvedStatus,
               child: Image.asset(
-                isSolved
+                _isSolved
                     ? 'assets/images/check.png'
                     : 'assets/images/uncheck.png',
                 height: 40,
@@ -174,9 +262,9 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
             ),
             const SizedBox(height: 4),
             Text(
-              isSolved ? 'Solved' : '',
+              _isSolved ? 'Solved' : '',
               style: TextStyle(
-                color: isSolved ? AppColors.schneiderGreen : AppColors.gray,
+                color: _isSolved ? AppColors.schneiderGreen : AppColors.gray,
                 fontWeight: FontWeight.w400,
                 fontSize: 11,
               ),
@@ -187,35 +275,6 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
     );
   }
 
-  void _showDeleteConfirmation() {
-    // Tutup dulu bottom sheet detail saat ini
-    Navigator.pop(context);
-
-    // Tampilkan bottom sheet konfirmasi delete
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => DeleteConfirmationBottomSheet(
-        issueTitle: widget.issue.title,
-        onConfirmDelete: () {
-          // Tutup bottom sheet konfirmasi
-          Navigator.pop(ctx);
-
-          // Tampilkan notifikasi sukses
-          scaffoldMessengerKey.currentState?.showSnackBar(
-            const SnackBar(
-              content: Text('Issue berhasil dihapus.'),
-              backgroundColor: AppColors.schneiderGreen,
-            ),
-          );
-
-          // Di sini Anda bisa menambahkan logika untuk refresh daftar isu utama
-          print('Issue ${widget.issue.title} dihapus. Muat ulang data...');
-        },
-      ),
-    );
-  }
-
   Widget _buildActionButtons() {
     return Row(
       children: [
@@ -223,29 +282,20 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
           child: _buildStyledButton(
             onPressed: () {
               showModalBottomSheet(
-                context:
-                    context, // Gunakan context lokal untuk menampilkan sheet ini
+                context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.white,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                builder: (ctx) => IssueFormBottomSheet(
+                  onIssueSaved: () {
+                    // Muat ulang detail & refresh list utama
+                    _loadIssueDetails();
+                    widget.onUpdate();
+                    PanelIssuesScreen.showSnackBar(
+                      'Issue berhasil diperbarui!',
+                    );
+                  },
+                  existingIssue: _issue!,
                 ),
-                builder: (ctx) {
-                  return IssueFormBottomSheet(
-                    panelNoPp: "DUMMY-PNL-01",
-                    onIssueSaved: () {
-                      // --- PERUBAHAN: Gunakan scaffoldContext yang sudah dioper ---
-                      ScaffoldMessenger.of(widget.scaffoldContext).showSnackBar(
-                        const SnackBar(
-                          content: Text('Issue berhasil diperbarui!'),
-                          backgroundColor: AppColors.schneiderGreen,
-                        ),
-                      );
-                      setState(() {});
-                    },
-                    existingIssue: widget.issue,
-                  );
-                },
               );
             },
             label: 'Edit',
@@ -255,7 +305,6 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
         const SizedBox(width: 12),
         Expanded(
           child: _buildStyledButton(
-            // --- PERUBAHAN: Panggil fungsi konfirmasi delete ---
             onPressed: _showDeleteConfirmation,
             label: 'Delete',
             icon: Image.asset('assets/images/trash.png', height: 16),
@@ -280,7 +329,7 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
             ),
           ),
           child: Text(
-            widget.issue.type,
+            _issue!.type,
             style: const TextStyle(
               color: AppColors.gray,
               fontWeight: FontWeight.w400,
@@ -290,8 +339,8 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
         ),
         const SizedBox(height: 12),
         Text(
-          widget.issue.description * 5,
-          style: TextStyle(
+          _issue!.description,
+          style: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w300,
             color: AppColors.gray,
@@ -303,19 +352,17 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
   }
 
   Widget _buildPhotos() {
-    final List<String> photos = [
-      'assets/images/send.png',
-      'assets/images/message.png',
-    ];
     return SizedBox(
       height: 100,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: photos.length,
+        itemCount: _issue!.photos.length,
         separatorBuilder: (context, index) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
+          final photo = _issue!.photos[index];
+          final imageBytes = base64Decode(photo.photoData);
           return GestureDetector(
-            onTap: () => _showFullScreenImage(photos[index]),
+            onTap: () => _showFullScreenImage(imageBytes),
             child: Container(
               width: 100,
               height: 100,
@@ -324,9 +371,8 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
                 border: Border.all(color: AppColors.grayLight, width: 1),
               ),
               child: ClipRRect(
-                // BorderRadius sedikit lebih kecil dari container agar border tidak terpotong
                 borderRadius: BorderRadius.circular(11),
-                child: Image.asset(photos[index], fit: BoxFit.cover),
+                child: Image.memory(imageBytes, fit: BoxFit.cover),
               ),
             ),
           );
@@ -335,7 +381,6 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
     );
   }
 
-  // --- MODIFIKASI: Struktur Log Aktivitas diubah total ---
   Widget _buildActivityLog() {
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -359,11 +404,10 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
             padding: EdgeInsets.only(top: 12.0),
             child: Divider(color: AppColors.grayLight, height: 1, thickness: 1),
           ),
-          // Menggunakan Column untuk menampilkan daftar log
           Padding(
             padding: const EdgeInsets.only(top: 8.0),
             child: Column(
-              children: activityLogs.map((log) {
+              children: _issue!.logs.map((log) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: _buildActivityLogRow(log),
@@ -376,9 +420,11 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
     );
   }
 
-  // Helper widget baru untuk satu baris log
   Widget _buildActivityLogRow(LogEntry log) {
     final actionDetails = _getActionDetails(log.action);
+    final formattedDate = DateFormat(
+      'dd MMM yyyy, HH:mm',
+    ).format(log.timestamp);
     return Row(
       children: [
         SizedBox(
@@ -413,33 +459,38 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: RichText(
-            text: TextSpan(
-              style: const TextStyle(
-                color: AppColors.black,
-                fontSize: 11,
-                fontFamily: 'Poppins',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RichText(
+                text: TextSpan(
+                  style: const TextStyle(
+                    color: AppColors.black,
+                    fontSize: 11,
+                    fontFamily: 'Poppins',
+                  ),
+                  children: [
+                    TextSpan(
+                      text: '${log.user.name} ',
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    TextSpan(
+                      text: log.action.toLowerCase(),
+                      style: const TextStyle(color: AppColors.gray),
+                    ),
+                  ],
+                ),
               ),
-              children: [
-                TextSpan(
-                  text: '${log.user.name} ',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+              const SizedBox(height: 2),
+              Text(
+                formattedDate,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w300,
+                  color: AppColors.gray,
                 ),
-                TextSpan(
-                  text: log.action.toLowerCase(),
-                  style: const TextStyle(color: AppColors.gray),
-                ),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(width: 4),
-        Text(
-          '4 hari lalu',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w300,
-            color: AppColors.gray,
+              ),
+            ],
           ),
         ),
       ],
@@ -461,9 +512,8 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
             borderRadius: BorderRadius.circular(12),
           ),
           splashFactory: NoSplash.splashFactory,
-          overlayColor: Colors.transparent,
           elevation: 0,
-        ),
+        ).copyWith(overlayColor: WidgetStateProperty.all(Colors.transparent)),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -497,11 +547,11 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
         'icon': 'assets/images/edit-issue.png',
         'color': const Color(0xFF5F6368),
       },
+      'membuka kembali issue': {
+        'icon': 'assets/images/reopen-issue.png',
+        'color': const Color(0xFFFBBC04),
+      },
     };
-    return actionMap[action.toLowerCase()] ??
-        {
-          'icon': 'assets/images/edit-issue.png',
-          'color': const Color(0xFF5F6368),
-        };
+    return actionMap[action.toLowerCase()] ?? actionMap['mengubah issue']!;
   }
 }

@@ -1,20 +1,19 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:secpanel/models/issuetest.dart'; // Pastikan path model ini benar
+import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/theme/colors.dart';
 
+import '../../../models/issue.dart';
+
 class IssueFormBottomSheet extends StatefulWidget {
-  final String panelNoPp;
   final VoidCallback onIssueSaved;
-  final Issue? existingIssue;
+  final Issue existingIssue;
 
   const IssueFormBottomSheet({
     super.key,
-    required this.panelNoPp,
     required this.onIssueSaved,
-    this.existingIssue,
+    required this.existingIssue,
   });
 
   @override
@@ -26,7 +25,8 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
   String? _selectedType;
-  final List<File> _selectedImages = [];
+  final List<File> _selectedImages =
+      []; // Note: API does not support adding photos on update yet
   bool _isLoading = false;
 
   final List<String> _issueTypeOptions = const [
@@ -38,14 +38,11 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController();
-    _descriptionController = TextEditingController();
-
-    if (widget.existingIssue != null) {
-      _titleController.text = widget.existingIssue!.title;
-      _descriptionController.text = widget.existingIssue!.description;
-      _selectedType = widget.existingIssue!.type;
-    }
+    _titleController = TextEditingController(text: widget.existingIssue.title);
+    _descriptionController = TextEditingController(
+      text: widget.existingIssue.description,
+    );
+    _selectedType = widget.existingIssue.type;
   }
 
   @override
@@ -55,110 +52,50 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        allowMultiple: true,
-      );
-
-      if (result != null && result.files.isNotEmpty) {
-        setState(() {
-          for (var platformFile in result.files) {
-            if (platformFile.path != null) {
-              _selectedImages.add(File(platformFile.path!));
-            }
-          }
-        });
-      }
-    } catch (e) {
-      debugPrint("Error picking image: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Gagal membuka galeri: $e')));
-      }
-    }
-  }
-
-  void _removeImage(int index) {
-    setState(() {
-      _selectedImages.removeAt(index);
-    });
-  }
-
-  void _showFullScreenImage(File imageFile) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.black.withOpacity(0.8),
-          insetPadding: EdgeInsets.zero,
-          child: GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: InteractiveViewer(
-              panEnabled: false,
-              boundaryMargin: const EdgeInsets.all(20),
-              minScale: 0.5,
-              maxScale: 4,
-              child: Image.file(imageFile, fit: BoxFit.contain),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Future<void> _submitIssue() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
     setState(() => _isLoading = true);
 
-    List<String> imageBase64List = [];
-    for (var imageFile in _selectedImages) {
-      final bytes = await imageFile.readAsBytes();
-      imageBase64List.add(base64Encode(bytes));
-    }
+    try {
+      // TODO: Get real username
+      const username = 'flutter_user';
 
-    final newIssueData = {
-      'issue_title': _titleController.text,
-      'issue_description': _descriptionController.text,
-      'issue_type': _selectedType,
-      'created_by': 'current_user_name',
-      'photos': imageBase64List,
-    };
+      final issueData = {
+        'issue_title': _titleController.text.trim(),
+        'issue_description': _descriptionController.text.trim(),
+        'issue_type': _selectedType ?? '',
+        'issue_status': widget.existingIssue.status, // Keep original status
+        'updated_by': username,
+      };
 
-    print(
-      widget.existingIssue == null
-          ? "--- MENYIMPAN ISSUE BARU ---"
-          : "--- MEMPERBARUI ISSUE ---",
-    );
-    print(newIssueData);
+      await DatabaseHelper.instance.updateIssue(
+        widget.existingIssue.id,
+        issueData,
+      );
 
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isLoading = false);
-
-    if (mounted) {
-      // --- PERUBAHAN: HAPUS SNACKBAR DARI SINI ---
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     content: Text(
-      //       'Issue berhasil ${widget.existingIssue == null ? "disimpan" : "diperbarui"}!',
-      //     ),
-      //     backgroundColor: AppColors.schneiderGreen,
-      //   ),
-      // );
-
-      widget.onIssueSaved();
-      Navigator.pop(context);
+      if (mounted) {
+        widget.onIssueSaved();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memperbarui issue: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEditMode = widget.existingIssue != null;
-
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.only(
@@ -184,12 +121,9 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
                 ),
               ),
               const SizedBox(height: 24),
-              Text(
-                isEditMode ? "Edit Issue" : "Tambah Issue Baru",
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                ),
+              const Text(
+                "Edit Issue",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 24),
               _buildTextField(
@@ -200,10 +134,14 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
                     : null,
               ),
               const SizedBox(height: 16),
-              _buildCombinedDescriptionPhotoField(),
+              _buildTextField(
+                controller: _descriptionController,
+                label: "Deskripsi",
+                maxLines: 4,
+              ),
               const SizedBox(height: 16),
               _buildSelectorSection(
-                label: "Tipe Masalah (Opsional)",
+                label: "Tipe Masalah",
                 options: _issueTypeOptions,
                 selectedValue: _selectedType,
                 onTap: (tappedOption) {
@@ -252,7 +190,7 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
                                 strokeWidth: 2,
                               ),
                             )
-                          : Text(isEditMode ? "Update" : "Simpan"),
+                          : const Text("Update"),
                     ),
                   ),
                 ],
@@ -267,6 +205,7 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
+    int? maxLines = 1,
     String? Function(String?)? validator,
   }) {
     return Column(
@@ -279,6 +218,7 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
+          maxLines: maxLines,
           validator: validator,
           cursorColor: AppColors.schneiderGreen,
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
@@ -300,124 +240,6 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: AppColors.schneiderGreen),
             ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCombinedDescriptionPhotoField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Deskripsi",
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.grayLight),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _descriptionController,
-                minLines: 2,
-                maxLines: 5,
-                cursorColor: AppColors.schneiderGreen,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w300,
-                ),
-                decoration: const InputDecoration(
-                  hintText: 'Masukkan Deskripsi',
-                  border: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: List.generate(_selectedImages.length, (
-                          index,
-                        ) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: Stack(
-                              children: [
-                                GestureDetector(
-                                  onTap: () => _showFullScreenImage(
-                                    _selectedImages[index],
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: AppColors.grayLight,
-                                          width: 1,
-                                        ),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Image.file(
-                                        _selectedImages[index],
-                                        width: 60,
-                                        height: 60,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 4,
-                                  right: 4,
-                                  child: GestureDetector(
-                                    onTap: () => _removeImage(index),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(2),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.black.withOpacity(0.6),
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 14,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: _pickImage,
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      margin: const EdgeInsets.only(left: 8),
-                      child: const Center(
-                        child: Icon(Icons.add, color: AppColors.gray, size: 26),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
           ),
         ),
       ],

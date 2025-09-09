@@ -1,17 +1,15 @@
-// lib/components/issue/issue_card.dart
-
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:secpanel/models/issuetest.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:secpanel/components/issue/issue_chat/chat.dart'; // Make sure this path is correct
-import 'package:secpanel/components/issue/issue_detail/issue_detail.dart'; // Make sure this path is correct
-import 'package:secpanel/theme/colors.dart'; // Make sure this path is correct
+import 'package:secpanel/components/issue/issue_detail/issue_detail.dart';
+import 'package:secpanel/helpers/db_helper.dart';
+import 'package:secpanel/theme/colors.dart';
+
+import '../../models/issue.dart';
 
 class IssueCard extends StatefulWidget {
   final Issue issue;
+  final VoidCallback onUpdate;
 
-  const IssueCard({super.key, required this.issue});
+  const IssueCard({super.key, required this.issue, required this.onUpdate});
 
   @override
   State<IssueCard> createState() => _IssueCardState();
@@ -33,12 +31,64 @@ class _IssueCardState extends State<IssueCard> {
       'icon': 'assets/images/edit-issue.png',
       'color': const Color(0xFF5F6368),
     },
+    'membuka kembali issue': {
+      'icon': 'assets/images/reopen-issue.png', // Tambahkan ikon untuk reopen
+      'color': const Color(0xFFFBBC04), // Kuning
+    },
   };
 
   @override
   void initState() {
     super.initState();
     _isSolved = widget.issue.status == 'solved';
+  }
+
+  @override
+  void didUpdateWidget(covariant IssueCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.issue.status != oldWidget.issue.status) {
+      setState(() {
+        _isSolved = widget.issue.status == 'solved';
+      });
+    }
+  }
+
+  Future<void> _toggleSolvedStatus() async {
+    final newStatus = _isSolved ? 'unsolved' : 'solved';
+
+    // Optimistic UI update
+    setState(() {
+      _isSolved = !_isSolved;
+    });
+
+    try {
+      // TODO: Get real username from auth provider
+      const username = 'flutter_user';
+
+      final issueData = {
+        'issue_title': widget.issue.title,
+        'issue_description': widget.issue.description,
+        'issue_type': widget.issue.type,
+        'issue_status': newStatus,
+        'updated_by': username,
+      };
+
+      await DatabaseHelper.instance.updateIssue(widget.issue.id, issueData);
+      widget.onUpdate();
+    } catch (e) {
+      // Revert UI on error
+      setState(() {
+        _isSolved = !_isSolved;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal update status: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   String _formatTimestamp(DateTime timestamp) {
@@ -81,7 +131,9 @@ class _IssueCardState extends State<IssueCard> {
     final log = widget.issue.lastLog;
     final user = log.user;
     final actionText = log.action.toLowerCase();
-    final actionDetails = _actionDetailsMap[actionText];
+    final actionDetails =
+        _actionDetailsMap[actionText] ??
+        _actionDetailsMap['mengubah issue']!; // Fallback
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
@@ -106,16 +158,15 @@ class _IssueCardState extends State<IssueCard> {
                     ),
                   ),
                 ),
-                if (actionDetails != null)
-                  Positioned(
-                    right: -2,
-                    bottom: -1,
-                    child: CircleAvatar(
-                      radius: 10,
-                      backgroundColor: actionDetails['color'] as Color,
-                      child: Image.asset(actionDetails['icon'] as String),
-                    ),
+                Positioned(
+                  right: -2,
+                  bottom: -1,
+                  child: CircleAvatar(
+                    radius: 10,
+                    backgroundColor: actionDetails['color'] as Color,
+                    child: Image.asset(actionDetails['icon'] as String),
                   ),
+                ),
               ],
             ),
           ),
@@ -250,26 +301,12 @@ class _IssueCardState extends State<IssueCard> {
         children: [
           Expanded(
             child: _buildStyledButton(
-              // --- AWAL PERUBAHAN ---
               onPressed: () {
-                // Hapus semua kode SharedPreferences di sini.
-                // Langsung navigasi dengan membawa data issue untuk preview.
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => IssueChatScreen(
-                      // `issue` ini adalah konteks utama dari halaman chat
-                      issue: widget.issue,
-                      // `initialIssueToForward` adalah issue yang mau kita jadikan preview
-                      initialIssueToForward: widget.issue,
-                    ),
-                  ),
-                );
+                // TODO: Implement navigation to Chat Screen
               },
-              // --- AKHIR PERUBAHAN ---
-              label: 'Send',
+              label: 'Chat',
               icon: Image.asset(
-                'assets/images/send.png',
+                'assets/images/message.png',
                 color: AppColors.schneiderGreen,
                 width: 14,
               ),
@@ -283,8 +320,11 @@ class _IssueCardState extends State<IssueCard> {
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
-                  builder: (context) =>
-                      IssueDetailBottomSheet(issue: widget.issue),
+                  builder: (context) => IssueDetailBottomSheet(
+                    // FIX: Pass the required arguments
+                    issueId: widget.issue.id,
+                    onUpdate: widget.onUpdate,
+                  ),
                 );
               },
               label: 'See Detail',
@@ -302,7 +342,7 @@ class _IssueCardState extends State<IssueCard> {
 
   Widget _buildStatusIcon() {
     return GestureDetector(
-      onTap: () => setState(() => _isSolved = !_isSolved),
+      onTap: _toggleSolvedStatus,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -333,19 +373,14 @@ class _IssueCardState extends State<IssueCard> {
       height: 36,
       child: OutlinedButton(
         onPressed: onPressed,
-        style:
-            OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.grayLight),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              // --- FIX UNTUK DEPRECATION WARNING ---
-              splashFactory: NoSplash.splashFactory,
-              elevation: 0,
-            ).copyWith(
-              // Gunakan .copyWith untuk overlayColor yang baru
-              overlayColor: WidgetStateProperty.all(Colors.transparent),
-            ),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: AppColors.grayLight),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          splashFactory: NoSplash.splashFactory,
+          elevation: 0,
+        ).copyWith(overlayColor: WidgetStateProperty.all(Colors.transparent)),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

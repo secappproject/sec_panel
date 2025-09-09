@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:secpanel/components/issue/add_issue_bottom_sheet.dart';
 import 'package:secpanel/components/issue/issue_card.dart';
-import 'package:secpanel/models/issuetest.dart';
+import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/theme/colors.dart';
+
+import '../../models/issue.dart';
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
@@ -18,11 +20,12 @@ class PanelIssuesScreen extends StatefulWidget {
     required this.panelVendor,
     required this.busbarVendor,
   });
-  static void showSnackBar(String message) {
+
+  static void showSnackBar(String message, {bool isError = false}) {
     scaffoldMessengerKey.currentState?.showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: AppColors.schneiderGreen,
+        backgroundColor: isError ? Colors.red : AppColors.schneiderGreen,
       ),
     );
   }
@@ -34,9 +37,11 @@ class PanelIssuesScreen extends StatefulWidget {
 class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late List<Issue> _allIssues;
-  late List<Issue> _unsolvedIssues;
-  late List<Issue> _solvedIssues;
+  List<Issue> _allIssues = [];
+  List<Issue> _unsolvedIssues = [];
+  List<Issue> _solvedIssues = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
   String _appBarTitle = ' ';
 
@@ -44,18 +49,38 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadIssues();
+  }
 
-    // --- KODE YANG DIPERBARUI ---
-    // Ambil semua issue dari data dummy, lalu filter berdasarkan panelNoPp
-    // yang diterima oleh screen ini melalui widget.
-    final allIssuesForThisPanel = generateDummyIssues()
-        .where((issue) => issue.panelNoPp == widget.panelNoPp)
-        .toList();
-
-    _allIssues = allIssuesForThisPanel;
-    _unsolvedIssues = _allIssues.where((i) => i.status == 'unsolved').toList();
-    _solvedIssues = _allIssues.where((i) => i.status == 'solved').toList();
-    // --- AKHIR KODE YANG DIPERBARUI ---
+  Future<void> _loadIssues({bool showLoading = true}) async {
+    if (showLoading && mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
+    try {
+      final issues = await DatabaseHelper.instance.getIssuesByPanel(
+        widget.panelNoPp,
+      );
+      if (mounted) {
+        setState(() {
+          _allIssues = issues;
+          _unsolvedIssues = issues
+              .where((i) => i.status == 'unsolved')
+              .toList();
+          _solvedIssues = issues.where((i) => i.status == 'solved').toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = "Gagal memuat isu: ${e.toString()}";
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -161,18 +186,21 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
           ),
         ];
       },
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildIssueList(_allIssues),
-          _buildIssueList(_unsolvedIssues),
-          _buildIssueList(_solvedIssues),
-        ],
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+          ? Center(child: Text(_errorMessage!))
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _buildIssueList(_allIssues),
+                _buildIssueList(_unsolvedIssues),
+                _buildIssueList(_solvedIssues),
+              ],
+            ),
     );
   }
 
-  /// Header with Panel information.
   Widget _buildPanelHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
@@ -190,9 +218,15 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
           const SizedBox(height: 8),
           Row(
             children: [
-              _buildInfoChip("Panel", widget.panelVendor),
+              _buildInfoChip(
+                "Panel",
+                widget.panelVendor != '' ? widget.panelVendor : 'No Vendor',
+              ),
               const SizedBox(width: 12),
-              _buildInfoChip("Busbar", widget.busbarVendor),
+              _buildInfoChip(
+                "Busbar",
+                widget.busbarVendor != '' ? widget.busbarVendor : 'No Vendor',
+              ),
             ],
           ),
         ],
@@ -251,7 +285,9 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
           const SizedBox(width: 12),
           Expanded(
             child: _buildStyledButton(
-              onPressed: () {},
+              onPressed: () {
+                // TODO: Implement navigation to chat screen
+              },
               label: 'Chat',
               icon: Image.asset(
                 'assets/images/message.png',
@@ -280,9 +316,8 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
             borderRadius: BorderRadius.circular(12),
           ),
           splashFactory: NoSplash.splashFactory,
-          overlayColor: Colors.transparent,
           elevation: 0,
-        ),
+        ).copyWith(overlayColor: WidgetStateProperty.all(Colors.transparent)),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -302,20 +337,33 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     );
   }
 
-  /// Builds the list of issues for each tab.
   Widget _buildIssueList(List<Issue> issues) {
     if (issues.isEmpty) {
-      return const Center(
-        child: Text(
-          'No issues found in this category.',
-          style: TextStyle(color: AppColors.gray),
+      return RefreshIndicator(
+        onRefresh: () => _loadIssues(),
+        child: ListView(
+          children: const [
+            SizedBox(height: 100),
+            Center(
+              child: Text(
+                'Tidak ada isu di kategori ini.',
+                style: TextStyle(color: AppColors.gray),
+              ),
+            ),
+          ],
         ),
       );
     }
-    return ListView.builder(
-      padding: EdgeInsets.zero,
-      itemCount: issues.length,
-      itemBuilder: (context, index) => IssueCard(issue: issues[index]),
+    return RefreshIndicator(
+      onRefresh: () => _loadIssues(),
+      child: ListView.builder(
+        padding: EdgeInsets.zero,
+        itemCount: issues.length,
+        itemBuilder: (context, index) => IssueCard(
+          issue: issues[index],
+          onUpdate: () => _loadIssues(showLoading: false),
+        ),
+      ),
     );
   }
 
@@ -331,9 +379,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
         return AddIssueBottomSheet(
           panelNoPp: widget.panelNoPp,
           onIssueAdded: () {
-            print("Issue baru ditambahkan, refresh data...");
-            // Di aplikasi nyata, panggil fungsi untuk mengambil data terbaru dari server
-            // lalu panggil setState() untuk memperbarui UI.
+            _loadIssues(showLoading: false);
           },
         );
       },
@@ -341,7 +387,6 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
   }
 }
 
-/// Delegate for the sticky TabBar header.
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   _SliverAppBarDelegate(this._tabBar);
   final TabBar _tabBar;

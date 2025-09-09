@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:secpanel/components/issue/panel_issue_screen.dart';
+import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/theme/colors.dart';
-import 'package:share_plus/share_plus.dart';
 
 class AddIssueBottomSheet extends StatefulWidget {
   final String panelNoPp;
@@ -59,9 +60,11 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
       }
     } catch (e) {
       debugPrint("Error picking image: $e");
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Gagal membuka galeri: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal membuka galeri: $e')));
+      }
     }
   }
 
@@ -81,9 +84,8 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
           child: GestureDetector(
             onTap: () => Navigator.of(context).pop(),
             child: InteractiveViewer(
-              // Gunakan InteractiveViewer agar bisa di-zoom
               panEnabled: false,
-              boundaryMargin: EdgeInsets.all(20),
+              boundaryMargin: const EdgeInsets.all(20),
               minScale: 0.5,
               maxScale: 4,
               child: Image.file(imageFile, fit: BoxFit.contain),
@@ -98,39 +100,49 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-
     setState(() => _isLoading = true);
 
-    List<String> imageBase64List = [];
-    for (var imageFile in _selectedImages) {
-      final bytes = await imageFile.readAsBytes();
-      imageBase64List.add(base64Encode(bytes));
-    }
+    try {
+      List<String> imageBase64List = [];
+      for (var imageFile in _selectedImages) {
+        final bytes = await imageFile.readAsBytes();
+        imageBase64List.add(base64Encode(bytes));
+      }
 
-    final newIssueData = {
-      'issue_title': _titleController.text,
-      'issue_description': _descriptionController.text,
-      'issue_type': _selectedType, // Bisa null jika tidak dipilih
-      'created_by': 'current_user_name',
-      'photos': imageBase64List,
-    };
+      // TODO: Get real username from auth provider
+      const username = 'flutter_user';
 
-    print('--- DATA ISSUE BARU UNTUK PANEL ${widget.panelNoPp} ---');
-    print(newIssueData);
+      final issueData = {
+        'issue_title': _titleController.text.trim(),
+        'issue_description': _descriptionController.text.trim(),
+        'issue_type': _selectedType ?? '',
+        'created_by': username,
+        'photos': imageBase64List,
+      };
 
-    await Future.delayed(const Duration(seconds: 2));
-
-    setState(() => _isLoading = false);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Issue baru berhasil ditambahkan!'),
-          backgroundColor: AppColors.schneiderGreen,
-        ),
+      await DatabaseHelper.instance.createIssueForPanel(
+        widget.panelNoPp,
+        issueData,
       );
-      widget.onIssueAdded();
-      Navigator.pop(context);
+
+      if (mounted) {
+        PanelIssuesScreen.showSnackBar('Issue baru berhasil ditambahkan!');
+        widget.onIssueAdded();
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menambahkan issue: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -235,10 +247,8 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
                 ),
               ),
               const SizedBox(height: 8),
-              // --- MODIFIED: Struktur layout diubah untuk memisahkan gambar scrollable dan tombol fixed ---
               Row(
                 children: [
-                  // --- Bagian ini (Expanded) akan scrollable ---
                   Expanded(
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -266,8 +276,7 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
                                       ),
                                       child: Image.file(
                                         _selectedImages[index],
-                                        width:
-                                            60, // Ukuran disamakan dengan tombol plus
+                                        width: 60,
                                         height: 60,
                                         fit: BoxFit.cover,
                                       ),
@@ -300,22 +309,14 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
                       ),
                     ),
                   ),
-                  // --- Tombol ini akan tetap di kanan (fixed) ---
                   GestureDetector(
-                    // --- MODIFIED: Kembali ke GestureDetector
                     onTap: _pickImage,
                     child: Container(
-                      width: 60, // --- MODIFIED: Ukuran dikecilkan
-                      height: 60, // --- MODIFIED: Ukuran dikecilkan
-                      margin: const EdgeInsets.only(
-                        left: 8,
-                      ), // Beri jarak dari list gambar
+                      width: 60,
+                      height: 60,
+                      margin: const EdgeInsets.only(left: 8),
                       child: const Center(
-                        child: Icon(
-                          Icons.add,
-                          color: AppColors.gray,
-                          size: 20, // --- MODIFIED: Ukuran ikon dikecilkan
-                        ),
+                        child: Icon(Icons.add, color: AppColors.gray, size: 26),
                       ),
                     ),
                   ),
