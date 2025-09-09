@@ -1089,14 +1089,14 @@ class DatabaseHelper {
     }
   }
 
-  /// Mengambil semua isu untuk sebuah panel.
-  Future<List<Issue>> getIssuesByPanel(String panelNoPp) async {
+  Future<List<IssueWithPhotos>> getIssuesByPanel(String panelNoPp) async {
     final List<dynamic>? data = await _apiRequest(
       'GET',
       '/panels/$panelNoPp/issues',
     );
     if (data == null) return [];
-    return data.map((json) => Issue.fromJson(json)).toList();
+    // Kembalikan sebagai List<IssueWithPhotos>
+    return data.map((json) => IssueWithPhotos.fromJson(json)).toList();
   }
 
   /// Mengambil detail satu isu beserta foto-fotonya.
@@ -1138,5 +1138,62 @@ class DatabaseHelper {
   /// Menghapus foto dari sebuah isu.
   Future<void> deletePhoto(int photoId) async {
     await _apiRequest('DELETE', '/photos/$photoId');
+  }
+
+  Future<List<IssueComment>> getComments(int issueId) async {
+    final List<dynamic>? data = await _apiRequest(
+      'GET',
+      '/issues/$issueId/comments',
+    );
+    if (data == null) return [];
+    return data.map((json) => IssueComment.fromJson(json)).toList();
+  }
+
+  Future<void> createComment({
+    required int issueId,
+    required String text,
+    required String senderId,
+    String? replyToCommentId,
+    String? replyToUserId,
+    required List<File> images,
+  }) async {
+    List<String> base64Images = [];
+    for (var imageFile in images) {
+      final bytes = await imageFile.readAsBytes();
+      final base64String = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      base64Images.add(base64String);
+    }
+
+    final body = {
+      'text': text,
+      'sender_id': senderId,
+      'reply_to_comment_id': replyToCommentId,
+      'reply_to_user_id': replyToUserId,
+      'images': base64Images,
+    };
+
+    await _apiRequest('POST', '/issues/$issueId/comments', body: body);
+  }
+
+  Future<void> updateComment({
+    required String commentId,
+    required String text,
+    required List<String> existingImageUrls, // URL yang sudah ada
+    required List<File> newImages, // File gambar baru
+  }) async {
+    List<String> finalImages = List.from(existingImageUrls);
+
+    for (var imageFile in newImages) {
+      final bytes = await imageFile.readAsBytes();
+      final base64String = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      finalImages.add(base64String);
+    }
+
+    final body = {'text': text, 'images': finalImages};
+    await _apiRequest('PUT', '/comments/$commentId', body: body);
+  }
+
+  Future<void> deleteComment(String commentId) async {
+    await _apiRequest('DELETE', '/comments/$commentId');
   }
 }

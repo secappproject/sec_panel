@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+// --- Helper Functions and Constants ---
+
 const List<Color> _userAvatarColors = [
   Color(0xFFFF5DD1), // Pink
   Color(0xFF0400FF), // Blue
@@ -16,6 +18,7 @@ Color _getColorForUser(String userId) {
 class User {
   final String id;
   final String name;
+  // Bagian avatar ini bisa tetap ada, akan di-generate di client-side
   final String avatarInitials;
   final Color avatarColor;
 
@@ -24,6 +27,14 @@ class User {
           ? name.substring(0, 2).toUpperCase()
           : '??',
       avatarColor = _getColorForUser(id);
+
+  // ▼▼▼ TAMBAHKAN FACTORY CONSTRUCTOR INI ▼▼▼
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      id: json['id'] ?? 'unknown',
+      name: json['name'] ?? 'Unknown User',
+    );
+  }
 }
 
 class LogEntry {
@@ -62,9 +73,8 @@ class Photo {
 class Issue {
   final int id;
   final int chatId;
-  final String title;
+  final String title; // This now holds the issue type
   final String description;
-  final String type;
   final String status;
   final List<LogEntry> logs;
   final String createdBy;
@@ -76,7 +86,6 @@ class Issue {
     required this.chatId,
     required this.title,
     required this.description,
-    required this.type,
     required this.status,
     required this.logs,
     required this.createdBy,
@@ -92,7 +101,7 @@ class Issue {
         timestamp: createdAt,
       );
     }
-    // Urutkan log dari yang terbaru
+    // Sort logs to find the most recent one
     logs.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return logs.first;
   }
@@ -108,9 +117,8 @@ class Issue {
     return Issue(
       id: json['issue_id'] ?? 0,
       chatId: json['chat_id'] ?? 0,
-      title: json['issue_title'] ?? 'No Title',
+      title: json['issue_title'] ?? 'Uncategorized',
       description: json['issue_description'] ?? '',
-      type: json['issue_type'] ?? 'Uncategorized',
       status: json['issue_status'] ?? 'unsolved',
       logs: logsList,
       createdBy: json['created_by'] ?? 'unknown',
@@ -128,7 +136,6 @@ class IssueWithPhotos extends Issue {
     required super.chatId,
     required super.title,
     required super.description,
-    required super.type,
     required super.status,
     required super.logs,
     required super.createdBy,
@@ -145,6 +152,7 @@ class IssueWithPhotos extends Issue {
           .toList();
     }
 
+    // Use the parent's factory to build the base Issue object
     final issuePart = Issue.fromJson(json);
 
     return IssueWithPhotos(
@@ -152,13 +160,71 @@ class IssueWithPhotos extends Issue {
       chatId: issuePart.chatId,
       title: issuePart.title,
       description: issuePart.description,
-      type: issuePart.type,
       status: issuePart.status,
       logs: issuePart.logs,
       createdBy: issuePart.createdBy,
       createdAt: issuePart.createdAt,
       updatedAt: issuePart.updatedAt,
       photos: photoList,
+    );
+  }
+}
+
+class IssueComment {
+  final String id;
+  final User sender;
+  final String text;
+  final DateTime timestamp;
+  final User? replyTo;
+  final String? replyToCommentId;
+  final bool isEdited;
+  final List<String> imageUrls;
+
+  IssueComment({
+    required this.id,
+    required this.sender,
+    required this.text,
+    required this.timestamp,
+    this.replyTo,
+    this.replyToCommentId,
+    this.isEdited = false,
+    this.imageUrls = const [],
+  });
+  IssueComment copyWith({
+    String? id,
+    User? sender,
+    String? text,
+    DateTime? timestamp,
+    User? replyTo,
+    String? replyToCommentId,
+    List<String>? imageUrls,
+    bool? isEdited,
+  }) {
+    return IssueComment(
+      id: id ?? this.id,
+      sender: sender ?? this.sender,
+      text: text ?? this.text,
+      timestamp: timestamp ?? this.timestamp,
+      replyTo: replyTo ?? this.replyTo,
+      replyToCommentId: replyToCommentId ?? this.replyToCommentId,
+      imageUrls: imageUrls ?? this.imageUrls,
+      isEdited: isEdited ?? this.isEdited,
+    );
+  }
+
+  // Factory constructor untuk membuat objek dari JSON
+  factory IssueComment.fromJson(Map<String, dynamic> json) {
+    return IssueComment(
+      id: json['id'],
+      sender: User.fromJson(json['sender']),
+      text: json['text'] ?? '',
+      timestamp: DateTime.parse(json['timestamp']).toLocal(),
+      replyTo: json['reply_to'] != null
+          ? User.fromJson(json['reply_to'])
+          : null,
+      replyToCommentId: json['reply_to_comment_id'],
+      isEdited: json['is_edited'] ?? false,
+      imageUrls: List<String>.from(json['image_urls'] ?? []),
     );
   }
 }

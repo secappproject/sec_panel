@@ -3,12 +3,13 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:secpanel/components/issue/issue_detail/delete_issue.dart';
+import 'package:secpanel/components/issue/issue_detail/issue_detail_card_skeleton.dart';
 import 'package:secpanel/components/issue/issue_detail/issue_form_bottom_sheet.dart';
 import 'package:secpanel/components/issue/panel_issue_screen.dart';
 import 'package:secpanel/helpers/db_helper.dart';
+import 'package:secpanel/models/issue.dart';
 import 'package:secpanel/theme/colors.dart';
-
-import '../../../models/issue.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class IssueDetailCard extends StatefulWidget {
   final int issueId;
@@ -67,18 +68,18 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
   }
 
   void _showDeleteConfirmation() {
-    Navigator.pop(context); // Tutup bottom sheet detail
+    Navigator.pop(context); // Close the detail bottom sheet
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => DeleteConfirmationBottomSheet(
         issueTitle: _issue!.title,
         onConfirmDelete: () async {
-          Navigator.pop(ctx); // Tutup konfirmasi
+          Navigator.pop(ctx); // Close the confirmation sheet
           try {
             await DatabaseHelper.instance.deleteIssue(_issue!.id);
             PanelIssuesScreen.showSnackBar('Issue berhasil dihapus.');
-            widget.onUpdate(); // Refresh list utama
+            widget.onUpdate(); // Refresh the main list
           } catch (e) {
             PanelIssuesScreen.showSnackBar(
               'Gagal menghapus isu: $e',
@@ -97,11 +98,11 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
     setState(() => _isSolved = !_isSolved); // Optimistic UI
 
     try {
-      const username = 'flutter_user';
+      final prefs = await SharedPreferences.getInstance();
+      final username = prefs.getString('loggedInUsername') ?? 'unknown_user';
       final issueData = {
         'issue_title': _issue!.title,
         'issue_description': _issue!.description,
-        'issue_type': _issue!.type,
         'issue_status': newStatus,
         'updated_by': username,
       };
@@ -133,23 +134,7 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-    if (_errorMessage != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(_errorMessage!),
-        ),
-      );
-    }
-    if (_issue == null) {
-      return const Center(child: Text("Data isu tidak ditemukan."));
+      return const IssueDetailCardSkeleton();
     }
 
     return Padding(
@@ -287,7 +272,7 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
                 backgroundColor: Colors.white,
                 builder: (ctx) => IssueFormBottomSheet(
                   onIssueSaved: () {
-                    // Muat ulang detail & refresh list utama
+                    Navigator.pop(ctx);
                     _loadIssueDetails();
                     widget.onUpdate();
                     PanelIssuesScreen.showSnackBar(
@@ -318,28 +303,20 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppColors.grayLight.withOpacity(0.8),
-              width: 1,
-            ),
-          ),
-          child: Text(
-            _issue!.type,
-            style: const TextStyle(
-              color: AppColors.gray,
-              fontWeight: FontWeight.w400,
-              fontSize: 11,
-            ),
-          ),
-        ),
         const SizedBox(height: 12),
         Text(
-          _issue!.description,
+          "Tentang Isu",
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            color: AppColors.black,
+            height: 1.5,
+          ),
+        ),
+        Text(
+          _issue!.description != ''
+              ? _issue!.description
+              : 'Tidak ada deskripsi yang diberikan.',
           style: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w300,

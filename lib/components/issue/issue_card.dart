@@ -1,12 +1,18 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:secpanel/components/issue/issue_chat/issue_comment_sheet.dart';
 import 'package:secpanel/components/issue/issue_detail/issue_detail.dart';
+import 'package:secpanel/components/issue/panel_issue_screen.dart';
+import 'package:secpanel/components/issue/photo_viewer.dart';
 import 'package:secpanel/helpers/db_helper.dart';
+import 'package:secpanel/models/issue.dart';
 import 'package:secpanel/theme/colors.dart';
-
-import '../../models/issue.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class IssueCard extends StatefulWidget {
-  final Issue issue;
+  final IssueWithPhotos issue;
   final VoidCallback onUpdate;
 
   const IssueCard({super.key, required this.issue, required this.onUpdate});
@@ -32,8 +38,8 @@ class _IssueCardState extends State<IssueCard> {
       'color': const Color(0xFF5F6368),
     },
     'membuka kembali issue': {
-      'icon': 'assets/images/reopen-issue.png', // Tambahkan ikon untuk reopen
-      'color': const Color(0xFFFBBC04), // Kuning
+      'icon': 'assets/images/reopen-issue.png',
+      'color': const Color(0xFFFBBC04),
     },
   };
 
@@ -54,40 +60,26 @@ class _IssueCardState extends State<IssueCard> {
   }
 
   Future<void> _toggleSolvedStatus() async {
+    if (widget.issue == null) return;
     final newStatus = _isSolved ? 'unsolved' : 'solved';
 
-    // Optimistic UI update
-    setState(() {
-      _isSolved = !_isSolved;
-    });
+    setState(() => _isSolved = !_isSolved); // Optimistic UI
 
     try {
-      // TODO: Get real username from auth provider
-      const username = 'flutter_user';
-
+      final prefs = await SharedPreferences.getInstance();
+      final username = prefs.getString('loggedInUsername') ?? 'unknown_user';
       final issueData = {
-        'issue_title': widget.issue.title,
-        'issue_description': widget.issue.description,
-        'issue_type': widget.issue.type,
+        'issue_title': widget.issue!.title,
+        'issue_description': widget.issue!.description,
         'issue_status': newStatus,
         'updated_by': username,
       };
 
-      await DatabaseHelper.instance.updateIssue(widget.issue.id, issueData);
+      await DatabaseHelper.instance.updateIssue(widget.issue!.id, issueData);
       widget.onUpdate();
     } catch (e) {
-      // Revert UI on error
-      setState(() {
-        _isSolved = !_isSolved;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal update status: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      setState(() => _isSolved = !_isSolved); // Revert on error
+      PanelIssuesScreen.showSnackBar('Gagal update status: $e', isError: true);
     }
   }
 
@@ -101,6 +93,18 @@ class _IssueCardState extends State<IssueCard> {
     return 'Baru saja';
   }
 
+  void _openPhotoViewer(BuildContext context, {int initialIndex = 0}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PhotoViewerScreen(
+          photos: widget.issue.photos,
+          initialIndex: initialIndex,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -112,16 +116,14 @@ class _IssueCardState extends State<IssueCard> {
           borderRadius: const BorderRadius.all(Radius.circular(16)),
           border: Border.all(width: 1, color: AppColors.grayLight),
         ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.all(Radius.circular(15)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              _buildContentWithNotch(context),
-              _buildFooter(),
-            ],
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            _buildContent(),
+            if (widget.issue.photos.isNotEmpty) _buildPhotoGrid(),
+            _buildFooter(),
+          ],
         ),
       ),
     );
@@ -132,35 +134,34 @@ class _IssueCardState extends State<IssueCard> {
     final user = log.user;
     final actionText = log.action.toLowerCase();
     final actionDetails =
-        _actionDetailsMap[actionText] ??
-        _actionDetailsMap['mengubah issue']!; // Fallback
+        _actionDetailsMap[actionText] ?? _actionDetailsMap['mengubah issue']!;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 45,
-            height: 45,
+            width: 40,
+            height: 40,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 CircleAvatar(
                   backgroundColor: user.avatarColor,
-                  radius: 18,
+                  radius: 20,
                   child: Text(
                     user.avatarInitials,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.w400,
+                      fontWeight: FontWeight.w500,
                       fontSize: 14,
                     ),
                   ),
                 ),
                 Positioned(
                   right: -2,
-                  bottom: -1,
+                  bottom: -2,
                   child: CircleAvatar(
                     radius: 10,
                     backgroundColor: actionDetails['color'] as Color,
@@ -170,141 +171,229 @@ class _IssueCardState extends State<IssueCard> {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(
-                  color: AppColors.black,
-                  fontSize: 12,
-                  fontFamily: 'Poppins',
-                ),
-                children: [
-                  TextSpan(
-                    text: '${user.name} ',
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  TextSpan(
-                    text: actionText,
-                    style: const TextStyle(
-                      color: AppColors.gray,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            _formatTimestamp(log.timestamp),
-            style: const TextStyle(
-              color: AppColors.gray,
-              fontWeight: FontWeight.w300,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContentWithNotch(BuildContext context) {
-    const double iconBackgroundRadius = 22.0;
-    const double notchCenterY = 30.0;
-
-    return Stack(
-      alignment: Alignment.topRight,
-      children: [
-        ClipPath(
-          clipper: NotchedCardClipper(
-            notchRadius: iconBackgroundRadius,
-            notchCenterY: notchCenterY,
-          ),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
-            decoration: const BoxDecoration(color: Colors.white),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(
-                    right: iconBackgroundRadius * 2 + 8,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      color: AppColors.black,
+                      fontSize: 12,
+                      fontFamily: 'Poppins',
+                    ),
                     children: [
-                      Text(
-                        widget.issue.title,
-                        style: const TextStyle(
-                          color: AppColors.black,
-                          fontWeight: FontWeight.w400,
-                          fontSize: 16,
-                        ),
+                      TextSpan(
+                        text: '${user.name} ',
+                        style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.issue.description,
+                      TextSpan(
+                        text: actionText,
                         style: const TextStyle(
                           color: AppColors.gray,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w300,
+                          fontWeight: FontWeight.w400,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.grayLight.withOpacity(0.8),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    widget.issue.type,
-                    style: const TextStyle(
-                      color: AppColors.gray,
-                      fontWeight: FontWeight.w400,
-                      fontSize: 11,
-                    ),
+                const SizedBox(height: 2),
+                Text(
+                  _formatTimestamp(log.timestamp),
+                  style: const TextStyle(
+                    color: AppColors.gray,
+                    fontWeight: FontWeight.w300,
+                    fontSize: 11,
                   ),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 8),
+          _buildStatusIcon(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.issue.title,
+            style: const TextStyle(
+              color: AppColors.black,
+              fontWeight: FontWeight.w500,
+              fontSize: 16,
+            ),
+          ),
+          if (widget.issue.description.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              widget.issue.description,
+              style: const TextStyle(
+                color: AppColors.gray,
+                fontSize: 12,
+                fontWeight: FontWeight.w300,
+                height: 1.4,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhotoGrid() {
+    final photosToShow = widget.issue.photos.take(4).toList();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double itemWidth = (constraints.maxWidth - 8) / 2;
+          final double itemHeight = itemWidth * 0.8;
+
+          return GridView.builder(
+            padding: EdgeInsets.zero,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: itemWidth / itemHeight,
+            ),
+            itemCount: photosToShow.length,
+            itemBuilder: (context, index) {
+              if (index == 3 && widget.issue.photos.length > 4) {
+                return _buildMorePhotosIndicator(index, itemHeight);
+              }
+              return _buildPhotoItem(index, itemHeight);
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPhotoItem(int index, double height) {
+    final photo = widget.issue.photos[index];
+    final imageBytes = base64Decode(photo.photoData);
+
+    return GestureDetector(
+      onTap: () => _openPhotoViewer(context, initialIndex: index),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Hero(
+          tag: photo.id,
+          child: Image.memory(
+            imageBytes,
+            height: height,
+            fit: BoxFit.cover,
+            frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+              if (wasSynchronouslyLoaded) return child;
+              return AnimatedOpacity(
+                opacity: frame == null ? 0 : 1,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOut,
+                child: child,
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: AppColors.grayLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.broken_image, color: AppColors.gray),
+              );
+            },
+          ),
         ),
-        Positioned(
-          top: notchCenterY - iconBackgroundRadius,
-          right: 12,
-          child: _buildStatusIcon(),
+      ),
+    );
+  }
+
+  Widget _buildMorePhotosIndicator(int index, double height) {
+    final photo = widget.issue.photos[index];
+    final imageBytes = base64Decode(photo.photoData);
+    final remainingCount = widget.issue.photos.length - 4;
+
+    return GestureDetector(
+      onTap: () => _openPhotoViewer(context, initialIndex: index),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Hero(
+          tag: photo.id,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.memory(imageBytes, height: height, fit: BoxFit.cover),
+              Container(
+                color: Colors.black.withOpacity(0.6),
+                child: Center(
+                  child: Text(
+                    '+$remainingCount',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildFooter() {
     return Padding(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       child: Row(
         children: [
           Expanded(
             child: _buildStyledButton(
-              onPressed: () {
-                // TODO: Implement navigation to Chat Screen
+              onPressed: () async {
+                // Make this async
+                // Get username from SharedPreferences
+                final prefs = await SharedPreferences.getInstance();
+                final username = prefs.getString('loggedInUsername');
+
+                // Get the full User object
+                // We assume the username is the ID and also the name for simplicity here.
+                // In a real app, you might fetch the full User profile.
+                if (username != null && mounted) {
+                  final currentUser = User(id: username, name: username);
+
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => IssueCommentSheet(
+                      issue: widget.issue,
+                      onUpdate: widget.onUpdate,
+                      currentUser: currentUser,
+                    ),
+                  );
+                } else {
+                  // Handle case where user is not logged in
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Error: Not logged in.")),
+                  );
+                }
               },
-              label: 'Chat',
+              label: 'Comment',
               icon: Image.asset(
                 'assets/images/message.png',
                 color: AppColors.schneiderGreen,
@@ -321,7 +410,6 @@ class _IssueCardState extends State<IssueCard> {
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
                   builder: (context) => IssueDetailBottomSheet(
-                    // FIX: Pass the required arguments
                     issueId: widget.issue.id,
                     onUpdate: widget.onUpdate,
                   ),
@@ -348,15 +436,15 @@ class _IssueCardState extends State<IssueCard> {
         children: [
           Image.asset(
             _isSolved ? 'assets/images/check.png' : 'assets/images/uncheck.png',
-            height: 40,
+            height: 36,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             _isSolved ? 'Solved' : '',
             style: TextStyle(
               color: _isSolved ? AppColors.schneiderGreen : AppColors.gray,
               fontWeight: FontWeight.w400,
-              fontSize: 11,
+              fontSize: 10,
             ),
           ),
         ],
@@ -399,30 +487,4 @@ class _IssueCardState extends State<IssueCard> {
       ),
     );
   }
-}
-
-class NotchedCardClipper extends CustomClipper<Path> {
-  final double notchRadius;
-  final double notchCenterY;
-
-  NotchedCardClipper({required this.notchRadius, required this.notchCenterY});
-
-  @override
-  Path getClip(Size size) {
-    return Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width, 0)
-      ..lineTo(size.width, notchCenterY - notchRadius)
-      ..arcToPoint(
-        Offset(size.width, notchCenterY + notchRadius),
-        radius: Radius.circular(notchRadius),
-        clockwise: false,
-      )
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

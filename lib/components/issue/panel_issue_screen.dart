@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:secpanel/components/issue/add_issue_bottom_sheet.dart';
 import 'package:secpanel/components/issue/issue_card.dart';
+import 'package:secpanel/components/issue/issue_card_skeleton.dart';
 import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/theme/colors.dart';
 
@@ -12,6 +13,8 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 class PanelIssuesScreen extends StatefulWidget {
   final String panelNoPp;
   final String panelVendor;
+  final String panelNoPanel;
+  final String panelNoWBS;
   final String busbarVendor;
 
   const PanelIssuesScreen({
@@ -19,6 +22,8 @@ class PanelIssuesScreen extends StatefulWidget {
     required this.panelNoPp,
     required this.panelVendor,
     required this.busbarVendor,
+    required this.panelNoPanel,
+    required this.panelNoWBS,
   });
 
   static void showSnackBar(String message, {bool isError = false}) {
@@ -37,9 +42,9 @@ class PanelIssuesScreen extends StatefulWidget {
 class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  List<Issue> _allIssues = [];
-  List<Issue> _unsolvedIssues = [];
-  List<Issue> _solvedIssues = [];
+  List<IssueWithPhotos> _allIssues = [];
+  List<IssueWithPhotos> _unsolvedIssues = [];
+  List<IssueWithPhotos> _solvedIssues = [];
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -112,7 +117,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
         _appBarTitle,
         style: const TextStyle(
           color: AppColors.black,
-          fontSize: 18,
+          fontSize: 14,
           fontWeight: FontWeight.w400,
         ),
       ),
@@ -187,7 +192,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
         ];
       },
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildLoadingSkeleton()
           : _errorMessage != null
           ? Center(child: Text(_errorMessage!))
           : TabBarView(
@@ -201,6 +206,15 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     );
   }
 
+  // ▼▼▼ WIDGET BARU UNTUK SKELETON LIST ▼▼▼
+  Widget _buildLoadingSkeleton() {
+    return ListView.builder(
+      padding: EdgeInsets.zero,
+      itemCount: 3, // Tampilkan 3 kartu skeleton sebagai placeholder
+      itemBuilder: (context, index) => const IssueCardSkeleton(),
+    );
+  }
+
   Widget _buildPanelHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
@@ -208,7 +222,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            widget.panelNoPp,
+            "${(widget.panelNoPp != "" || widget.panelNoPp.contains("TEMP_")) ? "" : "${widget.panelNoPp} "}${widget.panelNoPanel != "" ? widget.panelNoPanel : ""} ${widget.panelNoWBS != "" ? widget.panelNoWBS : ""}",
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w500,
@@ -242,7 +256,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
           label,
           style: const TextStyle(
             color: AppColors.gray,
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w400,
           ),
         ),
@@ -257,7 +271,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
             value,
             style: const TextStyle(
               color: AppColors.black,
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -283,19 +297,19 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
             ),
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: _buildStyledButton(
-              onPressed: () {
-                // TODO: Implement navigation to chat screen
-              },
-              label: 'Chat',
-              icon: Image.asset(
-                'assets/images/message.png',
-                color: AppColors.schneiderGreen,
-                width: 14,
-              ),
-            ),
-          ),
+          // Expanded(
+          //   child: _buildStyledButton(
+          //     onPressed: () {
+          //       // TODO: Implement navigation to chat screen
+          //     },
+          //     label: 'Chat',
+          //     icon: Image.asset(
+          //       'assets/images/message.png',
+          //       color: AppColors.schneiderGreen,
+          //       width: 14,
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );
@@ -337,7 +351,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     );
   }
 
-  Widget _buildIssueList(List<Issue> issues) {
+  Widget _buildIssueList(List<IssueWithPhotos> issues) {
     if (issues.isEmpty) {
       return RefreshIndicator(
         onRefresh: () => _loadIssues(),
@@ -347,7 +361,10 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
             Center(
               child: Text(
                 'Tidak ada isu di kategori ini.',
-                style: TextStyle(color: AppColors.gray),
+                style: TextStyle(
+                  color: AppColors.gray,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
             ),
           ],
@@ -360,7 +377,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
         padding: EdgeInsets.zero,
         itemCount: issues.length,
         itemBuilder: (context, index) => IssueCard(
-          issue: issues[index],
+          issue: issues[index], // Sekarang tipe datanya cocok
           onUpdate: () => _loadIssues(showLoading: false),
         ),
       ),

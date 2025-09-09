@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:secpanel/components/issue/panel_issue_screen.dart';
 import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/theme/colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AddIssueBottomSheet extends StatefulWidget {
   final String panelNoPp;
@@ -22,9 +23,7 @@ class AddIssueBottomSheet extends StatefulWidget {
 
 class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-
   String? _selectedType;
   final List<String> _issueTypeOptions = const [
     "Masalah 1",
@@ -32,12 +31,10 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
     "Masalah 3",
   ];
   final List<File> _selectedImages = [];
-
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -97,7 +94,15 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
   }
 
   Future<void> _submitIssue() async {
-    if (!_formKey.currentState!.validate()) {
+    if (!_formKey.currentState!.validate() || _selectedType == null) {
+      if (_selectedType == null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Silakan pilih tipe masalah.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
     setState(() => _isLoading = true);
@@ -109,13 +114,12 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
         imageBase64List.add(base64Encode(bytes));
       }
 
-      // TODO: Get real username from auth provider
-      const username = 'flutter_user';
+      final prefs = await SharedPreferences.getInstance();
+      final username = prefs.getString('loggedInUsername') ?? 'unknown_user';
 
       final issueData = {
-        'issue_title': _titleController.text.trim(),
+        'issue_title': _selectedType,
         'issue_description': _descriptionController.text.trim(),
-        'issue_type': _selectedType ?? '',
         'created_by': username,
         'photos': imageBase64List,
       };
@@ -178,30 +182,18 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 24),
-              _buildTextField(
-                controller: _titleController,
-                label: "Judul Issue",
-                validator: (val) => val == null || val.isEmpty
-                    ? 'Judul tidak boleh kosong'
-                    : null,
-              ),
-              const SizedBox(height: 16),
-              _buildCombinedDescriptionPhotoField(),
-              const SizedBox(height: 16),
               _buildSelectorSection(
-                label: "Tipe Masalah (Opsional)",
+                label: "Masalah",
                 options: _issueTypeOptions,
                 selectedValue: _selectedType,
                 onTap: (tappedOption) {
                   setState(() {
-                    if (_selectedType == tappedOption) {
-                      _selectedType = null;
-                    } else {
-                      _selectedType = tappedOption;
-                    }
+                    _selectedType = tappedOption;
                   });
                 },
               ),
+              const SizedBox(height: 16),
+              _buildCombinedDescriptionPhotoField(),
               const SizedBox(height: 24),
               _buildActionButtons(),
             ],
@@ -216,7 +208,7 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Deskripsi",
+          "Deskripsi (Opsional)",
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
         ),
         const SizedBox(height: 8),
@@ -323,50 +315,6 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
                 ],
               ),
             ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    int? maxLines = 1,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          maxLines: maxLines,
-          validator: validator,
-          cursorColor: AppColors.schneiderGreen,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
-          decoration: InputDecoration(
-            hintText: 'Masukkan $label',
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.grayLight),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.grayLight),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.schneiderGreen),
-            ),
           ),
         ),
       ],

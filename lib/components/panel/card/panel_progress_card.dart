@@ -498,6 +498,8 @@ class PanelProgressCard extends StatelessWidget {
                               MaterialPageRoute(
                                 builder: (context) => PanelIssuesScreen(
                                   panelNoPp: ppNumber,
+                                  panelNoWBS: wbsNumber,
+                                  panelNoPanel: panelTitle,
                                   panelVendor: panelVendorName,
                                   busbarVendor: busbarVendorNames,
                                 ),

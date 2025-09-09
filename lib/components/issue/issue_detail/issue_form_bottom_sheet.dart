@@ -1,19 +1,19 @@
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:secpanel/helpers/db_helper.dart';
+import 'package:secpanel/models/issue.dart';
 import 'package:secpanel/theme/colors.dart';
-
-import '../../../models/issue.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class IssueFormBottomSheet extends StatefulWidget {
   final VoidCallback onIssueSaved;
-  final Issue existingIssue;
+  // Tetap nullable untuk fleksibilitas di masa depan
+  final Issue? existingIssue;
 
   const IssueFormBottomSheet({
     super.key,
     required this.onIssueSaved,
-    required this.existingIssue,
+    this.existingIssue, // Dibuat opsional
   });
 
   @override
@@ -22,12 +22,11 @@ class IssueFormBottomSheet extends StatefulWidget {
 
 class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _titleController;
   late TextEditingController _descriptionController;
   String? _selectedType;
-  final List<File> _selectedImages =
-      []; // Note: API does not support adding photos on update yet
+  final List<File> _selectedImages = [];
   bool _isLoading = false;
+  bool _isEditMode = false;
 
   final List<String> _issueTypeOptions = const [
     "Masalah 1",
@@ -38,40 +37,59 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.existingIssue.title);
-    _descriptionController = TextEditingController(
-      text: widget.existingIssue.description,
-    );
-    _selectedType = widget.existingIssue.type;
+
+    // ▼▼▼ FIX: NULL CHECK IS ADDED HERE ▼▼▼
+    _isEditMode = widget.existingIssue != null;
+
+    if (_isEditMode) {
+      // Access properties only if existingIssue is not null
+      _descriptionController = TextEditingController(
+        text: widget.existingIssue!.description,
+      );
+      _selectedType = widget.existingIssue!.title;
+    } else {
+      // Initialize for creating a new issue
+      _descriptionController = TextEditingController();
+    }
   }
 
   @override
   void dispose() {
-    _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
 
   Future<void> _submitIssue() async {
-    if (!_formKey.currentState!.validate()) {
+    // Check for null only in edit mode
+    if (_isEditMode && widget.existingIssue == null) return;
+
+    if (!_formKey.currentState!.validate() || _selectedType == null) {
+      if (_selectedType == null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Silakan pilih tipe masalah.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Get real username
-      const username = 'flutter_user';
+      final prefs = await SharedPreferences.getInstance();
+      final username = prefs.getString('loggedInUsername') ?? 'unknown_user';
 
+      // ▼▼▼ FIX: NULL CHECK FOR 'status' and 'id' ▼▼▼
       final issueData = {
-        'issue_title': _titleController.text.trim(),
+        'issue_title': _selectedType,
         'issue_description': _descriptionController.text.trim(),
-        'issue_type': _selectedType ?? '',
-        'issue_status': widget.existingIssue.status, // Keep original status
+        'issue_status': widget.existingIssue!.status,
         'updated_by': username,
       };
 
       await DatabaseHelper.instance.updateIssue(
-        widget.existingIssue.id,
+        widget.existingIssue!.id,
         issueData,
       );
 
@@ -96,6 +114,8 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // This build method assumes it's always in edit mode based on your current usage.
+    // If you plan to use it for adding new issues, you'd add more logic here.
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.only(
@@ -121,80 +141,32 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
-                "Edit Issue",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+              Text(
+                _isEditMode ? "Edit Issue" : "Tambah Issue", // Dynamic title
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               const SizedBox(height: 24),
-              _buildTextField(
-                controller: _titleController,
-                label: "Judul Issue",
-                validator: (val) => val == null || val.isEmpty
-                    ? 'Judul tidak boleh kosong'
-                    : null,
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _descriptionController,
-                label: "Deskripsi",
-                maxLines: 4,
-              ),
-              const SizedBox(height: 16),
               _buildSelectorSection(
                 label: "Tipe Masalah",
                 options: _issueTypeOptions,
                 selectedValue: _selectedType,
                 onTap: (tappedOption) {
                   setState(() {
-                    _selectedType = (_selectedType == tappedOption)
-                        ? null
-                        : tappedOption;
+                    _selectedType = tappedOption;
                   });
                 },
               ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(color: AppColors.schneiderGreen),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        foregroundColor: AppColors.schneiderGreen,
-                      ),
-                      child: const Text("Batal"),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _submitIssue,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: AppColors.schneiderGreen,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 16,
-                              width: 16,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text("Update"),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: _descriptionController,
+                label: "Deskripsi (Opsional)",
+                maxLines: 4,
               ),
+              const SizedBox(height: 24),
+              _buildActionButtons(),
             ],
           ),
         ),
@@ -206,7 +178,6 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
     required TextEditingController controller,
     required String label,
     int? maxLines = 1,
-    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,7 +190,6 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
         TextFormField(
           controller: controller,
           maxLines: maxLines,
-          validator: validator,
           cursorColor: AppColors.schneiderGreen,
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
           decoration: InputDecoration(
@@ -303,6 +273,51 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () => Navigator.pop(context),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              side: const BorderSide(color: AppColors.schneiderGreen),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+              foregroundColor: AppColors.schneiderGreen,
+            ),
+            child: const Text("Batal"),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _submitIssue,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: AppColors.schneiderGreen,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            child: _isLoading
+                ? const SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(_isEditMode ? "Update" : "Simpan"),
+          ),
+        ),
+      ],
     );
   }
 }
