@@ -1,0 +1,369 @@
+import 'package:flutter/material.dart';
+import 'package:secpanel/components/issue/add_issue_bottom_sheet.dart';
+import 'package:secpanel/components/issue/issue_card.dart';
+import 'package:secpanel/models/issuetest.dart';
+import 'package:secpanel/theme/colors.dart';
+
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
+class PanelIssuesScreen extends StatefulWidget {
+  final String panelNoPp;
+  final String panelVendor;
+  final String busbarVendor;
+
+  const PanelIssuesScreen({
+    super.key,
+    required this.panelNoPp,
+    required this.panelVendor,
+    required this.busbarVendor,
+  });
+  static void showSnackBar(String message) {
+    scaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.schneiderGreen,
+      ),
+    );
+  }
+
+  @override
+  State<PanelIssuesScreen> createState() => _PanelIssuesScreenState();
+}
+
+class _PanelIssuesScreenState extends State<PanelIssuesScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  late List<Issue> _allIssues;
+  late List<Issue> _unsolvedIssues;
+  late List<Issue> _solvedIssues;
+
+  String _appBarTitle = ' ';
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+
+    // --- KODE YANG DIPERBARUI ---
+    // Ambil semua issue dari data dummy, lalu filter berdasarkan panelNoPp
+    // yang diterima oleh screen ini melalui widget.
+    final allIssuesForThisPanel = generateDummyIssues()
+        .where((issue) => issue.panelNoPp == widget.panelNoPp)
+        .toList();
+
+    _allIssues = allIssuesForThisPanel;
+    _unsolvedIssues = _allIssues.where((i) => i.status == 'unsolved').toList();
+    _solvedIssues = _allIssues.where((i) => i.status == 'solved').toList();
+    // --- AKHIR KODE YANG DIPERBARUI ---
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaffoldMessenger(
+      key: scaffoldMessengerKey,
+      child: Scaffold(
+        backgroundColor: AppColors.white,
+        appBar: _buildAppBar(),
+        body: _buildContent(),
+      ),
+    );
+  }
+
+  AppBar _buildAppBar() {
+    return AppBar(
+      backgroundColor: AppColors.white,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      shadowColor: AppColors.grayLight,
+      centerTitle: true,
+      title: Text(
+        _appBarTitle,
+        style: const TextStyle(
+          color: AppColors.black,
+          fontSize: 18,
+          fontWeight: FontWeight.w400,
+        ),
+      ),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: AppColors.gray),
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return NestedScrollView(
+      headerSliverBuilder: (context, innerBoxIsScrolled) {
+        final newTitle = innerBoxIsScrolled ? widget.panelNoPp : ' ';
+        if (newTitle != _appBarTitle) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _appBarTitle = newTitle;
+              });
+            }
+          });
+        }
+
+        return [
+          SliverToBoxAdapter(
+            child: Container(
+              color: AppColors.white,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildPanelHeader(),
+                  const Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.grayLight,
+                  ),
+                  _buildFooter(),
+                ],
+              ),
+            ),
+          ),
+          SliverPersistentHeader(
+            delegate: _SliverAppBarDelegate(
+              TabBar(
+                controller: _tabController,
+                labelColor: AppColors.black,
+                unselectedLabelColor: AppColors.gray,
+                labelStyle: const TextStyle(
+                  fontWeight: FontWeight.w400,
+                  fontSize: 12,
+                  fontFamily: 'Lexend',
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.w400,
+                  fontSize: 12,
+                  fontFamily: 'Lexend',
+                ),
+                indicatorColor: AppColors.schneiderGreen,
+                indicatorWeight: 3,
+                indicatorSize: TabBarIndicatorSize.label,
+                dividerColor: Colors.transparent,
+                tabs: [
+                  Tab(text: 'All (${_allIssues.length})'),
+                  Tab(text: 'Unsolved (${_unsolvedIssues.length})'),
+                  Tab(text: 'Solved (${_solvedIssues.length})'),
+                ],
+              ),
+            ),
+            pinned: true,
+          ),
+        ];
+      },
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildIssueList(_allIssues),
+          _buildIssueList(_unsolvedIssues),
+          _buildIssueList(_solvedIssues),
+        ],
+      ),
+    );
+  }
+
+  /// Header with Panel information.
+  Widget _buildPanelHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.panelNoPp,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w500,
+              color: AppColors.black,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _buildInfoChip("Panel", widget.panelVendor),
+              const SizedBox(width: 12),
+              _buildInfoChip("Busbar", widget.busbarVendor),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(String label, String value) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.gray,
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: AppColors.gray.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            value,
+            style: const TextStyle(
+              color: AppColors.black,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFooter() {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildStyledButton(
+              onPressed: _showAddIssueSheet,
+              label: 'Add Issue',
+              icon: Image.asset(
+                'assets/images/plus.png',
+                color: AppColors.schneiderGreen,
+                width: 14,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildStyledButton(
+              onPressed: () {},
+              label: 'Chat',
+              icon: Image.asset(
+                'assets/images/message.png',
+                color: AppColors.schneiderGreen,
+                width: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStyledButton({
+    required VoidCallback onPressed,
+    required String label,
+    required Widget icon,
+  }) {
+    return SizedBox(
+      height: 36,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: AppColors.grayLight),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          splashFactory: NoSplash.splashFactory,
+          overlayColor: Colors.transparent,
+          elevation: 0,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.black,
+                fontWeight: FontWeight.w400,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(width: 8),
+            icon,
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Builds the list of issues for each tab.
+  Widget _buildIssueList(List<Issue> issues) {
+    if (issues.isEmpty) {
+      return const Center(
+        child: Text(
+          'No issues found in this category.',
+          style: TextStyle(color: AppColors.gray),
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: EdgeInsets.zero,
+      itemCount: issues.length,
+      itemBuilder: (context, index) => IssueCard(issue: issues[index]),
+    );
+  }
+
+  void _showAddIssueSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return AddIssueBottomSheet(
+          panelNoPp: widget.panelNoPp,
+          onIssueAdded: () {
+            print("Issue baru ditambahkan, refresh data...");
+            // Di aplikasi nyata, panggil fungsi untuk mengambil data terbaru dari server
+            // lalu panggil setState() untuk memperbarui UI.
+          },
+        );
+      },
+    );
+  }
+}
+
+/// Delegate for the sticky TabBar header.
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverAppBarDelegate(this._tabBar);
+  final TabBar _tabBar;
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        border: Border(bottom: BorderSide(width: 1, color: Colors.transparent)),
+      ),
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
+}

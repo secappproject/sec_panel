@@ -13,6 +13,8 @@ import 'package:secpanel/models/company.dart';
 import 'package:secpanel/models/companyaccount.dart';
 import 'package:secpanel/models/component.dart';
 import 'package:secpanel/models/corepart.dart';
+import 'package:secpanel/models/issue.dart';
+import 'package:secpanel/models/issuetest.dart' hide Issue;
 import 'package:secpanel/models/palet.dart';
 import 'package:secpanel/models/paneldisplaydata.dart';
 import 'package:secpanel/models/panels.dart';
@@ -1085,5 +1087,56 @@ class DatabaseHelper {
       onProgress(1.0, "Impor gagal.");
       rethrow;
     }
+  }
+
+  /// Mengambil semua isu untuk sebuah panel.
+  Future<List<Issue>> getIssuesByPanel(String panelNoPp) async {
+    final List<dynamic>? data = await _apiRequest(
+      'GET',
+      '/panels/$panelNoPp/issues',
+    );
+    if (data == null) return [];
+    return data.map((json) => Issue.fromJson(json)).toList();
+  }
+
+  /// Mengambil detail satu isu beserta foto-fotonya.
+  Future<IssueWithPhotos> getIssueById(int issueId) async {
+    final data = await _apiRequest('GET', '/issues/$issueId');
+    if (data == null) {
+      throw Exception('Issue with ID $issueId not found.');
+    }
+    return IssueWithPhotos.fromJson(data);
+  }
+
+  /// Membuat isu baru untuk sebuah panel.
+  Future<void> createIssueForPanel(
+    String panelNoPp,
+    Map<String, dynamic> issueData,
+  ) async {
+    await _apiRequest('POST', '/panels/$panelNoPp/issues', body: issueData);
+  }
+
+  /// Memperbarui data sebuah isu.
+  Future<void> updateIssue(int issueId, Map<String, dynamic> issueData) async {
+    await _apiRequest('PUT', '/issues/$issueId', body: issueData);
+  }
+
+  /// Menghapus sebuah isu.
+  Future<void> deleteIssue(int issueId) async {
+    await _apiRequest('DELETE', '/issues/$issueId');
+  }
+
+  /// Menambah foto ke sebuah isu.
+  Future<void> addPhotoToIssue(int issueId, String base64Photo) async {
+    await _apiRequest(
+      'POST',
+      '/issues/$issueId/photos',
+      body: {'photo': base64Photo},
+    );
+  }
+
+  /// Menghapus foto dari sebuah isu.
+  Future<void> deletePhoto(int photoId) async {
+    await _apiRequest('DELETE', '/photos/$photoId');
   }
 }

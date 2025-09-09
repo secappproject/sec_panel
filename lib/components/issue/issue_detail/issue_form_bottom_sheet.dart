@@ -1,0 +1,486 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:secpanel/models/issuetest.dart'; // Pastikan path model ini benar
+import 'package:secpanel/theme/colors.dart';
+
+class IssueFormBottomSheet extends StatefulWidget {
+  final String panelNoPp;
+  final VoidCallback onIssueSaved;
+  final Issue? existingIssue;
+
+  const IssueFormBottomSheet({
+    super.key,
+    required this.panelNoPp,
+    required this.onIssueSaved,
+    this.existingIssue,
+  });
+
+  @override
+  State<IssueFormBottomSheet> createState() => _IssueFormBottomSheetState();
+}
+
+class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _titleController;
+  late TextEditingController _descriptionController;
+  String? _selectedType;
+  final List<File> _selectedImages = [];
+  bool _isLoading = false;
+
+  final List<String> _issueTypeOptions = const [
+    "Masalah 1",
+    "Masalah 2",
+    "Masalah 3",
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController();
+    _descriptionController = TextEditingController();
+
+    if (widget.existingIssue != null) {
+      _titleController.text = widget.existingIssue!.title;
+      _descriptionController.text = widget.existingIssue!.description;
+      _selectedType = widget.existingIssue!.type;
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: true,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          for (var platformFile in result.files) {
+            if (platformFile.path != null) {
+              _selectedImages.add(File(platformFile.path!));
+            }
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint("Error picking image: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal membuka galeri: $e')));
+      }
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+    });
+  }
+
+  void _showFullScreenImage(File imageFile) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.black.withOpacity(0.8),
+          insetPadding: EdgeInsets.zero,
+          child: GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
+            child: InteractiveViewer(
+              panEnabled: false,
+              boundaryMargin: const EdgeInsets.all(20),
+              minScale: 0.5,
+              maxScale: 4,
+              child: Image.file(imageFile, fit: BoxFit.contain),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _submitIssue() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    setState(() => _isLoading = true);
+
+    List<String> imageBase64List = [];
+    for (var imageFile in _selectedImages) {
+      final bytes = await imageFile.readAsBytes();
+      imageBase64List.add(base64Encode(bytes));
+    }
+
+    final newIssueData = {
+      'issue_title': _titleController.text,
+      'issue_description': _descriptionController.text,
+      'issue_type': _selectedType,
+      'created_by': 'current_user_name',
+      'photos': imageBase64List,
+    };
+
+    print(
+      widget.existingIssue == null
+          ? "--- MENYIMPAN ISSUE BARU ---"
+          : "--- MEMPERBARUI ISSUE ---",
+    );
+    print(newIssueData);
+
+    await Future.delayed(const Duration(seconds: 1));
+    setState(() => _isLoading = false);
+
+    if (mounted) {
+      // --- PERUBAHAN: HAPUS SNACKBAR DARI SINI ---
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text(
+      //       'Issue berhasil ${widget.existingIssue == null ? "disimpan" : "diperbarui"}!',
+      //     ),
+      //     backgroundColor: AppColors.schneiderGreen,
+      //   ),
+      // );
+
+      widget.onIssueSaved();
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isEditMode = widget.existingIssue != null;
+
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 16,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        ),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  height: 5,
+                  width: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.grayLight,
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                isEditMode ? "Edit Issue" : "Tambah Issue Baru",
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildTextField(
+                controller: _titleController,
+                label: "Judul Issue",
+                validator: (val) => val == null || val.isEmpty
+                    ? 'Judul tidak boleh kosong'
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              _buildCombinedDescriptionPhotoField(),
+              const SizedBox(height: 16),
+              _buildSelectorSection(
+                label: "Tipe Masalah (Opsional)",
+                options: _issueTypeOptions,
+                selectedValue: _selectedType,
+                onTap: (tappedOption) {
+                  setState(() {
+                    _selectedType = (_selectedType == tappedOption)
+                        ? null
+                        : tappedOption;
+                  });
+                },
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: const BorderSide(color: AppColors.schneiderGreen),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        foregroundColor: AppColors.schneiderGreen,
+                      ),
+                      child: const Text("Batal"),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _submitIssue,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: AppColors.schneiderGreen,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(isEditMode ? "Update" : "Simpan"),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          validator: validator,
+          cursorColor: AppColors.schneiderGreen,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
+          decoration: InputDecoration(
+            hintText: 'Masukkan $label',
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.grayLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.grayLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.schneiderGreen),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCombinedDescriptionPhotoField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Deskripsi",
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.grayLight),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _descriptionController,
+                minLines: 2,
+                maxLines: 5,
+                cursorColor: AppColors.schneiderGreen,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w300,
+                ),
+                decoration: const InputDecoration(
+                  hintText: 'Masukkan Deskripsi',
+                  border: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: List.generate(_selectedImages.length, (
+                          index,
+                        ) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: Stack(
+                              children: [
+                                GestureDetector(
+                                  onTap: () => _showFullScreenImage(
+                                    _selectedImages[index],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: AppColors.grayLight,
+                                          width: 1,
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Image.file(
+                                        _selectedImages[index],
+                                        width: 60,
+                                        height: 60,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: GestureDetector(
+                                    onTap: () => _removeImage(index),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(2),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.black.withOpacity(0.6),
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _pickImage,
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      margin: const EdgeInsets.only(left: 8),
+                      child: const Center(
+                        child: Icon(Icons.add, color: AppColors.gray, size: 26),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectorSection({
+    required String label,
+    required List<String> options,
+    required String? selectedValue,
+    required ValueChanged<String?> onTap,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 12,
+          children: options.map((option) {
+            return _buildOptionButton(
+              label: option,
+              selected: selectedValue == option,
+              onTap: () => onTap(option),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOptionButton({
+    required String label,
+    required bool selected,
+    required VoidCallback? onTap,
+  }) {
+    final Color borderColor = selected
+        ? AppColors.schneiderGreen
+        : AppColors.grayLight;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.schneiderGreen.withOpacity(0.08)
+              : Colors.white,
+          border: Border.all(color: borderColor),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.w400,
+            fontSize: 12,
+            color: AppColors.black,
+          ),
+        ),
+      ),
+    );
+  }
+}

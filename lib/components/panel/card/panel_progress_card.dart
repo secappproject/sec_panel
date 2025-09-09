@@ -489,6 +489,29 @@ class PanelProgressCard extends StatelessWidget {
                             ],
                           ],
                         ),
+                        InkWell(
+                          onTap: () => (),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.only(
+                              top: 4,
+                              bottom: 4,
+                              left: 8,
+                              right: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: AppColors.grayLight,
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              "Issues",
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ),
                         Row(
                           children: [
                             const Text(

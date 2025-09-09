@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:secpanel/components/issue/panel_issue_screen.dart';
 import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/models/company.dart';
 import 'package:secpanel/theme/colors.dart';
@@ -220,6 +221,16 @@ class _LoginPageState extends State<LoginPage> {
             onPressed: areButtonsDisabled
                 ? null
                 : () => Navigator.pushNamed(context, '/login-change-password'),
+            // : () => Navigator.push(
+            //     context,
+            //     MaterialPageRoute(
+            //       builder: (context) => PanelIssuesScreen(
+            //         panelNoPp: 'F05_NO PP', // Ambil dari data panel
+            //         panelVendor: 'ABACUS', // Ambil dari data panel
+            //         busbarVendor: 'Presisi', // Ambil dari data panel
+            //       ),
+            //     ),
+            //   ),
             child: const Text(
               'Ubah Password', // Disingkat agar muat
               textAlign: TextAlign.center,
