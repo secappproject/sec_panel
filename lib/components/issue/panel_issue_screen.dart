@@ -373,12 +373,22 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     }
     return RefreshIndicator(
       onRefresh: () => _loadIssues(),
-      child: ListView.builder(
-        padding: EdgeInsets.zero,
-        itemCount: issues.length,
-        itemBuilder: (context, index) => IssueCard(
-          issue: issues[index], // Sekarang tipe datanya cocok
-          onUpdate: () => _loadIssues(showLoading: false),
+      child: Container(
+        color: AppColors.grayLight.withOpacity(0.5),
+        child: Expanded(
+          child: Center(
+            child: Container(
+              width: 500,
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                itemCount: issues.length,
+                itemBuilder: (context, index) => IssueCard(
+                  issue: issues[index], // Sekarang tipe datanya cocok
+                  onUpdate: () => _loadIssues(showLoading: false),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

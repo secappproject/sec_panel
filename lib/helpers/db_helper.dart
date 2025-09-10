@@ -1126,6 +1126,28 @@ class DatabaseHelper {
     await _apiRequest('DELETE', '/issues/$issueId');
   }
 
+  /// Mengambil semua tipe isu yang tersedia untuk ditampilkan sebagai pilihan.
+  Future<List<Map<String, dynamic>>> getIssueTitles() async {
+    final List<dynamic>? data = await _apiRequest('GET', '/issue-titles');
+    if (data == null) return [];
+    return List<Map<String, dynamic>>.from(data);
+  }
+
+  /// Membuat tipe isu baru.
+  Future<void> createIssueTitle(String title) async {
+    await _apiRequest('POST', '/issue-titles', body: {'title': title});
+  }
+
+  /// Memperbarui nama tipe isu yang sudah ada.
+  Future<void> updateIssueTitle(int id, String newTitle) async {
+    await _apiRequest('PUT', '/issue-titles/$id', body: {'title': newTitle});
+  }
+
+  /// Menghapus tipe isu.
+  Future<void> deleteIssueTitle(int id) async {
+    await _apiRequest('DELETE', '/issue-titles/$id');
+  }
+
   /// Menambah foto ke sebuah isu.
   Future<void> addPhotoToIssue(int issueId, String base64Photo) async {
     await _apiRequest(

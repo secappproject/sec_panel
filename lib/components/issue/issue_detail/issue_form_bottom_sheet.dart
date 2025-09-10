@@ -1,19 +1,21 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:secpanel/helpers/db_helper.dart';
+import 'package:secpanel/models/approles.dart';
 import 'package:secpanel/models/issue.dart';
 import 'package:secpanel/theme/colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
 
 class IssueFormBottomSheet extends StatefulWidget {
   final VoidCallback onIssueSaved;
-  // Tetap nullable untuk fleksibilitas di masa depan
-  final Issue? existingIssue;
+  final Issue existingIssue;
 
   const IssueFormBottomSheet({
     super.key,
     required this.onIssueSaved,
-    this.existingIssue, // Dibuat opsional
+    required this.existingIssue,
   });
 
   @override
@@ -23,35 +25,74 @@ class IssueFormBottomSheet extends StatefulWidget {
 class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _descriptionController;
-  String? _selectedType;
-  final List<File> _selectedImages = [];
-  bool _isLoading = false;
-  bool _isEditMode = false;
 
-  final List<String> _issueTypeOptions = const [
-    "Masalah 1",
-    "Masalah 2",
-    "Masalah 3",
-  ];
+  // --- PERUBAHAN 1: Mengadopsi state dari AddIssueBottomSheet ---
+  List<Map<String, dynamic>> _issueTitleOptions = [];
+  String? _selectedTitle;
+  bool _isLoadingTitles = true;
+  bool _isAdmin = false;
+  // --- Akhir Perubahan 1 ---
+
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    _descriptionController = TextEditingController(
+      text: widget.existingIssue.description,
+    );
+    // Langsung set root cause yang sudah ada
+    _selectedTitle = widget.existingIssue.title;
 
-    // ▼▼▼ FIX: NULL CHECK IS ADDED HERE ▼▼▼
-    _isEditMode = widget.existingIssue != null;
+    // Mulai memuat data dinamis
+    _initializeData();
+  }
 
-    if (_isEditMode) {
-      // Access properties only if existingIssue is not null
-      _descriptionController = TextEditingController(
-        text: widget.existingIssue!.description,
+  // --- PERUBAHAN 2: Menambahkan semua fungsi helper dari AddIssueBottomSheet ---
+  Future<void> _initializeData() async {
+    await _checkUserRole();
+    await _loadIssueTitles();
+  }
+
+  Future<void> _checkUserRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    final username = prefs.getString('loggedInUsername');
+    if (username != null) {
+      final company = await DatabaseHelper.instance.getCompanyByUsername(
+        username,
       );
-      _selectedType = widget.existingIssue!.title;
-    } else {
-      // Initialize for creating a new issue
-      _descriptionController = TextEditingController();
+      if (mounted && company != null) {
+        setState(() {
+          _isAdmin = company.role == AppRole.admin;
+        });
+      }
     }
   }
+
+  Future<void> _loadIssueTitles() async {
+    if (!mounted) return;
+    setState(() => _isLoadingTitles = true);
+    try {
+      final titles = await DatabaseHelper.instance.getIssueTitles();
+      if (mounted) {
+        setState(() {
+          _issueTitleOptions = titles;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red,
+            content: Text('Gagal memuat root cause: $e'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingTitles = false);
+    }
+  }
+  // --- Akhir Perubahan 2 ---
 
   @override
   void dispose() {
@@ -60,14 +101,11 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
   }
 
   Future<void> _submitIssue() async {
-    // Check for null only in edit mode
-    if (_isEditMode && widget.existingIssue == null) return;
-
-    if (!_formKey.currentState!.validate() || _selectedType == null) {
-      if (_selectedType == null && mounted) {
+    if (!_formKey.currentState!.validate() || _selectedTitle == null) {
+      if (_selectedTitle == null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Silakan pilih tipe masalah.'),
+            content: Text('Silakan pilih root cause.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -80,21 +118,28 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
       final prefs = await SharedPreferences.getInstance();
       final username = prefs.getString('loggedInUsername') ?? 'unknown_user';
 
-      // ▼▼▼ FIX: NULL CHECK FOR 'status' and 'id' ▼▼▼
       final issueData = {
-        'issue_title': _selectedType,
+        'issue_title': _selectedTitle, // Menggunakan state dinamis
         'issue_description': _descriptionController.text.trim(),
-        'issue_status': widget.existingIssue!.status,
+        'issue_status': widget.existingIssue.status,
         'updated_by': username,
       };
 
       await DatabaseHelper.instance.updateIssue(
-        widget.existingIssue!.id,
+        widget.existingIssue.id,
         issueData,
       );
 
       if (mounted) {
+        // Tampilkan snackbar sukses dan panggil callback
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Issue berhasil diperbarui'),
+            backgroundColor: AppColors.schneiderGreen,
+          ),
+        );
         widget.onIssueSaved();
+        Navigator.pop(context); // Tutup bottom sheet setelah sukses
       }
     } catch (e) {
       if (mounted) {
@@ -112,10 +157,46 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
     }
   }
 
+  // --- PERUBAHAN 3: Menambahkan fungsi untuk menampilkan form manajemen root cause ---
+  Future<void> _showAddTitleSheet() async {
+    final bool? success = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => Padding(
+        padding: MediaQuery.of(context).viewInsets,
+        child: const _AddNewIssueTitleSheet(),
+      ),
+    );
+    if (success == true) {
+      _loadIssueTitles();
+    }
+  }
+
+  Future<void> _showEditTitleSheet(Map<String, dynamic> titleData) async {
+    final bool? success = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => Padding(
+        padding: MediaQuery.of(context).viewInsets,
+        child: _EditIssueTitleSheet(titleData: titleData),
+      ),
+    );
+    if (success == true) {
+      _loadIssueTitles();
+    }
+  }
+  // --- Akhir Perubahan 3 ---
+
   @override
   Widget build(BuildContext context) {
-    // This build method assumes it's always in edit mode based on your current usage.
-    // If you plan to use it for adding new issues, you'd add more logic here.
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.only(
@@ -141,24 +222,14 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
                 ),
               ),
               const SizedBox(height: 24),
-              Text(
-                _isEditMode ? "Edit Issue" : "Tambah Issue", // Dynamic title
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                ),
+              const Text(
+                "Edit Issue",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 24),
-              _buildSelectorSection(
-                label: "Tipe Masalah",
-                options: _issueTypeOptions,
-                selectedValue: _selectedType,
-                onTap: (tappedOption) {
-                  setState(() {
-                    _selectedType = tappedOption;
-                  });
-                },
-              ),
+              // --- PERUBAHAN 4: Menggunakan widget selector dinamis ---
+              _buildIssueTitleSelector(),
+              // --- Akhir Perubahan 4 ---
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _descriptionController,
@@ -216,39 +287,94 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
     );
   }
 
-  Widget _buildSelectorSection({
-    required String label,
-    required List<String> options,
-    required String? selectedValue,
-    required ValueChanged<String?> onTap,
-  }) {
+  // --- PERUBAHAN 5: Menambahkan semua widget builder dari AddIssueBottomSheet ---
+  Widget _buildIssueTitleSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+        const Text(
+          "Root Cause",
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 12,
-          children: options.map((option) {
-            return _buildOptionButton(
-              label: option,
-              selected: selectedValue == option,
-              onTap: () => onTap(option),
-            );
-          }).toList(),
-        ),
+        if (_isLoadingTitles)
+          _buildLoadingSkeleton()
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 12,
+            children: [
+              ..._issueTitleOptions.map((option) {
+                final String title = option['title'] as String;
+                return _buildOptionButton(
+                  label: title,
+                  selected: _selectedTitle == title,
+                  onTap: () => setState(() {
+                    _selectedTitle = title;
+                  }),
+                  onEdit: _isAdmin ? () => _showEditTitleSheet(option) : null,
+                );
+              }),
+              if (_isAdmin) _buildOtherButton(onTap: _showAddTitleSheet),
+            ],
+          ),
       ],
+    );
+  }
+
+  Widget _buildLoadingSkeleton() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[200]!,
+      highlightColor: Colors.grey[100]!,
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 12,
+        children: List.generate(4, (index) {
+          final double width = (index % 3 == 0)
+              ? 150
+              : (index % 2 == 0)
+              ? 120
+              : 100;
+          return Container(
+            width: width,
+            height: 42,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildOtherButton({required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: AppColors.grayLight),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Text(
+          "Tambah Lainnya...",
+          style: TextStyle(
+            fontWeight: FontWeight.w400,
+            fontSize: 12,
+            color: AppColors.gray,
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildOptionButton({
     required String label,
     required bool selected,
-    required VoidCallback? onTap,
+    required VoidCallback onTap,
+    VoidCallback? onEdit,
   }) {
     final Color borderColor = selected
         ? AppColors.schneiderGreen
@@ -256,7 +382,7 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: selected
               ? AppColors.schneiderGreen.withOpacity(0.08)
@@ -264,17 +390,42 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
           border: Border.all(color: borderColor),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w400,
-            fontSize: 12,
-            color: AppColors.black,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w400,
+                fontSize: 12,
+                color: AppColors.black,
+              ),
+            ),
+            if (onEdit != null)
+              InkWell(
+                onTap: onEdit,
+                borderRadius: BorderRadius.circular(20),
+                child: const Padding(
+                  padding: EdgeInsets.only(
+                    left: 8.0,
+                    top: 4,
+                    bottom: 4,
+                    right: 2,
+                  ),
+                  child: Icon(
+                    Icons.edit,
+                    size: 16,
+                    color: AppColors.schneiderGreen,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
+  // --- Akhir Perubahan 5 ---
 
   Widget _buildActionButtons() {
     return Row(
@@ -314,10 +465,475 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
                       strokeWidth: 2,
                     ),
                   )
-                : Text(_isEditMode ? "Update" : "Simpan"),
+                : const Text("Update"),
           ),
         ),
       ],
+    );
+  }
+}
+
+// --- PERUBAHAN 6: Menambahkan semua widget helper sheet di akhir file ---
+
+/// Bottom sheet untuk menambah root cause baru.
+class _AddNewIssueTitleSheet extends StatefulWidget {
+  const _AddNewIssueTitleSheet();
+
+  @override
+  State<_AddNewIssueTitleSheet> createState() => _AddNewIssueTitleSheetState();
+}
+
+class _AddNewIssueTitleSheetState extends State<_AddNewIssueTitleSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  bool _isSaving = false;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSaving = true);
+    try {
+      await DatabaseHelper.instance.createIssueTitle(
+        _titleController.text.trim(),
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Root cause baru berhasil ditambahkan.'),
+            backgroundColor: AppColors.schneiderGreen,
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menyimpan: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                height: 5,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.grayLight,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              "Tambah Root Cause Baru",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 24),
+            TextFormField(
+              controller: _titleController,
+              autofocus: true,
+              cursorColor: AppColors.schneiderGreen,
+              decoration: InputDecoration(
+                labelText: 'Nama Root Cause',
+                labelStyle: const TextStyle(color: AppColors.gray),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.grayLight),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.grayLight),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.schneiderGreen),
+                ),
+              ),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Nama tidak boleh kosong'
+                  : null,
+            ),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: const BorderSide(color: AppColors.schneiderGreen),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    child: const Text(
+                      "Batal",
+                      style: TextStyle(
+                        color: AppColors.schneiderGreen,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isSaving ? null : _save,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: AppColors.schneiderGreen,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text("Simpan"),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Bottom sheet untuk mengedit atau menghapus root cause.
+class _EditIssueTitleSheet extends StatefulWidget {
+  final Map<String, dynamic> titleData;
+  const _EditIssueTitleSheet({required this.titleData});
+
+  @override
+  State<_EditIssueTitleSheet> createState() => _EditIssueTitleSheetState();
+}
+
+class _EditIssueTitleSheetState extends State<_EditIssueTitleSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _titleController;
+  late final int _titleId;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleId = widget.titleData['id'] as int;
+    _titleController = TextEditingController(
+      text: widget.titleData['title'] as String,
+    );
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSaving = true);
+    try {
+      await DatabaseHelper.instance.updateIssueTitle(
+        _titleId,
+        _titleController.text.trim(),
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Root cause berhasil diperbarui.'),
+            backgroundColor: AppColors.schneiderGreen,
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menyimpan: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  Future<void> _delete() async {
+    final confirm = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => _DeleteTitleConfirmationSheet(
+        titleName: widget.titleData['title'] as String,
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await DatabaseHelper.instance.deleteIssueTitle(_titleId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Root cause berhasil dihapus.'),
+            backgroundColor: AppColors.schneiderGreen,
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menghapus: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                height: 5,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.grayLight,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Edit Root Cause",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: AppColors.red),
+                  onPressed: _delete,
+                  tooltip: 'Hapus Root Cause',
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            TextFormField(
+              controller: _titleController,
+              autofocus: true,
+              cursorColor: AppColors.schneiderGreen,
+              decoration: InputDecoration(
+                labelText: 'Nama Root Cause',
+                labelStyle: const TextStyle(color: AppColors.gray),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.grayLight),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.grayLight),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.schneiderGreen),
+                ),
+              ),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Nama tidak boleh kosong'
+                  : null,
+            ),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: const BorderSide(color: AppColors.schneiderGreen),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    child: const Text(
+                      "Batal",
+                      style: TextStyle(
+                        color: AppColors.schneiderGreen,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isSaving ? null : _save,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: AppColors.schneiderGreen,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            "Simpan Perubahan",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DeleteTitleConfirmationSheet extends StatelessWidget {
+  final String titleName;
+  const _DeleteTitleConfirmationSheet({required this.titleName});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              height: 5,
+              width: 40,
+              decoration: BoxDecoration(
+                color: AppColors.grayLight,
+                borderRadius: BorderRadius.circular(100),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            "Hapus Root Cause?",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Anda yakin ingin menghapus root cause \"$titleName\"? Tindakan ini tidak dapat diurungkan.",
+            style: const TextStyle(color: AppColors.gray, fontSize: 14),
+          ),
+          const SizedBox(height: 32),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: const BorderSide(color: AppColors.schneiderGreen),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  child: const Text(
+                    "Batal",
+                    style: TextStyle(
+                      color: AppColors.schneiderGreen,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: AppColors.red,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  child: const Text(
+                    "Ya, Hapus",
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
