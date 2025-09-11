@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:rich_text_controller/rich_text_controller.dart';
+import 'package:secpanel/components/issue/issue_chat/mention_text_editing_controller.dart';
 import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/models/issue.dart';
 import 'package:secpanel/theme/colors.dart';
@@ -24,7 +26,7 @@ class IssueCommentSheet extends StatefulWidget {
 }
 
 class _IssueCommentSheetState extends State<IssueCommentSheet> {
-  final TextEditingController _textController = TextEditingController();
+  late final MentionTextEditingController _textController;
   final ScrollController _scrollController = ScrollController();
 
   final List<File> _newDraftImages = [];
@@ -53,6 +55,8 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
   @override
   void initState() {
     super.initState();
+    // GANTI INISIALISASI MENJADI SANGAT SEDERHANA ✅
+    _textController = MentionTextEditingController();
     _fetchComments();
   }
 
@@ -88,24 +92,47 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
   }
 
   void _groupComments() {
-    final grouped = <String?, List<IssueComment>>{null: []};
-    final sortedComments = List<IssueComment>.from(_comments)
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final commentsById = {for (var c in _comments) c.id: c};
+    final grouped = <String?, List<IssueComment>>{
+      null: [],
+    }; // Untuk top-level comments
 
-    for (var comment in sortedComments) {
-      final parentId = comment.replyToCommentId;
-      bool parentExists =
-          parentId == null || _comments.any((c) => c.id == parentId);
+    // Kelompokkan semua balasan di bawah ID komentar top-levelnya
+    for (final comment in _comments) {
+      String? topLevelParentId = comment.replyToCommentId;
 
-      if (parentId == null || !parentExists) {
+      // Terus cari ke atas sampai menemukan komentar top-level (yang replyToCommentId-nya null)
+      while (topLevelParentId != null &&
+          commentsById[topLevelParentId]?.replyToCommentId != null) {
+        topLevelParentId = commentsById[topLevelParentId]!.replyToCommentId;
+      }
+
+      if (topLevelParentId == null) {
+        // Ini adalah komentar top-level
         (grouped[null] ??= []).add(comment);
       } else {
-        (grouped[parentId] ??= []).add(comment);
+        // Ini adalah balasan, kelompokkan di bawah komentar top-level
+        (grouped[topLevelParentId] ??= []).add(comment);
       }
     }
 
-    _groupedComments = grouped;
-    _topLevelComments = grouped[null] ?? [];
+    // Pisahkan komentar top-level dan urutkan balasannya berdasarkan waktu
+    final topLevelComments = grouped[null] ?? [];
+    topLevelComments.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+    final finalGroupedComments = <String?, List<IssueComment>>{
+      null: topLevelComments,
+    };
+    for (final topLevel in topLevelComments) {
+      final replies = grouped[topLevel.id] ?? [];
+      replies.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      finalGroupedComments[topLevel.id] = replies;
+    }
+
+    setState(() {
+      _groupedComments = finalGroupedComments;
+      _topLevelComments = topLevelComments;
+    });
   }
 
   @override
@@ -166,50 +193,77 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
       }
     });
   }
+  // file: issue_comment_sheet.dart
 
   Future<void> _submitComment() async {
-    final hasText = _textController.text.trim().isNotEmpty;
-    final hasImages =
-        _newDraftImages.isNotEmpty || _existingImageUrls.isNotEmpty;
-    if (!hasText && !hasImages) return;
+    final text = _textController.text.trim();
+    if (text.isEmpty && _newDraftImages.isEmpty && _existingImageUrls.isEmpty)
+      return;
 
     FocusScope.of(context).unfocus();
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      if (_editingComment != null) {
-        await DatabaseHelper.instance.updateComment(
-          commentId: _editingComment!.id,
-          text: _textController.text.trim(),
-          existingImageUrls: _existingImageUrls,
-          newImages: _newDraftImages,
-        );
+      const geminiTrigger = '@AI';
+      final parentId = _replyingTo?.replyToCommentId ?? _replyingTo?.id;
+      final replyToUserId = _replyingTo?.sender.id;
+
+      if (text.startsWith(geminiTrigger) && _editingComment == null) {
+        final question = text.substring(geminiTrigger.length).trim();
+
+        // 1. Simpan komentar user dan TANGKAP ID-nya
+        final String userCommentId = await DatabaseHelper.instance
+            .createComment(
+              issueId: widget.issue.id,
+              text: text,
+              senderId: widget.currentUser.id,
+              images: _newDraftImages,
+              replyToCommentId: parentId,
+              replyToUserId: replyToUserId,
+            );
+
+        // 2. Jika ada pertanyaan, panggil AI dan BERIKAN ID KOMENTAR USER
+        if (question.isNotEmpty) {
+          await DatabaseHelper.instance.askGemini(
+            issueId: widget.issue.id,
+            question: question,
+            senderId: widget.currentUser.id,
+            replyToCommentId: userCommentId, // <-- ID DIBERIKAN DI SINI
+          );
+        }
       } else {
-        final parentId = _replyingTo?.replyToCommentId ?? _replyingTo?.id;
-        await DatabaseHelper.instance.createComment(
-          issueId: widget.issue.id,
-          text: _textController.text.trim(),
-          senderId: widget.currentUser.id,
-          replyToCommentId: parentId,
-          replyToUserId: _replyingTo?.sender.id,
-          images: _newDraftImages,
-        );
+        // Logika untuk komentar biasa dan edit tetap sama...
+        if (_editingComment != null) {
+          await DatabaseHelper.instance.updateComment(
+            commentId: _editingComment!.id,
+            text: text,
+            existingImageUrls: _existingImageUrls,
+            newImages: _newDraftImages,
+          );
+        } else {
+          await DatabaseHelper.instance.createComment(
+            issueId: widget.issue.id,
+            text: text,
+            senderId: widget.currentUser.id,
+            replyToCommentId: parentId,
+            replyToUserId: replyToUserId,
+            images: _newDraftImages,
+          );
+        }
       }
 
-      _cancelReplyOrEdit(); // This now correctly clears all draft image lists
+      _cancelReplyOrEdit();
       await _fetchComments();
     } catch (e) {
+      debugPrint('--- !!! ERROR DI FLUTTER !!! ---');
+      debugPrint(e.toString());
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Gagal mengirim komentar: $e")));
+      ).showSnackBar(SnackBar(content: Text("Gagal mengirim: $e")));
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -459,89 +513,97 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
   }
 
   Widget _buildCommentContent(IssueComment comment) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (comment.text.isNotEmpty)
-          RichText(
-            text: TextSpan(
-              style: const TextStyle(
-                fontSize: 12,
-                height: 1.5,
-                color: AppColors.black,
-                fontFamily: 'Poppins',
-              ),
-              children: [
-                if (comment.replyTo != null)
-                  TextSpan(
-                    text: '@${comment.replyTo!.name} ',
-                    style: const TextStyle(
-                      color: Color(0xFF0066FF),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                TextSpan(text: comment.text),
-              ],
-            ),
-          ),
-        if (comment.imageUrls.isNotEmpty) ...[
-          SizedBox(height: comment.text.isNotEmpty ? 8 : 0),
-          Wrap(
-            spacing: 8.0,
-            runSpacing: 8.0,
-            children: comment.imageUrls.map((imageUrl) {
-              final fullUrl = _baseUrl + imageUrl;
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => FullScreenImageViewer(imageUrl: fullUrl),
-                    ),
-                  );
-                },
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: Image.network(
-                    fullUrl,
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        width: 100,
-                        height: 100,
-                        color: Colors.grey[200],
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                : null,
-                          ),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 100,
-                        height: 100,
-                        color: Colors.grey[200],
-                        child: const Icon(
-                          Icons.broken_image,
-                          color: Colors.grey,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ],
+    // Langsung panggil fungsi baru kita
+    return _buildRichTextComment(comment.text, comment.replyTo);
+  }
+
+  Widget _buildRichTextComment(String text, User? replyTo) {
+    List<InlineSpan> spans = [];
+
+    // 1. Regex diperbarui untuk mengenali format baru: miring (*), coret (~), dan kode (`)
+    final pattern = RegExp(
+      r"(\*\*.*?\*\*)|(\*.*?\*)|(~.*?~)|(`.*?`)|(\B@\w+\b)",
     );
+
+    // 2. Style dasar dan style untuk mention (tetap sama)
+    final defaultStyle = const TextStyle(
+      fontSize: 12,
+      height: 1.5,
+      color: AppColors.black,
+      fontFamily: 'Poppins',
+    );
+    final mentionStyle = defaultStyle.copyWith(
+      color: const Color(0xFF0066FF),
+      fontWeight: FontWeight.w500,
+    );
+
+    // 3. Tambahkan style untuk setiap format baru
+    final boldStyle = defaultStyle.copyWith(fontWeight: FontWeight.bold);
+    final italicStyle = defaultStyle.copyWith(fontStyle: FontStyle.italic);
+    final strikethroughStyle = defaultStyle.copyWith(
+      decoration: TextDecoration.lineThrough,
+    );
+    // Style khusus untuk blok kode agar terlihat berbeda
+    final codeStyle = const TextStyle(
+      fontFamily: 'monospace',
+      backgroundColor: Color(0xFFF0F0F0),
+      color: Color(0xFFD6336C),
+      fontSize: 11.5,
+    );
+
+    // Logika untuk menambahkan @mention di awal balasan (tetap sama)
+    if (replyTo != null) {
+      spans.add(TextSpan(text: '@${replyTo.name} ', style: mentionStyle));
+    }
+
+    // 4. Proses teks dengan logika yang sudah diperbarui untuk menangani semua format
+    text.splitMapJoin(
+      pattern,
+      onMatch: (Match match) {
+        String matchText = match[0]!;
+        if (matchText.startsWith('**') && matchText.endsWith('**')) {
+          spans.add(
+            TextSpan(
+              text: matchText.substring(2, matchText.length - 2),
+              style: boldStyle,
+            ),
+          );
+        } else if (matchText.startsWith('*') && matchText.endsWith('*')) {
+          spans.add(
+            TextSpan(
+              text: matchText.substring(1, matchText.length - 1),
+              style: italicStyle,
+            ),
+          );
+        } else if (matchText.startsWith('~') && matchText.endsWith('~')) {
+          spans.add(
+            TextSpan(
+              text: matchText.substring(1, matchText.length - 1),
+              style: strikethroughStyle,
+            ),
+          );
+        } else if (matchText.startsWith('`') && matchText.endsWith('`')) {
+          // Tambahkan sedikit spasi agar background kode tidak menempel
+          spans.add(const TextSpan(text: ' '));
+          spans.add(
+            TextSpan(
+              text: matchText.substring(1, matchText.length - 1),
+              style: codeStyle,
+            ),
+          );
+          spans.add(const TextSpan(text: ' '));
+        } else if (matchText.startsWith('@')) {
+          spans.add(TextSpan(text: matchText, style: mentionStyle));
+        }
+        return '';
+      },
+      onNonMatch: (String nonMatch) {
+        spans.add(TextSpan(text: nonMatch, style: defaultStyle));
+        return '';
+      },
+    );
+
+    return RichText(text: TextSpan(children: spans));
   }
 
   Widget _buildCommentActions(IssueComment comment, bool isCurrentUser) {

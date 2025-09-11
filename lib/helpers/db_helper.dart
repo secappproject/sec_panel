@@ -31,12 +31,12 @@ class DatabaseHelper {
 
   String get _baseUrl {
     if (kReleaseMode) {
-      return "https://secpanel-db.onrender.com";
+      return "https://secpanel-server.onrender.com";
     } else {
       if (Platform.isAndroid) {
-        return "https://secpanel-db.onrender.com";
+        return "https://secpanel-server.onrender.com";
       } else {
-        return "https://secpanel-db.onrender.com";
+        return "https://secpanel-server.onrender.com";
       }
     }
   }
@@ -1171,7 +1171,7 @@ class DatabaseHelper {
     return data.map((json) => IssueComment.fromJson(json)).toList();
   }
 
-  Future<void> createComment({
+  Future<String> createComment({
     required int issueId,
     required String text,
     required String senderId,
@@ -1194,7 +1194,19 @@ class DatabaseHelper {
       'images': base64Images,
     };
 
-    await _apiRequest('POST', '/issues/$issueId/comments', body: body);
+    // Panggil _apiRequest dan dapatkan hasilnya
+    final responseData = await _apiRequest(
+      'POST',
+      '/issues/$issueId/comments',
+      body: body,
+    );
+
+    // Kembalikan ID dari response
+    if (responseData != null && responseData['id'] != null) {
+      return responseData['id'];
+    } else {
+      throw Exception('Failed to get comment ID from server');
+    }
   }
 
   Future<void> updateComment({
@@ -1217,5 +1229,19 @@ class DatabaseHelper {
 
   Future<void> deleteComment(String commentId) async {
     await _apiRequest('DELETE', '/comments/$commentId');
+  }
+
+  Future<void> askGemini({
+    required int issueId,
+    required String question,
+    required String senderId,
+    required String replyToCommentId, // <-- TAMBAHKAN INI
+  }) async {
+    final body = {
+      'question': question,
+      'sender_id': senderId,
+      'reply_to_comment_id': replyToCommentId, // <-- TAMBAHKAN INI
+    };
+    await _apiRequest('POST', '/issues/$issueId/ask-gemini', body: body);
   }
 }
