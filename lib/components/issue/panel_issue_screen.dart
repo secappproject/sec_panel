@@ -43,19 +43,82 @@ class PanelIssuesScreen extends StatefulWidget {
 class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+
+  // State untuk menyimpan semua issue asli
   List<IssueWithPhotos> _allIssues = [];
-  List<IssueWithPhotos> _unsolvedIssues = [];
-  List<IssueWithPhotos> _solvedIssues = [];
+
+  // State untuk menyimpan daftar issue yang sudah difilter
+  List<IssueWithPhotos> _filteredAllIssues = [];
+  List<IssueWithPhotos> _filteredUnsolvedIssues = [];
+  List<IssueWithPhotos> _filteredSolvedIssues = [];
+
+  // State untuk filter root cause
+  List<String> _allRootCauses = [];
+  List<String> _selectedRootCauses = []; // Diubah untuk multi-select
+  Map<String, int> _rootCauseCounts =
+      {}; // Untuk menyimpan jumlah issue per root cause
+
   bool _isLoading = true;
   String? _errorMessage;
-
   String _appBarTitle = ' ';
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _loadIssues();
+    _loadInitialData();
+  }
+
+  void _processIssueData(
+    List<IssueWithPhotos> issues, {
+    List<Map<String, dynamic>>? rootCauseMaps,
+  }) {
+    // Hitung jumlah issue untuk setiap root cause
+    final counts = <String, int>{};
+    for (var issue in issues) {
+      // -- PERBAIKAN DI SINI --
+      // Menambahkan .trim() untuk menghapus spasi di awal/akhir judul
+      final trimmedTitle = issue.title.trim();
+      counts.update(trimmedTitle, (value) => value + 1, ifAbsent: () => 1);
+    }
+
+    setState(() {
+      _allIssues = issues;
+      _rootCauseCounts = counts;
+      // Hanya update daftar root cause jika data baru tersedia (saat load awal)
+      if (rootCauseMaps != null) {
+        _allRootCauses = rootCauseMaps
+            .map((map) => map['title'] as String)
+            .toList();
+      }
+      _isLoading = false;
+      _applyFilter(); // Terapkan filter
+    });
+  }
+
+  Future<void> _loadInitialData() async {
+    if (mounted) setState(() => _isLoading = true);
+    try {
+      final issuesFuture = DatabaseHelper.instance.getIssuesByPanel(
+        widget.panelNoPp,
+      );
+      final rootCausesFuture = DatabaseHelper.instance.getIssueTitles();
+
+      final results = await Future.wait([issuesFuture, rootCausesFuture]);
+      final issues = results[0] as List<IssueWithPhotos>;
+      final rootCauseMaps = results[1] as List<Map<String, dynamic>>;
+
+      if (mounted) {
+        _processIssueData(issues, rootCauseMaps: rootCauseMaps);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = "Gagal memuat data: ${e.toString()}";
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadIssues({bool showLoading = true}) async {
@@ -70,14 +133,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
         widget.panelNoPp,
       );
       if (mounted) {
-        setState(() {
-          _allIssues = issues;
-          _unsolvedIssues = issues
-              .where((i) => i.status == 'unsolved')
-              .toList();
-          _solvedIssues = issues.where((i) => i.status == 'solved').toList();
-          _isLoading = false;
-        });
+        _processIssueData(issues); // Proses ulang data issue
       }
     } catch (e) {
       if (mounted) {
@@ -87,6 +143,25 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
         });
       }
     }
+  }
+
+  void _applyFilter() {
+    // Jika _selectedRootCauses kosong, berarti "Semua" dipilih.
+    final filtered = _selectedRootCauses.isEmpty
+        ? _allIssues
+        : _allIssues
+              .where((issue) => _selectedRootCauses.contains(issue.title))
+              .toList();
+
+    setState(() {
+      _filteredAllIssues = filtered;
+      _filteredUnsolvedIssues = filtered
+          .where((i) => i.status == 'unsolved')
+          .toList();
+      _filteredSolvedIssues = filtered
+          .where((i) => i.status == 'solved')
+          .toList();
+    });
   }
 
   @override
@@ -107,14 +182,9 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
             final newTitle = innerBoxIsScrolled ? widget.panelNoPp : ' ';
             if (newTitle != _appBarTitle) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  setState(() {
-                    _appBarTitle = newTitle;
-                  });
-                }
+                if (mounted) setState(() => _appBarTitle = newTitle);
               });
             }
-
             return [
               SliverToBoxAdapter(
                 child: Container(
@@ -123,11 +193,13 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildPanelHeader(),
+                      _buildRootCauseFilter(),
                       const Divider(
                         height: 1,
                         thickness: 1,
                         color: AppColors.grayLight,
                       ),
+                      SizedBox(height: 12),
                     ],
                   ),
                 ),
@@ -153,9 +225,9 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
                     indicatorSize: TabBarIndicatorSize.label,
                     dividerColor: Colors.transparent,
                     tabs: [
-                      Tab(text: 'All (${_allIssues.length})'),
-                      Tab(text: 'Unsolved (${_unsolvedIssues.length})'),
-                      Tab(text: 'Solved (${_solvedIssues.length})'),
+                      Tab(text: 'All (${_filteredAllIssues.length})'),
+                      Tab(text: 'Unsolved (${_filteredUnsolvedIssues.length})'),
+                      Tab(text: 'Solved (${_filteredSolvedIssues.length})'),
                     ],
                   ),
                 ),
@@ -170,9 +242,9 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
               : TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildIssueList(_allIssues),
-                    _buildIssueList(_unsolvedIssues),
-                    _buildIssueList(_solvedIssues),
+                    _buildIssueList(_filteredAllIssues),
+                    _buildIssueList(_filteredUnsolvedIssues),
+                    _buildIssueList(_filteredSolvedIssues),
                   ],
                 ),
         ),
@@ -198,6 +270,120 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: AppColors.gray),
         onPressed: () => Navigator.of(context).pop(),
+      ),
+    );
+  }
+
+  // WIDGET BARU: Kustom chip dengan desain yang diinginkan
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    int? count,
+  }) {
+    final Color textColor = isSelected
+        ? AppColors.schneiderGreen
+        : AppColors.black;
+    final Color borderColor = isSelected
+        ? AppColors.schneiderGreen
+        : AppColors.grayLight;
+    final Color backgroundColor = isSelected
+        ? AppColors.schneiderGreen.withOpacity(0.08)
+        : Colors.white;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          border: Border.all(color: borderColor),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.w400,
+                fontSize: 12,
+              ),
+            ),
+            if (count != null) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.schneiderGreen
+                      : AppColors.gray.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  count.toString(),
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : AppColors.black,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // WIDGET BARU: Untuk menampilkan filter chips
+  Widget _buildRootCauseFilter() {
+    if (_isLoading || _allRootCauses.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Handler untuk tap events pada chips
+    void _onChipTap(String? cause) {
+      setState(() {
+        if (cause == null) {
+          // Chip "Semua" ditekan
+          _selectedRootCauses.clear();
+        } else {
+          // Chip root cause spesifik ditekan
+          if (_selectedRootCauses.contains(cause)) {
+            _selectedRootCauses.remove(cause);
+          } else {
+            _selectedRootCauses.add(cause);
+          }
+        }
+        _applyFilter();
+      });
+    }
+
+    return Container(
+      height: 52,
+      color: AppColors.white,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        children: [
+          // _buildFilterChip(
+          //   label: 'Semua',
+          //   isSelected: _selectedRootCauses.isEmpty,
+          //   onTap: () => _onChipTap(null),
+          //   count: _allIssues.length,
+          // ),
+          ..._allRootCauses.map((cause) {
+            return _buildFilterChip(
+              label: cause,
+              isSelected: _selectedRootCauses.contains(cause),
+              onTap: () => _onChipTap(cause),
+              count: _rootCauseCounts[cause] ?? 0,
+            );
+          }).toList(),
+        ],
       ),
     );
   }
@@ -277,6 +463,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
 
   Widget _buildIssueList(List<IssueWithPhotos> issues) {
     if (issues.isEmpty) {
+      bool isFilterActive = _selectedRootCauses.isNotEmpty;
       return RefreshIndicator(
         onRefresh: () => _loadIssues(),
         child: ListView(
@@ -287,12 +474,14 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
               panelNoPp: widget.panelNoPp,
             ),
             const SizedBox(height: 100),
-            const Center(
+            Center(
               child: Text(
-                'Tidak ada isu di kategori ini.',
-                style: TextStyle(
+                isFilterActive
+                    ? 'Tidak ada isu dengan root cause yang dipilih.'
+                    : 'Tidak ada isu di kategori ini.',
+                style: const TextStyle(
                   color: AppColors.gray,
-                  fontWeight: FontWeight.w400,
+                  fontWeight: FontWeight.w300,
                 ),
               ),
             ),
@@ -305,7 +494,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
       child: Container(
         color: AppColors.grayLight.withOpacity(0.5),
         child: Center(
-          child: Container(
+          child: SizedBox(
             width: 500,
             child: ListView.builder(
               padding: EdgeInsets.zero,
@@ -359,7 +548,6 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 class AddIssuePostBox extends StatefulWidget {
   final VoidCallback onIssueAdded;
   final String panelNoPp;
-
   const AddIssuePostBox({
     super.key,
     required this.onIssueAdded,
@@ -408,12 +596,10 @@ class _AddIssuePostBoxState extends State<AddIssuePostBox> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
-        return AddIssueBottomSheet(
-          panelNoPp: widget.panelNoPp,
-          onIssueAdded: widget.onIssueAdded,
-        );
-      },
+      builder: (context) => AddIssueBottomSheet(
+        panelNoPp: widget.panelNoPp,
+        onIssueAdded: widget.onIssueAdded,
+      ),
     );
   }
 
