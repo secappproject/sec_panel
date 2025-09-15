@@ -10,9 +10,9 @@ import 'package:secpanel/components/issue/issue_chat/issue_comment_sheet.dart'; 
 
 // Aset Ikon (Pastikan path ini ada di pubspec.yaml dan file ada di proyek Anda)
 const String _addIcon = 'assets/images/plus.png';
-const String _sendIcon = 'assets/images/send.png';
+const String _sendIcon = 'assets/images/send-chat.png';
 
-// Model untuk UI Chat
+// Model untuk UI Chat dengan tambahan `suggestedActions`
 class AiChatMessage {
   final String id;
   final User sender;
@@ -21,6 +21,7 @@ class AiChatMessage {
   final DateTime timestamp;
   final bool isThinking;
   final bool isError;
+  final List<String> suggestedActions;
 
   AiChatMessage({
     required this.id,
@@ -30,6 +31,7 @@ class AiChatMessage {
     this.imageFile,
     this.isThinking = false,
     this.isError = false,
+    this.suggestedActions = const [],
   });
 }
 
@@ -57,6 +59,7 @@ class _AskAiScreenState extends State<AskAiScreen> {
   final List<AiChatMessage> _messages = [];
   final List<File> _draftImages = [];
   bool _isSending = false;
+  List<String> _currentSuggestions = [];
 
   static final User geminiAI = User(id: 'gemini_ai', name: 'Gemini AI');
 
@@ -68,7 +71,7 @@ class _AskAiScreenState extends State<AskAiScreen> {
         id: 'initial-${DateTime.now().millisecondsSinceEpoch}',
         sender: geminiAI,
         text:
-            "Ada yang bisa saya bantu terkait panel *${widget.panelTitle}*? Anda bisa bertanya tentang status, ringkasan isu, atau memberi perintah untuk mengubah data.",
+            "Halo! Ada yang bisa saya bantu terkait panel **${widget.panelTitle}**? Coba tanyakan 'apa saja isu yang ada?' untuk memulai.",
         timestamp: DateTime.now(),
       ),
     );
@@ -93,8 +96,8 @@ class _AskAiScreenState extends State<AskAiScreen> {
     });
   }
 
-  Future<void> _sendMessage() async {
-    final text = _textController.text.trim();
+  Future<void> _sendMessage({String? textFromChip}) async {
+    final text = textFromChip ?? _textController.text.trim();
     if ((text.isEmpty && _draftImages.isEmpty) || _isSending) return;
 
     FocusScope.of(context).unfocus();
@@ -102,6 +105,8 @@ class _AskAiScreenState extends State<AskAiScreen> {
 
     setState(() {
       _isSending = true;
+      _currentSuggestions = []; // Hapus sugesti lama saat pesan baru dikirim
+
       if (imagesToSend.isNotEmpty) {
         for (var imageFile in imagesToSend) {
           _messages.add(
@@ -124,6 +129,7 @@ class _AskAiScreenState extends State<AskAiScreen> {
           ),
         );
       }
+
       _textController.clear();
       _draftImages.clear();
 
@@ -153,6 +159,10 @@ class _AskAiScreenState extends State<AskAiScreen> {
         imageB64: imageB64,
       );
 
+      final List<String> suggestions = List<String>.from(
+        aiResponse['suggested_actions'] ?? [],
+      );
+
       final aiResponseMessage = AiChatMessage(
         id:
             aiResponse['id'] as String? ??
@@ -160,11 +170,13 @@ class _AskAiScreenState extends State<AskAiScreen> {
         text: aiResponse['text'] as String? ?? "Maaf, terjadi kesalahan.",
         sender: geminiAI,
         timestamp: DateTime.now(),
+        suggestedActions: suggestions,
       );
 
       setState(() {
         _messages.removeWhere((msg) => msg.isThinking);
         _messages.add(aiResponseMessage);
+        _currentSuggestions = suggestions;
         if (aiResponse['action_taken'] == true) {
           widget.onUpdate();
         }
@@ -228,6 +240,8 @@ class _AskAiScreenState extends State<AskAiScreen> {
               },
             ),
           ),
+          if (_currentSuggestions.isNotEmpty && !_isSending)
+            _buildSuggestionChips(),
           _buildMessageComposer(),
         ],
       ),
@@ -280,11 +294,12 @@ class _AskAiScreenState extends State<AskAiScreen> {
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(color: AppColors.grayLight),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
+
               children: [
                 IconButton(
                   icon: Image.asset(
@@ -297,7 +312,7 @@ class _AskAiScreenState extends State<AskAiScreen> {
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: TextField(
                       controller: _textController,
                       maxLines: 5,
@@ -321,8 +336,7 @@ class _AskAiScreenState extends State<AskAiScreen> {
                 ),
                 Container(
                   child: IconButton(
-                    style: IconButton.styleFrom(),
-                    icon: Image.asset(_sendIcon, height: 32),
+                    icon: Image.asset(_sendIcon, width: 32),
                     onPressed: _isSending ? null : _sendMessage,
                   ),
                 ),
@@ -330,6 +344,43 @@ class _AskAiScreenState extends State<AskAiScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSuggestionChips() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      height: 44,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        reverse: true,
+        itemCount: _currentSuggestions.length,
+        itemBuilder: (context, index) {
+          final suggestion = _currentSuggestions[index];
+          return GestureDetector(
+            onTap: () => _sendMessage(textFromChip: suggestion),
+            child: Container(
+              margin: const EdgeInsets.only(left: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.schneiderGreen.withOpacity(0.5),
+                ),
+              ),
+              child: Text(
+                suggestion,
+                style: const TextStyle(
+                  color: AppColors.schneiderGreen,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -384,6 +435,10 @@ class _AskAiScreenState extends State<AskAiScreen> {
   }
 }
 
+// ===========================================================================
+// WIDGET-WIDGET PENDUKUNG (Bubbles, Skeletons)
+// ===========================================================================
+
 class _UserMessageBubble extends StatelessWidget {
   final AiChatMessage message;
   const _UserMessageBubble({required this.message});
@@ -432,7 +487,7 @@ class _UserMessageBubble extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
-                        fontWeight: FontWeight.w400,
+                        fontWeight: FontWeight.w300,
                       ),
                     ),
                   ),
@@ -444,7 +499,7 @@ class _UserMessageBubble extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          // const SizedBox(width: 8),
           // CircleAvatar(
           //   radius: 20,
           //   backgroundColor: AppColors.schneiderGreen,
@@ -452,8 +507,8 @@ class _UserMessageBubble extends StatelessWidget {
           //     message.sender.avatarInitials,
           //     style: const TextStyle(
           //       color: Colors.white,
-          //       fontWeight: FontWeight.w400,
           //       fontSize: 12,
+          //       fontWeight: FontWeight.w400,
           //     ),
           //   ),
           // ),
@@ -469,20 +524,15 @@ class _AiMessageBubble extends StatelessWidget {
 
   Widget _buildRichText(String text) {
     List<InlineSpan> spans = [];
-    final pattern = RegExp(r"(\*\*.*?\*\*)|(\*.*?\*)|(~.*?~)|(`.*?`)");
+    final pattern = RegExp(r"(\*\*.*?\*\*)|(\*.*?\*)");
     final defaultStyle = const TextStyle(
       fontSize: 12,
       height: 1.5,
       color: AppColors.black,
-      fontFamily: 'Poppins',
+      fontFamily: 'Lexend',
     );
-    final boldStyle = defaultStyle.copyWith(fontWeight: FontWeight.bold);
+    final boldStyle = defaultStyle.copyWith(fontWeight: FontWeight.w600);
     final italicStyle = defaultStyle.copyWith(fontStyle: FontStyle.italic);
-    final codeStyle = const TextStyle(
-      fontFamily: 'monospace',
-      backgroundColor: Color(0xFFF0F0F0),
-      fontSize: 11.5,
-    );
 
     text.splitMapJoin(
       pattern,
@@ -500,13 +550,6 @@ class _AiMessageBubble extends StatelessWidget {
             TextSpan(
               text: matchText.substring(1, matchText.length - 1),
               style: italicStyle,
-            ),
-          );
-        } else if (matchText.startsWith('`') && matchText.endsWith('`')) {
-          spans.add(
-            TextSpan(
-              text: matchText.substring(1, matchText.length - 1),
-              style: codeStyle,
             ),
           );
         }
@@ -529,13 +572,13 @@ class _AiMessageBubble extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: Colors.deepPurple[400],
+            backgroundColor: AppColors.blue,
             child: Text(
               message.sender.avatarInitials,
               style: const TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.w400,
                 fontSize: 12,
+                fontWeight: FontWeight.w400,
               ),
             ),
           ),
@@ -549,7 +592,7 @@ class _AiMessageBubble extends StatelessWidget {
                   style: const TextStyle(
                     color: AppColors.gray,
                     fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w300,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -595,12 +638,13 @@ class _AiLoadingBubble extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: Colors.deepPurple[400],
+            backgroundColor: AppColors.blue,
             child: Text(
               user.avatarInitials,
               style: const TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.w500,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
               ),
             ),
           ),
@@ -613,7 +657,7 @@ class _AiLoadingBubble extends StatelessWidget {
                 style: const TextStyle(
                   color: AppColors.gray,
                   fontSize: 11,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w300,
                 ),
               ),
               const SizedBox(height: 4),
