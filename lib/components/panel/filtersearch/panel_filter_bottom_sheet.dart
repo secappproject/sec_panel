@@ -168,14 +168,15 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
   late DateTimeRange? _startDateRange;
   late DateTimeRange? _deliveryDateRange;
   late DateTimeRange? _closedDateRange;
-  late DateTimeRange? _pccClosedDateRange;
-  late DateTimeRange? _mccClosedDateRange;
 
+  // Variabel baru untuk Busbar Closed
+  late DateTimeRange? _busbarClosedDateRange;
+  late DateFilterType _busbarClosedDateStatus;
+
+  // Variabel yang hilang
   late DateFilterType _startDateStatus;
   late DateFilterType _deliveryDateStatus;
   late DateFilterType _closedDateStatus;
-  late DateFilterType _pccClosedDateStatus;
-  late DateFilterType _mccClosedDateStatus;
 
   final List<String> busbarStatusOptions = [
     "Close",
@@ -207,14 +208,30 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
     _startDateRange = widget.startDateRange;
     _deliveryDateRange = widget.deliveryDateRange;
     _closedDateRange = widget.closedDateRange;
-    _pccClosedDateRange = widget.pccClosedDateRange;
-    _mccClosedDateRange = widget.mccClosedDateRange;
 
+    // Inisialisasi variabel yang hilang
     _startDateStatus = widget.startDateStatus;
     _deliveryDateStatus = widget.deliveryDateStatus;
     _closedDateStatus = widget.closedDateStatus;
-    _pccClosedDateStatus = widget.pccClosedDateStatus;
-    _mccClosedDateStatus = widget.mccClosedDateStatus;
+
+    // Logika untuk menginisialisasi _busbarClosedDateRange dan _busbarClosedDateStatus
+    _busbarClosedDateRange =
+        widget.pccClosedDateRange ?? widget.mccClosedDateRange;
+    if (widget.pccClosedDateRange != null &&
+        widget.mccClosedDateRange != null) {
+      if (widget.pccClosedDateRange!.end.isAfter(
+        widget.mccClosedDateRange!.end,
+      )) {
+        _busbarClosedDateRange = widget.pccClosedDateRange;
+      } else {
+        _busbarClosedDateRange = widget.mccClosedDateRange;
+      }
+    }
+    _busbarClosedDateStatus =
+        widget.pccClosedDateStatus == DateFilterType.notSet ||
+            widget.mccClosedDateStatus == DateFilterType.notSet
+        ? DateFilterType.notSet
+        : DateFilterType.any;
   }
 
   void _applyFilters() {
@@ -236,14 +253,17 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
     widget.onStartDateRangeChanged(_startDateRange);
     widget.onDeliveryDateRangeChanged(_deliveryDateRange);
     widget.onClosedDateRangeChanged(_closedDateRange);
-    widget.onPccClosedDateRangeChanged(_pccClosedDateRange);
-    widget.onMccClosedDateRangeChanged(_mccClosedDateRange);
+
+    // Menerapkan nilai filter yang digabungkan ke kedua fungsi callback
+    widget.onPccClosedDateRangeChanged(_busbarClosedDateRange);
+    widget.onMccClosedDateRangeChanged(_busbarClosedDateRange);
+
+    widget.onPccClosedDateStatusChanged(_busbarClosedDateStatus);
+    widget.onMccClosedDateStatusChanged(_busbarClosedDateStatus);
 
     widget.onStartDateStatusChanged(_startDateStatus);
     widget.onDeliveryDateStatusChanged(_deliveryDateStatus);
     widget.onClosedDateStatusChanged(_closedDateStatus);
-    widget.onPccClosedDateStatusChanged(_pccClosedDateStatus);
-    widget.onMccClosedDateStatusChanged(_mccClosedDateStatus);
 
     Navigator.pop(context);
   }
@@ -589,23 +609,13 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                   ),
                   const SizedBox(height: 24),
                   _buildDateField(
-                    title: "Range Busbar MCC Closed",
-                    currentRange: _mccClosedDateRange,
+                    title: "Range Busbar Closed",
+                    currentRange: _busbarClosedDateRange,
                     onRangeChanged: (range) =>
-                        setState(() => _mccClosedDateRange = range),
-                    currentStatus: _mccClosedDateStatus,
+                        setState(() => _busbarClosedDateRange = range),
+                    currentStatus: _busbarClosedDateStatus,
                     onStatusChanged: (status) =>
-                        setState(() => _mccClosedDateStatus = status),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildDateField(
-                    title: "Range Busbar PCC Closed",
-                    currentRange: _pccClosedDateRange,
-                    onRangeChanged: (range) =>
-                        setState(() => _pccClosedDateRange = range),
-                    currentStatus: _pccClosedDateStatus,
-                    onStatusChanged: (status) =>
-                        setState(() => _pccClosedDateStatus = status),
+                        setState(() => _busbarClosedDateStatus = status),
                   ),
                   const SizedBox(height: 24),
                   const Text(
