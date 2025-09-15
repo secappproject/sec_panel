@@ -1257,4 +1257,27 @@ class DatabaseHelper {
     };
     await _apiRequest('POST', '/issues/$issueId/ask-gemini', body: body);
   }
+
+  Future<Map<String, dynamic>> askAiAboutPanel({
+    required String panelNoPp,
+    required String question,
+    required String senderId,
+    String? imageB64,
+  }) async {
+    final responseData = await _apiRequest(
+      'POST',
+      '/panels/$panelNoPp/ask-gemini',
+      body: {
+        'question': question,
+        'sender_id': senderId,
+        'image_b64': imageB64,
+      },
+    );
+
+    if (responseData is Map<String, dynamic>) {
+      return responseData;
+    } else {
+      throw Exception('Format respon dari AI tidak valid.');
+    }
+  }
 }
