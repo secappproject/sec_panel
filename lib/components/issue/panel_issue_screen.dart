@@ -4,6 +4,7 @@ import 'package:secpanel/components/issue/issue_card.dart';
 import 'package:secpanel/components/issue/issue_card_skeleton.dart';
 import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/theme/colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/issue.dart';
 
@@ -101,7 +102,80 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
       child: Scaffold(
         backgroundColor: AppColors.white,
         appBar: _buildAppBar(),
-        body: _buildContent(),
+        body: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            final newTitle = innerBoxIsScrolled ? widget.panelNoPp : ' ';
+            if (newTitle != _appBarTitle) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() {
+                    _appBarTitle = newTitle;
+                  });
+                }
+              });
+            }
+
+            return [
+              SliverToBoxAdapter(
+                child: Container(
+                  color: AppColors.white,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildPanelHeader(),
+                      const Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: AppColors.grayLight,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SliverPersistentHeader(
+                delegate: _SliverAppBarDelegate(
+                  TabBar(
+                    controller: _tabController,
+                    labelColor: AppColors.black,
+                    unselectedLabelColor: AppColors.gray,
+                    labelStyle: const TextStyle(
+                      fontWeight: FontWeight.w400,
+                      fontSize: 12,
+                      fontFamily: 'Lexend',
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontWeight: FontWeight.w400,
+                      fontSize: 12,
+                      fontFamily: 'Lexend',
+                    ),
+                    indicatorColor: AppColors.schneiderGreen,
+                    indicatorWeight: 3,
+                    indicatorSize: TabBarIndicatorSize.label,
+                    dividerColor: Colors.transparent,
+                    tabs: [
+                      Tab(text: 'All (${_allIssues.length})'),
+                      Tab(text: 'Unsolved (${_unsolvedIssues.length})'),
+                      Tab(text: 'Solved (${_solvedIssues.length})'),
+                    ],
+                  ),
+                ),
+                pinned: true,
+              ),
+            ];
+          },
+          body: _isLoading
+              ? _buildLoadingSkeleton()
+              : _errorMessage != null
+              ? Center(child: Text(_errorMessage!))
+              : TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildIssueList(_allIssues),
+                    _buildIssueList(_unsolvedIssues),
+                    _buildIssueList(_solvedIssues),
+                  ],
+                ),
+        ),
       ),
     );
   }
@@ -128,89 +202,10 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     );
   }
 
-  Widget _buildContent() {
-    return NestedScrollView(
-      headerSliverBuilder: (context, innerBoxIsScrolled) {
-        final newTitle = innerBoxIsScrolled ? widget.panelNoPp : ' ';
-        if (newTitle != _appBarTitle) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              setState(() {
-                _appBarTitle = newTitle;
-              });
-            }
-          });
-        }
-
-        return [
-          SliverToBoxAdapter(
-            child: Container(
-              color: AppColors.white,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildPanelHeader(),
-                  const Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: AppColors.grayLight,
-                  ),
-                  _buildFooter(),
-                ],
-              ),
-            ),
-          ),
-          SliverPersistentHeader(
-            delegate: _SliverAppBarDelegate(
-              TabBar(
-                controller: _tabController,
-                labelColor: AppColors.black,
-                unselectedLabelColor: AppColors.gray,
-                labelStyle: const TextStyle(
-                  fontWeight: FontWeight.w400,
-                  fontSize: 12,
-                  fontFamily: 'Lexend',
-                ),
-                unselectedLabelStyle: const TextStyle(
-                  fontWeight: FontWeight.w400,
-                  fontSize: 12,
-                  fontFamily: 'Lexend',
-                ),
-                indicatorColor: AppColors.schneiderGreen,
-                indicatorWeight: 3,
-                indicatorSize: TabBarIndicatorSize.label,
-                dividerColor: Colors.transparent,
-                tabs: [
-                  Tab(text: 'All (${_allIssues.length})'),
-                  Tab(text: 'Unsolved (${_unsolvedIssues.length})'),
-                  Tab(text: 'Solved (${_solvedIssues.length})'),
-                ],
-              ),
-            ),
-            pinned: true,
-          ),
-        ];
-      },
-      body: _isLoading
-          ? _buildLoadingSkeleton()
-          : _errorMessage != null
-          ? Center(child: Text(_errorMessage!))
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildIssueList(_allIssues),
-                _buildIssueList(_unsolvedIssues),
-                _buildIssueList(_solvedIssues),
-              ],
-            ),
-    );
-  }
-
-  // ▼▼▼ WIDGET BARU UNTUK SKELETON LIST ▼▼▼
   Widget _buildLoadingSkeleton() {
     return ListView.builder(
       padding: EdgeInsets.zero,
-      itemCount: 3, // Tampilkan 3 kartu skeleton sebagai placeholder
+      itemCount: 3,
       itemBuilder: (context, index) => const IssueCardSkeleton(),
     );
   }
@@ -280,85 +275,19 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     );
   }
 
-  Widget _buildFooter() {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildStyledButton(
-              onPressed: _showAddIssueSheet,
-              label: 'Add Issue',
-              icon: Image.asset(
-                'assets/images/plus.png',
-                color: AppColors.schneiderGreen,
-                width: 14,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Expanded(
-          //   child: _buildStyledButton(
-          //     onPressed: () {
-          //       // TODO: Implement navigation to chat screen
-          //     },
-          //     label: 'Chat',
-          //     icon: Image.asset(
-          //       'assets/images/message.png',
-          //       color: AppColors.schneiderGreen,
-          //       width: 14,
-          //     ),
-          //   ),
-          // ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStyledButton({
-    required VoidCallback onPressed,
-    required String label,
-    required Widget icon,
-  }) {
-    return SizedBox(
-      height: 36,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: AppColors.grayLight),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          splashFactory: NoSplash.splashFactory,
-          elevation: 0,
-        ).copyWith(overlayColor: WidgetStateProperty.all(Colors.transparent)),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.black,
-                fontWeight: FontWeight.w400,
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(width: 8),
-            icon,
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildIssueList(List<IssueWithPhotos> issues) {
     if (issues.isEmpty) {
       return RefreshIndicator(
         onRefresh: () => _loadIssues(),
         child: ListView(
-          children: const [
-            SizedBox(height: 100),
-            Center(
+          padding: EdgeInsets.zero,
+          children: [
+            AddIssuePostBox(
+              onIssueAdded: () => _loadIssues(showLoading: false),
+              panelNoPp: widget.panelNoPp,
+            ),
+            const SizedBox(height: 100),
+            const Center(
               child: Text(
                 'Tidak ada isu di kategori ini.',
                 style: TextStyle(
@@ -375,41 +304,28 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
       onRefresh: () => _loadIssues(),
       child: Container(
         color: AppColors.grayLight.withOpacity(0.5),
-        child: Expanded(
-          child: Center(
-            child: Container(
-              width: 500,
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: issues.length,
-                itemBuilder: (context, index) => IssueCard(
-                  issue: issues[index], // Sekarang tipe datanya cocok
+        child: Center(
+          child: Container(
+            width: 500,
+            child: ListView.builder(
+              padding: EdgeInsets.zero,
+              itemCount: issues.length + 1,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return AddIssuePostBox(
+                    onIssueAdded: () => _loadIssues(showLoading: false),
+                    panelNoPp: widget.panelNoPp,
+                  );
+                }
+                return IssueCard(
+                  issue: issues[index - 1],
                   onUpdate: () => _loadIssues(showLoading: false),
-                ),
-              ),
+                );
+              },
             ),
           ),
         ),
       ),
-    );
-  }
-
-  void _showAddIssueSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return AddIssueBottomSheet(
-          panelNoPp: widget.panelNoPp,
-          onIssueAdded: () {
-            _loadIssues(showLoading: false);
-          },
-        );
-      },
     );
   }
 }
@@ -438,4 +354,127 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
+}
+
+class AddIssuePostBox extends StatefulWidget {
+  final VoidCallback onIssueAdded;
+  final String panelNoPp;
+
+  const AddIssuePostBox({
+    super.key,
+    required this.onIssueAdded,
+    required this.panelNoPp,
+  });
+
+  @override
+  State<AddIssuePostBox> createState() => _AddIssuePostBoxState();
+}
+
+class _AddIssuePostBoxState extends State<AddIssuePostBox> {
+  String _initials = 'US';
+  Color _avatarColor = AppColors.gray;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInitials();
+  }
+
+  Future<void> _loadUserInitials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final username = prefs.getString('loggedInUsername');
+    if (username != null && username.isNotEmpty) {
+      final initials = username.length >= 2
+          ? username.substring(0, 2).toUpperCase()
+          : username.toUpperCase();
+      final hash =
+          initials.codeUnitAt(0) +
+          (initials.length > 1 ? initials.codeUnitAt(1) : 0);
+      final color = Colors.primaries[hash % Colors.primaries.length];
+      if (mounted) {
+        setState(() {
+          _initials = initials;
+          _avatarColor = color;
+        });
+      }
+    }
+  }
+
+  void _showAddIssueSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return AddIssueBottomSheet(
+          panelNoPp: widget.panelNoPp,
+          onIssueAdded: widget.onIssueAdded,
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.grayLight),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: _avatarColor,
+                radius: 20,
+                child: Text(
+                  _initials,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _showAddIssueSheet(context),
+                  child: Container(
+                    height: 40,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.grayLight.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Ada isu apa sekarang?',
+                        style: TextStyle(
+                          color: AppColors.gray,
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                onPressed: () => _showAddIssueSheet(context),
+                icon: const Icon(Icons.add, color: AppColors.gray),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
