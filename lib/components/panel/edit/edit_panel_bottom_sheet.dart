@@ -826,21 +826,21 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildSectionHeader("Busbar"),
-                        _buildMultiSelectorBusbarVendor(),
-                        const SizedBox(height: 16),
-                        _buildSelectorSection(
-                          label: "Status Busbar MCC",
-                          options: Map.fromEntries(
-                            busbarStatusOptions.map((s) => MapEntry(s, s)),
-                          ),
-                          selectedValue: _selectedBusbarMccStatus,
-                          onTap: (val) => setState(() {
-                            _selectedBusbarMccStatus = val;
-                            _updateCanMarkAsSent();
-                          }),
-                          isEnabled: _selectedBusbarVendorIds.isNotEmpty,
-                        ),
+                        // _buildSectionHeader("Busbar"),
+                        // _buildMultiSelectorBusbarVendor(),
+                        // const SizedBox(height: 16),
+                        // _buildSelectorSection(
+                        //   label: "Status Busbar MCC",
+                        //   options: Map.fromEntries(
+                        //     busbarStatusOptions.map((s) => MapEntry(s, s)),
+                        //   ),
+                        //   selectedValue: _selectedBusbarMccStatus,
+                        //   onTap: (val) => setState(() {
+                        //     _selectedBusbarMccStatus = val;
+                        //     _updateCanMarkAsSent();
+                        //   }),
+                        //   isEnabled: _selectedBusbarVendorIds.isNotEmpty,
+                        // ),
                         const SizedBox(height: 16),
                         _buildDatePickerField(
                           label: "Acknowledgement Order",
@@ -1168,8 +1168,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     String subtitleText;
     switch (_selectedPanelType) {
       case 'MCCW':
-        subtitleText =
-            "Syarat: Progres 100%, Palet, Corepart & Busbar MCC Close.";
+        subtitleText = "Syarat: Progres 100%, Palet, Corepart Close.";
         break;
       case 'PCC':
       case 'MCCF':
