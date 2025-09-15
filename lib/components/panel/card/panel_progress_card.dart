@@ -206,10 +206,18 @@ class PanelProgressCard extends StatelessWidget {
     return 'assets/images/no-status-gray.png';
   }
 
-  String _getComponentStatusImage(String status) =>
-      status.toLowerCase().contains('close')
-      ? 'assets/images/done-green.png'
-      : 'assets/images/no-status-gray.png';
+  String _getComponentStatusImage(String status) {
+    final lower = status.toLowerCase();
+    if (lower.contains('open')) return 'assets/images/no-status-gray.png';
+    if (lower.contains('done')) {
+      return 'assets/images/done-green.png';
+    }
+    if (lower.contains('on progress')) {
+      return 'assets/images/on-progress-blue.png';
+    }
+    return 'assets/images/no-status-gray.png';
+  }
+
   String _getPaletStatusImage(String status) =>
       status.toLowerCase().contains('close')
       ? 'assets/images/done-green.png'

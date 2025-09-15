@@ -172,10 +172,12 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
 
   String _getComponentStatusImage(String status) {
     final lower = status.toLowerCase();
-    if (lower == '' || lower.contains('open')) {
-      return 'assets/images/no-status-gray.png';
-    } else if (lower.contains('done') || lower.contains('close')) {
+    if (lower.contains('open')) return 'assets/images/no-status-gray.png';
+    if (lower.contains('done')) {
       return 'assets/images/done-green.png';
+    }
+    if (lower.contains('on progress')) {
+      return 'assets/images/on-progress-blue.png';
     }
     return 'assets/images/no-status-gray.png';
   }

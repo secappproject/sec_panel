@@ -93,7 +93,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     "100% Siap Kirim",
     "Close",
   ];
-  final List<String> componentStatusOptions = ["Open", "Close"];
+  final List<String> componentStatusOptions = ["Open", "On Progress", "Close"];
   final List<String> paletCorepartStatusOptions = ["Open", "Close"];
 
   @override
