@@ -182,16 +182,16 @@ class PanelProgressCard extends StatelessWidget {
     return 'assets/images/progress-bolt-blue.png';
   }
 
-  String _getBusbarStatusImage(String status) {
-    final lower = status.toLowerCase();
-    if (lower.contains('on progress')) return 'assets/images/new-yellow.png';
-    if (lower.contains('close')) return 'assets/images/done-green.png';
-    if (lower.contains('siap 100%')) return 'assets/images/done-blue.png';
-    if (lower.contains('red block')) return 'assets/images/on-block-red.png';
-    return 'assets/images/no-status-gray.png';
-  }
+  // String _getBusbarStatusImage(String status) {
+  //   final lower = status.toLowerCase();
+  //   if (lower.contains('on progress')) return 'assets/images/new-yellow.png';
+  //   if (lower.contains('close')) return 'assets/images/done-green.png';
+  //   if (lower.contains('siap 100%')) return 'assets/images/done-blue.png';
+  //   if (lower.contains('red block')) return 'assets/images/on-block-red.png';
+  //   return 'assets/images/no-status-gray.png';
+  // }
 
-  String _getComponentStatusImage(String status) {
+  String _getBusbarStatusImage(String status) {
     final lower = status.toLowerCase();
     if (lower.contains('open')) return 'assets/images/no-status-gray.png';
     if (lower.contains('done') || lower.contains('close')) {
@@ -206,6 +206,10 @@ class PanelProgressCard extends StatelessWidget {
     return 'assets/images/no-status-gray.png';
   }
 
+  String _getComponentStatusImage(String status) =>
+      status.toLowerCase().contains('close')
+      ? 'assets/images/done-green.png'
+      : 'assets/images/no-status-gray.png';
   String _getPaletStatusImage(String status) =>
       status.toLowerCase().contains('close')
       ? 'assets/images/done-green.png'

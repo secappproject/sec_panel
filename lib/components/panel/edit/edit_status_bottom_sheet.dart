@@ -156,21 +156,31 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
     }
   }
 
-  String _getBusbarStatusImage(String status) {
+  // String _getBusbarStatusImage(String status) {
+  //   final lower = status.toLowerCase();
+  //   if (lower == '' || lower.contains('on progress')) {
+  //     return 'assets/images/new-yellow.png';
+  //   } else if (lower.contains('close')) {
+  //     return 'assets/images/done-green.png';
+  //   } else if (lower.contains('siap 100%')) {
+  //     return 'assets/images/done-blue.png';
+  //   } else if (lower.contains('red block')) {
+  //     return 'assets/images/on-block-red.png';
+  //   }
+  //   return 'assets/images/no-status-gray.png';
+  // }
+
+  String _getComponentStatusImage(String status) {
     final lower = status.toLowerCase();
-    if (lower == '' || lower.contains('on progress')) {
-      return 'assets/images/new-yellow.png';
-    } else if (lower.contains('close')) {
+    if (lower == '' || lower.contains('open')) {
+      return 'assets/images/no-status-gray.png';
+    } else if (lower.contains('done') || lower.contains('close')) {
       return 'assets/images/done-green.png';
-    } else if (lower.contains('siap 100%')) {
-      return 'assets/images/done-blue.png';
-    } else if (lower.contains('red block')) {
-      return 'assets/images/on-block-red.png';
     }
     return 'assets/images/no-status-gray.png';
   }
 
-  String _getComponentStatusImage(String status) {
+  String _getBusbarStatusImage(String status) {
     final lower = status.toLowerCase();
     if (lower == '' || lower.contains('open')) {
       return 'assets/images/no-status-gray.png';

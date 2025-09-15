@@ -80,19 +80,20 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
   // ▼▼▼ [BARU] State untuk tanggal close busbar ▼▼▼
   DateTime? _closeDateBusbar;
 
+  // final List<String> busbarStatusOptions = [
+  //   "On Progress",
+  //   "Siap 100%",
+  //   "Close",
+  //   "Red Block",
+  // ];
   final List<String> busbarStatusOptions = [
-    "On Progress",
-    "Siap 100%",
-    "Close",
-    "Red Block",
-  ];
-  final List<String> componentStatusOptions = [
     "Open",
     "Punching/Bending",
     "Plating/Epoxy",
     "100% Siap Kirim",
     "Close",
   ];
+  final List<String> componentStatusOptions = ["Open", "Close"];
   final List<String> paletCorepartStatusOptions = ["Open", "Close"];
 
   @override
