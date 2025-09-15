@@ -194,10 +194,15 @@ class PanelProgressCard extends StatelessWidget {
   String _getComponentStatusImage(String status) {
     final lower = status.toLowerCase();
     if (lower.contains('open')) return 'assets/images/no-status-gray.png';
-    if (lower.contains('done')) return 'assets/images/done-green.png';
-    if (lower.contains('on progress')) {
+    if (lower.contains('done') || lower.contains('close')) {
+      return 'assets/images/done-green.png';
+    }
+    if (lower.contains('on progress') ||
+        lower.contains('punching/bending') ||
+        lower.contains('plating/epoxy')) {
       return 'assets/images/on-progress-blue.png';
     }
+    if (lower.contains('100% siap kirim')) return 'assets/images/done-blue.png';
     return 'assets/images/no-status-gray.png';
   }
 

@@ -763,6 +763,21 @@ class DatabaseHelper {
       // Bagian ini sudah benar, tidak perlu diubah.
       for (final panelData in filteredPanels) {
         final panel = panelData.panel;
+        final latestAoBusbar =
+            (panel.aoBusbarPcc != null &&
+                (panel.aoBusbarMcc == null ||
+                    panel.aoBusbarPcc!.isAfter(panel.aoBusbarMcc!)))
+            ? panel.aoBusbarPcc
+            : panel.aoBusbarMcc;
+
+        final latestCloseDateBusbar =
+            (panel.closeDateBusbarPcc != null &&
+                (panel.closeDateBusbarMcc == null ||
+                    panel.closeDateBusbarPcc!.isAfter(
+                      panel.closeDateBusbarMcc!,
+                    )))
+            ? panel.closeDateBusbarPcc
+            : panel.closeDateBusbarMcc;
         panelSheet.appendRow([
           TextCellValue(
             panel.noPp.startsWith('TEMP_') ? 'Belum Diatur' : panel.noPp,
@@ -783,10 +798,8 @@ class DatabaseHelper {
           TextCellValue(panel.statusPalet ?? ''),
           TextCellValue(panel.statusBusbarPcc ?? ''),
           TextCellValue(panel.statusBusbarMcc ?? ''),
-          TextCellValue(formatDate(panel.closeDateBusbarPcc) ?? ''),
-          TextCellValue(formatDate(panel.closeDateBusbarMcc) ?? ''),
-          TextCellValue(formatDate(panel.aoBusbarPcc) ?? ''),
-          TextCellValue(formatDate(panel.aoBusbarMcc) ?? ''),
+          TextCellValue(formatDate(latestAoBusbar) ?? ''),
+          TextCellValue(formatDate(latestCloseDateBusbar) ?? ''),
         ]);
       }
     }

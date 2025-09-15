@@ -54,7 +54,13 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
     "Close",
     "Red Block",
   ];
-  final List<String> _componentStatusOptions = ["Open", "On Progress", "Done"];
+  final List<String> _componentStatusOptions = [
+    "Open",
+    "Punching/Bending",
+    "Plating/Epoxy",
+    "100% Siap Kirim",
+    "Close",
+  ];
 
   @override
   void initState() {
@@ -168,9 +174,12 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
     final lower = status.toLowerCase();
     if (lower == '' || lower.contains('open')) {
       return 'assets/images/no-status-gray.png';
-    } else if (lower.contains('done')) {
+    } else if (lower.contains('done') || lower.contains('close')) {
       return 'assets/images/done-green.png';
-    } else if (lower.contains('on progress')) {
+    } else if (lower.contains('punching/bending') ||
+        lower.contains('plating/epoxy') ||
+        lower.contains('on progress') ||
+        lower.contains('100% siap kirim')) {
       return 'assets/images/on-progress-blue.png';
     }
     return 'assets/images/no-status-gray.png';
