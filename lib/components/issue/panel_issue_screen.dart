@@ -6,6 +6,7 @@ import 'package:secpanel/components/issue/issue_chat/ask_ai.dart';
 import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/theme/colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart'; // <-- TAMBAHKAN IMPORT INI
 
 import '../../models/issue.dart';
 
@@ -65,23 +66,20 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     _loadInitialData();
   }
 
-  // ▼▼▼ FUNGSI BARU UNTUK MEMBUKA AI CHAT ▼▼▼
   void _showAiChatSheet() async {
     final prefs = await SharedPreferences.getInstance();
     final username = prefs.getString('loggedInUsername');
 
     if (username != null && mounted) {
       final currentUser = User(id: username, name: username);
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => AskAiScreen(
-          panelNoPp: widget.panelNoPp,
-          panelTitle: "${widget.panelNoPanel} ${widget.panelNoWBS}".trim(),
-          currentUser: currentUser,
-          onUpdate: () =>
-              _loadIssues(showLoading: false), // Callback untuk refresh data
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => AskAiScreen(
+            panelNoPp: widget.panelNoPp,
+            panelTitle: "${widget.panelNoPanel} ${widget.panelNoWBS}".trim(),
+            currentUser: currentUser,
+            onUpdate: () => _loadIssues(showLoading: false),
+          ),
         ),
       );
     } else {
@@ -208,7 +206,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildPanelHeader(),
-                      _buildRootCauseFilter(),
+                      _buildRootCauseFilter(), // <-- Widget ini akan menampilkan skeleton saat loading
                       const Divider(
                         height: 1,
                         thickness: 1,
@@ -272,7 +270,6 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
       backgroundColor: AppColors.white,
       elevation: 0,
       scrolledUnderElevation: 0,
-      shadowColor: AppColors.grayLight,
       centerTitle: true,
       title: Text(
         _appBarTitle,
@@ -285,6 +282,106 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: AppColors.gray),
         onPressed: () => Navigator.of(context).pop(),
+      ),
+    );
+  }
+
+  // --- ▼▼▼ PERUBAHAN UTAMA DI SINI ▼▼▼ ---
+  Widget _buildRootCauseFilter() {
+    // Jika sedang loading, tampilkan skeleton
+    if (_isLoading) return _buildRootCauseFilterSkeleton();
+
+    // Jika sudah tidak loading tapi tidak ada isu sama sekali, jangan tampilkan apa-apa
+    if (_allIssues.isEmpty) return const SizedBox(height: 52);
+
+    void _onChipTap(String? cause) {
+      setState(() {
+        if (cause == null) {
+          _selectedRootCauses.clear();
+        } else {
+          if (_selectedRootCauses.contains(cause)) {
+            _selectedRootCauses.remove(cause);
+          } else {
+            _selectedRootCauses.add(cause);
+          }
+        }
+        _applyFilter();
+      });
+    }
+
+    // Tampilkan chip yang sesungguhnya jika data sudah ada
+    return Container(
+      height: 52,
+      color: AppColors.white,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        children: [
+          _buildFilterChip(
+            label: 'Semua',
+            isSelected: _selectedRootCauses.isEmpty,
+            onTap: () => _onChipTap(null),
+            count: _allIssues.length,
+          ),
+          ..._allRootCauses.map((cause) {
+            final count = _rootCauseCounts[cause] ?? 0;
+            if (count == 0 && !_selectedRootCauses.contains(cause))
+              return const SizedBox.shrink();
+            return _buildFilterChip(
+              label: cause,
+              isSelected: _selectedRootCauses.contains(cause),
+              onTap: () => _onChipTap(cause),
+              count: count,
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  // --- ▼▼▼ FUNGSI BARU UNTUK MEMBUAT SKELETON CHIP ▼▼▼ ---
+  Widget _buildRootCauseFilterSkeleton() {
+    Widget placeholderChip({double width = 80}) {
+      return Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Container(width: width, height: 14, color: Colors.white),
+            const SizedBox(width: 8),
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(11),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[200]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          physics: const NeverScrollableScrollPhysics(), // Non-aktifkan scroll
+          children: [
+            placeholderChip(width: 50),
+            placeholderChip(width: 70),
+            placeholderChip(width: 90),
+            placeholderChip(width: 60),
+          ],
+        ),
       ),
     );
   }
@@ -352,58 +449,6 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     );
   }
 
-  Widget _buildRootCauseFilter() {
-    if (_isLoading) return const SizedBox(height: 52); // Placeholder
-
-    // Tampilkan "Semua" jika tidak ada root cause lain atau jika ada isu.
-    final bool showAllButton =
-        _allRootCauses.isNotEmpty || _allIssues.isNotEmpty;
-
-    void _onChipTap(String? cause) {
-      setState(() {
-        if (cause == null) {
-          _selectedRootCauses.clear();
-        } else {
-          if (_selectedRootCauses.contains(cause)) {
-            _selectedRootCauses.remove(cause);
-          } else {
-            _selectedRootCauses.add(cause);
-          }
-        }
-        _applyFilter();
-      });
-    }
-
-    return Container(
-      height: 52,
-      color: AppColors.white,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        children: [
-          if (showAllButton)
-            _buildFilterChip(
-              label: 'Semua',
-              isSelected: _selectedRootCauses.isEmpty,
-              onTap: () => _onChipTap(null),
-              count: _allIssues.length,
-            ),
-          ..._allRootCauses.map((cause) {
-            final count = _rootCauseCounts[cause] ?? 0;
-            if (count == 0 && !_selectedRootCauses.contains(cause))
-              return const SizedBox.shrink();
-            return _buildFilterChip(
-              label: cause,
-              isSelected: _selectedRootCauses.contains(cause),
-              onTap: () => _onChipTap(cause),
-              count: count,
-            );
-          }).toList(),
-        ],
-      ),
-    );
-  }
-
   Widget _buildLoadingSkeleton() {
     return ListView.builder(
       padding: EdgeInsets.zero,
@@ -417,7 +462,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
@@ -429,17 +474,6 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
                     fontSize: 24,
                     fontWeight: FontWeight.w500,
                     color: AppColors.black,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  widget.panelNoPp.contains("TEMP_")
-                      ? "No. PP Belum Diatur"
-                      : widget.panelNoPp,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w300,
-                    color: AppColors.gray,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -464,7 +498,6 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
             ),
           ),
           const SizedBox(width: 16),
-          // ▼▼▼ GESTURE DETECTOR UNTUK TOMBOL AI ▼▼▼
           GestureDetector(
             onTap: _showAiChatSheet,
             child: Column(
@@ -522,7 +555,6 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
 
   Widget _buildIssueList(List<IssueWithPhotos> issues) {
     if (issues.isEmpty && _allIssues.isEmpty) {
-      // Kondisi awal saat benar-benar kosong
       return RefreshIndicator(
         onRefresh: () => _loadIssues(),
         child: ListView(
@@ -547,7 +579,6 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     }
 
     if (issues.isEmpty && _selectedRootCauses.isNotEmpty) {
-      // Kondisi saat filter aktif tapi hasil kosong
       return RefreshIndicator(
         onRefresh: () => _loadIssues(),
         child: ListView(
