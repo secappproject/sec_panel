@@ -841,15 +841,15 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                         //   }),
                         //   isEnabled: _selectedBusbarVendorIds.isNotEmpty,
                         // ),
-                        const SizedBox(height: 16),
-                        _buildDatePickerField(
-                          label: "Acknowledgement Order",
-                          selectedDate: _aoBusbar,
-                          onDateChanged: (date) =>
-                              setState(() => _aoBusbar = date),
-                          icon: Icons.assignment_turned_in_outlined,
-                        ),
-                        const SizedBox(height: 24),
+                        // const SizedBox(height: 16),
+                        // _buildDatePickerField(
+                        //   label: "Acknowledgement Order",
+                        //   selectedDate: _aoBusbar,
+                        //   onDateChanged: (date) =>
+                        //       setState(() => _aoBusbar = date),
+                        //   icon: Icons.assignment_turned_in_outlined,
+                        // ),
+                        // const SizedBox(height: 24),
                         SizedBox(
                           width: MediaQuery.of(context).size.width,
                           child: Column(
