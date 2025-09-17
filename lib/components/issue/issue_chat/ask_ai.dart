@@ -3,16 +3,17 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
+// [PLACEHOLDER] Ganti dengan path impor proyek Anda yang sebenarnya
 import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/models/issue.dart';
 import 'package:secpanel/theme/colors.dart';
-import 'package:secpanel/components/issue/issue_chat/issue_comment_sheet.dart'; // Untuk skeleton
 
 // Aset Ikon (Pastikan path ini ada di pubspec.yaml dan file ada di proyek Anda)
 const String _addIcon = 'assets/images/plus.png';
-const String _sendIcon = 'assets/images/send-chat.png';
+const String _sendIcon = 'assets/images/send.png';
 
-// Model untuk UI Chat dengan tambahan `suggestedActions`
+// Model untuk UI Chat
 class AiChatMessage {
   final String id;
   final User sender;
@@ -61,7 +62,18 @@ class _AskAiScreenState extends State<AskAiScreen> {
   bool _isSending = false;
   List<String> _currentSuggestions = [];
 
+  // State untuk mengontrol visibilitas menu pesan cepat
+  bool _isQuickReplyVisible = false;
+
   static final User geminiAI = User(id: 'gemini_ai', name: 'Gemini AI');
+
+  // Daftar pertanyaan pembuka default
+  final List<String> _starterQuestions = [
+    'Apa saja isu yang belum selesai?',
+    'Ringkas status panel ini.',
+    'Siapa penanggung jawab busbar?',
+    'Update progres panel menjadi 50%',
+  ];
 
   @override
   void initState() {
@@ -180,6 +192,10 @@ class _AskAiScreenState extends State<AskAiScreen> {
         if (aiResponse['action_taken'] == true) {
           widget.onUpdate();
         }
+        // Jika ada sugesti baru, tampilkan menunya
+        if (_currentSuggestions.isNotEmpty) {
+          _isQuickReplyVisible = true;
+        }
       });
     } catch (e) {
       final errorMessage = AiChatMessage(
@@ -224,24 +240,40 @@ class _AskAiScreenState extends State<AskAiScreen> {
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16.0),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                final isSender = message.sender.id == widget.currentUser.id;
-
-                if (message.isThinking) return _AiLoadingBubble(user: geminiAI);
-
-                return isSender
-                    ? _UserMessageBubble(message: message)
-                    : _AiMessageBubble(message: message);
-              },
+            // <-- STRUKTUR BARU MENGGUNAKAN STACK
+            child: Stack(
+              children: [
+                // Lapisan 1: Daftar Pesan Chat
+                ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    16,
+                    80,
+                  ), // Beri ruang di bawah
+                  itemCount: _messages.length,
+                  itemBuilder: (context, index) {
+                    final message = _messages[index];
+                    final isSender = message.sender.id == widget.currentUser.id;
+                    if (message.isThinking)
+                      return _AiLoadingBubble(user: geminiAI);
+                    return isSender
+                        ? _UserMessageBubble(message: message)
+                        : _AiMessageBubble(message: message);
+                  },
+                ),
+                // Lapisan 2: Menu Pesan Cepat (jika visible)
+                if (_isQuickReplyVisible)
+                  Positioned(
+                    bottom: 0,
+                    left: 16,
+                    right: 16,
+                    child: _buildQuickReplyMenu(),
+                  ),
+              ],
             ),
           ),
-          if (_currentSuggestions.isNotEmpty && !_isSending)
-            _buildSuggestionChips(),
           _buildMessageComposer(),
         ],
       ),
@@ -272,6 +304,97 @@ class _AskAiScreenState extends State<AskAiScreen> {
     );
   }
 
+  // <-- WIDGET BARU UNTUK MENU PESAN CEPAT
+  Widget _buildQuickReplyMenu() {
+    final bool hasSuggestions = _currentSuggestions.isNotEmpty && !_isSending;
+    final List<String> items = hasSuggestions
+        ? _currentSuggestions
+        : _starterQuestions;
+    final String title = hasSuggestions ? 'Rekomendasi Aksi' : 'Pesan Cepat';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.grayLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.w400,
+                color: AppColors.black,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          const Divider(height: 1, color: AppColors.grayLight),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    _sendMessage(textFromChip: item);
+                    setState(() {
+                      _isQuickReplyVisible = false;
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          hasSuggestions
+                              ? Icons.auto_awesome_outlined
+                              : Icons.chat_bubble_outline_rounded,
+                          size: 20,
+                          color: AppColors.gray,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            item,
+                            style: const TextStyle(
+                              color: AppColors.black,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w300,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // <-- WIDGET COMPOSER YANG SUDAH DIMODIFIKASI
   Widget _buildMessageComposer() {
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -291,96 +414,75 @@ class _AskAiScreenState extends State<AskAiScreen> {
             _buildImagePreview(),
             const SizedBox(height: 8),
           ],
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.grayLight),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-
-              children: [
-                IconButton(
-                  icon: Image.asset(
-                    _addIcon,
-                    width: 24,
-                    height: 24,
-                    color: AppColors.gray,
-                  ),
-                  onPressed: _pickImage,
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(
+                  _isQuickReplyVisible ? Icons.close : Icons.bolt_outlined,
+                  color: AppColors.gray,
                 ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: TextField(
-                      controller: _textController,
-                      maxLines: 5,
-                      minLines: 1,
-                      cursorColor: AppColors.schneiderGreen,
-                      decoration: const InputDecoration(
-                        hintText: 'Tulis pesan...',
-                        border: InputBorder.none,
-                        isCollapsed: true,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 4),
-                        hintStyle: TextStyle(
+                onPressed: () {
+                  setState(() {
+                    _isQuickReplyVisible = !_isQuickReplyVisible;
+                  });
+                },
+              ),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppColors.grayLight),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: Image.asset(
+                          _addIcon,
+                          width: 24,
+                          height: 24,
                           color: AppColors.gray,
-                          fontWeight: FontWeight.w300,
-                          fontSize: 14,
+                        ),
+                        onPressed: _pickImage,
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: TextField(
+                            controller: _textController,
+                            maxLines: 5,
+                            minLines: 1,
+                            cursorColor: AppColors.schneiderGreen,
+                            decoration: const InputDecoration(
+                              hintText: 'Tulis pesan...',
+                              border: InputBorder.none,
+                              isCollapsed: true,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
+                              hintStyle: TextStyle(
+                                color: AppColors.gray,
+                                fontWeight: FontWeight.w300,
+                                fontSize: 14,
+                              ),
+                            ),
+                            style: const TextStyle(fontSize: 14),
+                            onSubmitted: (_) => _sendMessage(),
+                          ),
                         ),
                       ),
-                      style: const TextStyle(fontSize: 14),
-                      onSubmitted: (_) => _sendMessage(),
-                    ),
+                      IconButton(
+                        icon: Image.asset(_sendIcon, width: 32),
+                        onPressed: _isSending ? null : _sendMessage,
+                      ),
+                    ],
                   ),
                 ),
-                Container(
-                  child: IconButton(
-                    icon: Image.asset(_sendIcon, width: 32),
-                    onPressed: _isSending ? null : _sendMessage,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSuggestionChips() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      height: 44,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        reverse: true,
-        itemCount: _currentSuggestions.length,
-        itemBuilder: (context, index) {
-          final suggestion = _currentSuggestions[index];
-          return GestureDetector(
-            onTap: () => _sendMessage(textFromChip: suggestion),
-            child: Container(
-              margin: const EdgeInsets.only(left: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: AppColors.schneiderGreen.withOpacity(0.5),
-                ),
-              ),
-              child: Text(
-                suggestion,
-                style: const TextStyle(
-                  color: AppColors.schneiderGreen,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }
@@ -517,41 +619,62 @@ class _UserMessageBubble extends StatelessWidget {
     );
   }
 }
+// ask_ai_screen.dart
 
 class _AiMessageBubble extends StatelessWidget {
   final AiChatMessage message;
-  const _AiMessageBubble({required this.message});
+  const _AiMessageBubble({super.key, required this.message});
 
+  // Fungsi ini yang akan kita modifikasi
   Widget _buildRichText(String text) {
     List<InlineSpan> spans = [];
-    final pattern = RegExp(r"(\*\*.*?\*\*)|(\*.*?\*)");
+    final pattern = RegExp(
+      r"(\*\*.*?\*\*)",
+    ); // Kita hanya butuh pattern untuk bold
     final defaultStyle = const TextStyle(
       fontSize: 12,
       height: 1.5,
       color: AppColors.black,
       fontFamily: 'Lexend',
     );
-    final boldStyle = defaultStyle.copyWith(fontWeight: FontWeight.w600);
-    final italicStyle = defaultStyle.copyWith(fontStyle: FontStyle.italic);
 
     text.splitMapJoin(
       pattern,
       onMatch: (Match match) {
         String matchText = match[0]!;
         if (matchText.startsWith('**') && matchText.endsWith('**')) {
+          // ====================================================================
+          // <-- BAGIAN YANG DIUBAH: Dari TextSpan menjadi WidgetSpan
+          // ====================================================================
           spans.add(
-            TextSpan(
-              text: matchText.substring(2, matchText.length - 2),
-              style: boldStyle,
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.gray.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(5),
+                  border: Border.all(
+                    color: AppColors.gray.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  matchText.substring(2, matchText.length - 2),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.black,
+                    fontFamily: 'Lexend',
+                  ),
+                ),
+              ),
             ),
           );
-        } else if (matchText.startsWith('*') && matchText.endsWith('*')) {
-          spans.add(
-            TextSpan(
-              text: matchText.substring(1, matchText.length - 1),
-              style: italicStyle,
-            ),
-          );
+          // ====================================================================
+          // <-- AKHIR PERUBAHAN
+          // ====================================================================
         }
         return '';
       },
@@ -609,7 +732,9 @@ class _AiMessageBubble extends StatelessWidget {
                       20,
                     ).copyWith(bottomLeft: const Radius.circular(4)),
                   ),
-                  child: _buildRichText(message.text!),
+                  child: _buildRichText(
+                    message.text!,
+                  ), // Memanggil fungsi yang sudah diubah
                 ),
                 const SizedBox(height: 4),
                 Text(

@@ -12,6 +12,9 @@ import 'package:secpanel/components/panel/edit/edit_status_bottom_sheet.dart';
 import 'package:secpanel/components/panel/filtersearch/panel_filter_bottom_sheet.dart';
 import 'package:secpanel/components/panel/filtersearch/search_field.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
+import 'dart:math' as math;
 
 class HomeScreen extends StatefulWidget {
   final Company currentCompany;
@@ -21,6 +24,8 @@ class HomeScreen extends StatefulWidget {
   @override
   HomeScreenState createState() => HomeScreenState();
 }
+
+enum ChartTimeView { daily, monthly, yearly }
 
 class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late final TabController _tabController;
@@ -32,10 +37,19 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<Company> _allWHSVendors = [];
   bool _isLoading = true;
 
-  // --- State untuk filter ---
+  bool _isChartView = false;
+
+  // State untuk Chart
+  ChartTimeView _panelChartView = ChartTimeView.monthly;
+  ChartTimeView _busbarChartView = ChartTimeView.monthly;
+  bool _isPanelMonthly = true;
+  bool _isBusbarMonthly = true;
+  Map<String, dynamic> _panelChartData = {};
+  Map<String, dynamic> _busbarChartData = {};
+
+  // --- State untuk filter (tidak ada perubahan di sini) ---
   List<String> searchChips = [];
   String activeSearchText = "";
-
   bool includeArchived = false;
   SortOption? selectedSort;
   List<PanelFilterStatus> selectedPanelStatuses = [];
@@ -50,18 +64,17 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<String> selectedPalet = [];
   List<String> selectedCorepart = [];
   List<String> selectedPanelTypes = [];
-
   DateTimeRange? startDateRange;
   DateTimeRange? deliveryDateRange;
   DateTimeRange? closedDateRange;
   DateTimeRange? pccClosedDateRange;
   DateTimeRange? mccClosedDateRange;
-
   DateFilterType startDateStatus = DateFilterType.any;
   DateFilterType deliveryDateStatus = DateFilterType.any;
   DateFilterType closedDateStatus = DateFilterType.any;
   DateFilterType pccClosedDateStatus = DateFilterType.any;
   DateFilterType mccClosedDateStatus = DateFilterType.any;
+  // --- Akhir State Filter ---
 
   @override
   void initState() {
@@ -87,6 +100,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           _allK3Vendors = k3Vendors;
           _allK5Vendors = k5Vendors;
           _allWHSVendors = whsVendors;
+          _prepareChartData();
         });
       }
     } catch (e) {
@@ -100,6 +114,48 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+  void _prepareChartData() {
+    final panelsToDisplay = filteredPanelsForDisplay;
+
+    final allPanelVendorNames = _allK3Vendors.map((v) => v.name).toList();
+    final allBusbarVendorNames = _allK5Vendors.map((v) => v.name).toList();
+
+    if (panelsToDisplay.any((p) => p.panelVendorName.isEmpty)) {
+      if (!allPanelVendorNames.contains("No Vendor")) {
+        allPanelVendorNames.add("No Vendor");
+      }
+    }
+    if (panelsToDisplay.any((p) => p.busbarVendorNames.isEmpty)) {
+      if (!allBusbarVendorNames.contains("No Vendor")) {
+        allBusbarVendorNames.add("No Vendor");
+      }
+    }
+
+    _panelChartData = _calculateDeliveryByTime(
+      panelsToDisplay,
+      (data) => [
+        data.panelVendorName.isNotEmpty ? data.panelVendorName : "No Vendor",
+      ],
+      view: _panelChartView,
+      allPossibleVendors: allPanelVendorNames,
+    );
+
+    _busbarChartData = _calculateDeliveryByTime(
+      panelsToDisplay,
+      (data) {
+        if (data.busbarVendorNames.isNotEmpty) {
+          return data.busbarVendorNames
+              .split(',')
+              .map((e) => e.trim())
+              .toList();
+        }
+        return ["No Vendor"];
+      },
+      view: _busbarChartView,
+      allPossibleVendors: allBusbarVendorNames,
+    );
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -107,6 +163,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  // --- Semua fungsi _open...BottomSheet dan logika filter tidak berubah ---
   void _openFilterBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -647,14 +704,11 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildContentView() {
-    final panelsToDisplay = filteredPanelsForDisplay;
     final baseFilteredList = _panelsAfterPrimaryFilters;
     final role = widget.currentCompany.role;
 
     final allCount = baseFilteredList.length;
 
-    // --- PERUBAHAN ---
-    // Logika perhitungan count untuk "Open Vendor" disesuaikan per role.
     final openVendorCount = baseFilteredList.where((data) {
       if (role == AppRole.k3) {
         return data.panel.vendorId == null || data.panel.vendorId!.isEmpty;
@@ -665,7 +719,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (role == AppRole.warehouse) {
         return data.componentVendorIds.isEmpty;
       }
-      // Default untuk Admin/Viewer
       return data.panel.vendorId == null ||
           data.panel.vendorId!.isEmpty ||
           data.busbarVendorIds.isEmpty ||
@@ -674,8 +727,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           data.corepartVendorIds.isEmpty;
     }).length;
 
-    // --- PERUBAHAN ---
-    // Logika perhitungan count untuk "Need to Track" disesuaikan per role.
     final onGoingPanelCount = baseFilteredList.where((data) {
       final panel = data.panel;
       bool isReady = (panel.percentProgress ?? 0) >= 100 && !panel.isClosed;
@@ -753,7 +804,31 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       },
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        _isChartView = !_isChartView;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.grayLight),
+                      ),
+                      child: Icon(
+                        _isChartView
+                            ? Icons.list_alt_rounded
+                            : Icons.bar_chart_rounded,
+                        color: AppColors.gray,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   InkWell(
                     onTap: _openFilterBottomSheet,
                     borderRadius: BorderRadius.circular(12),
@@ -774,167 +849,616 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ],
               ),
-              TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                labelColor: AppColors.black,
-                unselectedLabelColor: AppColors.gray,
-                indicatorColor: AppColors.schneiderGreen,
-                indicatorWeight: 2,
-                tabAlignment: TabAlignment.start,
-                padding: EdgeInsets.zero,
-                indicatorSize: TabBarIndicatorSize.label,
-                overlayColor: WidgetStateProperty.all(Colors.transparent),
-                dividerColor: Colors.transparent,
-                labelStyle: const TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Lexend',
-                  fontSize: 12,
+              if (!_isChartView)
+                TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  labelColor: AppColors.black,
+                  unselectedLabelColor: AppColors.gray,
+                  indicatorColor: AppColors.schneiderGreen,
+                  indicatorWeight: 2,
+                  tabAlignment: TabAlignment.start,
+                  padding: EdgeInsets.zero,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  overlayColor: WidgetStateProperty.all(Colors.transparent),
+                  dividerColor: Colors.transparent,
+                  labelStyle: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Lexend',
+                    fontSize: 12,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontWeight: FontWeight.w400,
+                    fontFamily: 'Lexend',
+                    fontSize: 12,
+                  ),
+                  tabs: [
+                    Tab(text: "All ($allCount)"),
+                    Tab(text: "Open Vendor ($openVendorCount)"),
+                    Tab(text: "Need to Track ($onGoingPanelCount)"),
+                    Tab(text: "Ready to Delivery ($readyToDeliveryCount)"),
+                    Tab(text: "Closed Panel ($closedPanelCount)"),
+                  ],
                 ),
-                unselectedLabelStyle: const TextStyle(
-                  fontWeight: FontWeight.w400,
-                  fontFamily: 'Lexend',
-                  fontSize: 12,
-                ),
-                tabs: [
-                  Tab(text: "All ($allCount)"),
-                  Tab(text: "Open Vendor ($openVendorCount)"),
-                  Tab(text: "Need to Track ($onGoingPanelCount)"),
-                  Tab(text: "Ready to Delivery ($readyToDeliveryCount)"),
-                  Tab(text: "Closed Panel ($closedPanelCount)"),
-                ],
-              ),
             ],
           ),
         ),
         const SizedBox(height: 12),
-        Expanded(
-          child: panelsToDisplay.isEmpty
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 48.0),
-                    child: Text(
-                      "Tidak ada panel yang ditemukan",
-                      style: TextStyle(color: AppColors.gray, fontSize: 14),
-                    ),
-                  ),
-                )
-              : LayoutBuilder(
-                  builder: (context, constraints) {
-                    const double gridBreakpoint = 740;
-
-                    if (constraints.maxWidth < gridBreakpoint) {
-                      return ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-                        itemCount: panelsToDisplay.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 16),
-                        itemBuilder: (context, index) {
-                          final data = panelsToDisplay[index];
-                          final panel = data.panel;
-                          return PanelProgressCard(
-                            currentUserRole: widget.currentCompany.role,
-                            targetDelivery: panel.targetDelivery,
-                            duration: _formatDuration(panel.startDate),
-                            progress: (panel.percentProgress ?? 0) / 100.0,
-                            startDate: panel.startDate,
-                            progressLabel:
-                                "${panel.percentProgress?.toInt() ?? 0}%",
-                            panelType: panel.panelType ?? "",
-                            panelTitle: panel.noPanel ?? "",
-                            panelRemarks: panel.remarks,
-                            statusBusbarPcc: panel.statusBusbarPcc ?? "",
-                            statusBusbarMcc: panel.statusBusbarMcc ?? "",
-                            statusComponent: panel.statusComponent ?? "",
-                            statusPalet: panel.statusPalet ?? "",
-                            statusCorepart: panel.statusCorepart ?? "",
-                            ppNumber: panel.noPp,
-                            wbsNumber: panel.noWbs ?? "",
-                            project: panel.project ?? "",
-                            onEdit: () {
-                              final role = widget.currentCompany.role;
-                              if (role == AppRole.admin || role == AppRole.k3) {
-                                _openEditPanelBottomSheet(data);
-                              } else if (role == AppRole.k5 ||
-                                  role == AppRole.warehouse) {
-                                _openEditStatusBottomSheet(data);
-                              }
-                            },
-                            panelVendorName: data.panelVendorName,
-                            busbarVendorNames: data.busbarVendorNames,
-                            componentVendorName: data.componentVendorNames,
-                            paletVendorName: data.paletVendorNames,
-                            corepartVendorName: data.corepartVendorNames,
-                            isClosed: panel.isClosed,
-                            closedDate: panel.closedDate,
-                            busbarRemarks: data.busbarRemarks,
-                          );
-                        },
-                      );
-                    } else {
-                      final int crossAxisCount = (constraints.maxWidth / 500)
-                          .floor()
-                          .clamp(2, 4);
-
-                      return GridView.builder(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          mainAxisExtent: 440,
-                        ),
-                        itemCount: panelsToDisplay.length,
-                        itemBuilder: (context, index) {
-                          final data = panelsToDisplay[index];
-                          final panel = data.panel;
-                          return PanelProgressCard(
-                            currentUserRole: widget.currentCompany.role,
-                            targetDelivery: panel.targetDelivery,
-                            duration: _formatDuration(panel.startDate),
-                            progress: (panel.percentProgress ?? 0) / 100.0,
-                            startDate: panel.startDate,
-                            progressLabel:
-                                "${panel.percentProgress?.toInt() ?? 0}%",
-                            panelType: panel.panelType ?? "",
-                            panelTitle: panel.noPanel ?? "",
-                            panelRemarks: panel.remarks,
-                            statusBusbarPcc: panel.statusBusbarPcc ?? "",
-                            statusBusbarMcc: panel.statusBusbarMcc ?? "",
-                            statusComponent: panel.statusComponent ?? "",
-                            statusPalet: panel.statusPalet ?? "",
-                            statusCorepart: panel.statusCorepart ?? "",
-                            ppNumber: panel.noPp,
-                            wbsNumber: panel.noWbs ?? "",
-                            project: panel.project ?? "",
-                            onEdit: () {
-                              final role = widget.currentCompany.role;
-                              if (role == AppRole.admin || role == AppRole.k3) {
-                                _openEditPanelBottomSheet(data);
-                              } else if (role == AppRole.k5 ||
-                                  role == AppRole.warehouse) {
-                                _openEditStatusBottomSheet(data);
-                              }
-                            },
-                            panelVendorName: data.panelVendorName,
-                            busbarVendorNames: data.busbarVendorNames,
-                            componentVendorName: data.componentVendorNames,
-                            paletVendorName: data.paletVendorNames,
-                            corepartVendorName: data.corepartVendorNames,
-                            isClosed: panel.isClosed,
-                            closedDate: panel.closedDate,
-                            busbarRemarks: data.busbarRemarks,
-                          );
-                        },
-                      );
-                    }
-                  },
-                ),
-        ),
+        Expanded(child: _isChartView ? _buildChartView() : _buildPanelView()),
       ],
     );
   }
 
+  Widget _buildPanelView() {
+    final panelsToDisplay = filteredPanelsForDisplay;
+
+    if (panelsToDisplay.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 48.0),
+          child: Text(
+            "Tidak ada panel yang ditemukan",
+            style: TextStyle(color: AppColors.gray, fontSize: 14),
+          ),
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const double gridBreakpoint = 740;
+
+        if (constraints.maxWidth < gridBreakpoint) {
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+            itemCount: panelsToDisplay.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              final data = panelsToDisplay[index];
+              final panel = data.panel;
+              return PanelProgressCard(
+                currentUserRole: widget.currentCompany.role,
+                targetDelivery: panel.targetDelivery,
+                duration: _formatDuration(panel.startDate),
+                progress: (panel.percentProgress ?? 0) / 100.0,
+                startDate: panel.startDate,
+                progressLabel: "${panel.percentProgress?.toInt() ?? 0}%",
+                panelType: panel.panelType ?? "",
+                panelTitle: panel.noPanel ?? "",
+                panelRemarks: panel.remarks,
+                statusBusbarPcc: panel.statusBusbarPcc ?? "",
+                statusBusbarMcc: panel.statusBusbarMcc ?? "",
+                statusComponent: panel.statusComponent ?? "",
+                statusPalet: panel.statusPalet ?? "",
+                statusCorepart: panel.statusCorepart ?? "",
+                ppNumber: panel.noPp,
+                wbsNumber: panel.noWbs ?? "",
+                project: panel.project ?? "",
+                onEdit: () {
+                  final role = widget.currentCompany.role;
+                  if (role == AppRole.admin || role == AppRole.k3) {
+                    _openEditPanelBottomSheet(data);
+                  } else if (role == AppRole.k5 || role == AppRole.warehouse) {
+                    _openEditStatusBottomSheet(data);
+                  }
+                },
+                panelVendorName: data.panelVendorName,
+                busbarVendorNames: data.busbarVendorNames,
+                componentVendorName: data.componentVendorNames,
+                paletVendorName: data.paletVendorNames,
+                corepartVendorName: data.corepartVendorNames,
+                isClosed: panel.isClosed,
+                closedDate: panel.closedDate,
+                busbarRemarks: data.busbarRemarks,
+              );
+            },
+          );
+        } else {
+          final int crossAxisCount = (constraints.maxWidth / 500).floor().clamp(
+            2,
+            4,
+          );
+
+          return GridView.builder(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              mainAxisExtent: 440,
+            ),
+            itemCount: panelsToDisplay.length,
+            itemBuilder: (context, index) {
+              final data = panelsToDisplay[index];
+              final panel = data.panel;
+              return PanelProgressCard(
+                currentUserRole: widget.currentCompany.role,
+                targetDelivery: panel.targetDelivery,
+                duration: _formatDuration(panel.startDate),
+                progress: (panel.percentProgress ?? 0) / 100.0,
+                startDate: panel.startDate,
+                progressLabel: "${panel.percentProgress?.toInt() ?? 0}%",
+                panelType: panel.panelType ?? "",
+                panelTitle: panel.noPanel ?? "",
+                panelRemarks: panel.remarks,
+                statusBusbarPcc: panel.statusBusbarPcc ?? "",
+                statusBusbarMcc: panel.statusBusbarMcc ?? "",
+                statusComponent: panel.statusComponent ?? "",
+                statusPalet: panel.statusPalet ?? "",
+                statusCorepart: panel.statusCorepart ?? "",
+                ppNumber: panel.noPp,
+                wbsNumber: panel.noWbs ?? "",
+                project: panel.project ?? "",
+                onEdit: () {
+                  final role = widget.currentCompany.role;
+                  if (role == AppRole.admin || role == AppRole.k3) {
+                    _openEditPanelBottomSheet(data);
+                  } else if (role == AppRole.k5 || role == AppRole.warehouse) {
+                    _openEditStatusBottomSheet(data);
+                  }
+                },
+                panelVendorName: data.panelVendorName,
+                busbarVendorNames: data.busbarVendorNames,
+                componentVendorName: data.componentVendorNames,
+                paletVendorName: data.paletVendorNames,
+                corepartVendorName: data.corepartVendorNames,
+                isClosed: panel.isClosed,
+                closedDate: panel.closedDate,
+                busbarRemarks: data.busbarRemarks,
+              );
+            },
+          );
+        }
+      },
+    );
+  }
+
+  Map<String, dynamic> _calculateDeliveryByTime(
+    List<PanelDisplayData> panels,
+    List<String> Function(PanelDisplayData) getVendors, {
+    required ChartTimeView view,
+    required List<String> allPossibleVendors,
+  }) {
+    final Map<String, Map<String, int>> counts = {};
+    final now = DateTime.now();
+
+    late DateTime timeLimit;
+    late DateFormat keyFormat;
+    late int limit;
+
+    switch (view) {
+      case ChartTimeView.daily:
+        timeLimit = DateTime(now.year, now.month, now.day - 6);
+        keyFormat = DateFormat('E, d MMM', 'id_ID'); // Format: Sen, 17 Sep
+        limit = 7;
+        break;
+      case ChartTimeView.monthly:
+        timeLimit = DateTime(now.year, now.month - 4, 1);
+        keyFormat = DateFormat('MMMM yyyy', 'id_ID');
+        limit = 5;
+        break;
+      case ChartTimeView.yearly:
+        timeLimit = DateTime(now.year - 4, 1, 1);
+        keyFormat = DateFormat('yyyy');
+        limit = 5;
+        break;
+    }
+
+    final relevantPanels = panels.where(
+      (data) =>
+          data.panel.closedDate != null &&
+          data.panel.closedDate!.isAfter(
+            timeLimit.subtract(const Duration(days: 1)),
+          ) &&
+          data.panel.closedDate!.isBefore(now.add(const Duration(days: 1))),
+    );
+
+    for (var data in relevantPanels) {
+      final date = data.panel.closedDate!;
+      final key = keyFormat.format(date);
+
+      final vendorsFromPanel = getVendors(data);
+      if (!counts.containsKey(key)) {
+        counts[key] = {};
+      }
+
+      for (var vendor in vendorsFromPanel) {
+        if (vendor.isNotEmpty && allPossibleVendors.contains(vendor)) {
+          counts[key]![vendor] = (counts[key]![vendor] ?? 0) + 1;
+        }
+      }
+    }
+
+    final sortedKeys = counts.keys.toList()
+      ..sort((a, b) {
+        try {
+          return keyFormat.parse(a).compareTo(keyFormat.parse(b));
+        } catch (e) {
+          return a.compareTo(b);
+        }
+      });
+
+    final limitedKeys = sortedKeys.length > limit
+        ? sortedKeys.sublist(sortedKeys.length - limit)
+        : sortedKeys;
+    final sortedMap = {for (var k in limitedKeys) k: counts[k]!};
+
+    final sortedVendors = allPossibleVendors..sort();
+    return {'data': sortedMap, 'vendors': sortedVendors};
+  }
+
+  Widget _buildChartView() {
+    _prepareChartData();
+
+    final panelsToDisplay = filteredPanelsForDisplay;
+
+    if (panelsToDisplay.isEmpty && _allPanelsData.isNotEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 48.0),
+          child: Text(
+            "Tidak ada data untuk divisualisasikan\ndengan filter saat ini.",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.gray,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 12),
+          _buildGroupedBarChartCard(
+            title: "Delivered Panel",
+            chartData: _panelChartData,
+            currentView: _panelChartView,
+            onToggle: (newView) {
+              setState(() {
+                _panelChartView = newView;
+              });
+            },
+          ),
+          const SizedBox(height: 24),
+          _buildGroupedBarChartCard(
+            title: "Delivered Busbar",
+            chartData: _busbarChartData,
+            currentView: _busbarChartView,
+            onToggle: (newView) {
+              setState(() {
+                _busbarChartView = newView;
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroupedBarChartCard({
+    required String title,
+    required Map<String, dynamic> chartData,
+    required ChartTimeView currentView,
+    required ValueChanged<ChartTimeView> onToggle,
+  }) {
+    final Map<String, Map<String, int>> data =
+        (chartData['data'] as Map<String, Map<String, int>>? ?? {});
+    final List<String> vendors = (chartData['vendors'] as List<String>? ?? []);
+
+    final List<Color> colorPalette = [
+      AppColors.schneiderGreen, // Hijau
+      const Color(0xFFFF5DD1), // Hijau
+      const Color(0xFF0400FF), // Hijau
+      const Color(0xFFFF9E50), // Hijau
+      const Color(0xFFFF0000), // Hijau
+    ];
+    final Map<String, Color> vendorColors = {
+      for (int i = 0; i < vendors.length; i++)
+        vendors[i]: colorPalette[i % colorPalette.length],
+    };
+
+    double maxValue = 0;
+    data.values.forEach((vendorMap) {
+      vendorMap.values.forEach((count) {
+        if (count > maxValue) {
+          maxValue = count.toDouble();
+        }
+      });
+    });
+    if (maxValue == 0) maxValue = 50;
+
+    // Widget untuk tombol-tombol filter (Daily, Monthly, Yearly)
+    // Dibuat terpisah agar tidak duplikasi kode
+    Widget buildToggleButtons() {
+      Widget buildToggleButton(String text, ChartTimeView view) {
+        final isSelected = currentView == view;
+        return GestureDetector(
+          onTap: () => onToggle(view),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+            decoration: BoxDecoration(
+              color: isSelected ? Colors.white : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              border: isSelected
+                  ? Border.all(color: AppColors.grayLight)
+                  : null,
+            ),
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: isSelected ? AppColors.black : AppColors.gray,
+              ),
+            ),
+          ),
+        );
+      }
+
+      return Container(
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: AppColors.grayLight.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            buildToggleButton("Daily", ChartTimeView.daily),
+            buildToggleButton("Monthly", ChartTimeView.monthly),
+            buildToggleButton("Yearly", ChartTimeView.yearly),
+          ],
+        ),
+      );
+    }
+
+    // Widget untuk judul
+    Widget buildTitle() {
+      return Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+          color: AppColors.black,
+        ),
+      );
+    }
+
+    // Definisikan konstanta untuk kalkulasi lebar chart
+    const double barWidth = 24.0;
+    const double barsSpace = 6.0;
+    const double groupsSpace = 32.0;
+
+    final double widthPerGroup = vendors.isEmpty
+        ? barWidth
+        : (vendors.length * barWidth) + ((vendors.length - 1) * barsSpace);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.grayLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 400) {
+                // TAMPILAN LAYAR KECIL (HP) -> Column
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    buildTitle(),
+                    const SizedBox(height: 12),
+                    buildToggleButtons(),
+                  ],
+                );
+              } else {
+                // TAMPILAN LAYAR LEBAR -> Row
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: buildTitle()),
+                    buildToggleButtons(),
+                  ],
+                );
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          if (vendors.isNotEmpty)
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: vendors.map((vendor) {
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: vendorColors[vendor],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(vendor, style: const TextStyle(fontSize: 12)),
+                  ],
+                );
+              }).toList(),
+            ),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 250,
+            child: data.isEmpty
+                ? const Center(
+                    child: Text(
+                      "Tidak ada data delivery\nyang sesuai filter.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.gray,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  )
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      final double calculatedWidth =
+                          (data.keys.length * widthPerGroup) +
+                          ((data.keys.length - 1) * groupsSpace);
+
+                      final double availableWidth = constraints.maxWidth;
+                      final double finalChartWidth = math.max(
+                        availableWidth,
+                        calculatedWidth,
+                      );
+
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SizedBox(
+                          width: finalChartWidth,
+                          child: BarChart(
+                            BarChartData(
+                              alignment: calculatedWidth < availableWidth
+                                  ? BarChartAlignment.spaceAround
+                                  : BarChartAlignment.start,
+                              groupsSpace: groupsSpace,
+                              maxY: maxValue * 1.25,
+                              barTouchData: BarTouchData(
+                                handleBuiltInTouches: false,
+                                touchTooltipData: BarTouchTooltipData(
+                                  getTooltipColor: (_) => Colors.transparent,
+                                  tooltipPadding: EdgeInsets.zero,
+                                  tooltipMargin: 8,
+                                  getTooltipItem:
+                                      (group, groupIndex, rod, rodIndex) {
+                                        if (rod.toY == 0) return null;
+                                        return BarTooltipItem(
+                                          rod.toY.round().toString(),
+                                          const TextStyle(
+                                            color: AppColors.black,
+                                            fontWeight: FontWeight.w400,
+                                            fontSize: 14,
+                                          ),
+                                        );
+                                      },
+                                ),
+                              ),
+                              titlesData: FlTitlesData(
+                                show: true,
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    getTitlesWidget:
+                                        (double value, TitleMeta meta) {
+                                          final index = value.toInt();
+                                          if (index >= data.keys.length) {
+                                            return const SizedBox.shrink();
+                                          }
+                                          final key = data.keys.elementAt(
+                                            index,
+                                          );
+                                          final title =
+                                              currentView ==
+                                                  ChartTimeView.monthly
+                                              ? key.split(' ')[0]
+                                              : currentView ==
+                                                    ChartTimeView.daily
+                                              ? key.replaceAll(', ', '\n')
+                                              : key;
+                                          return SideTitleWidget(
+                                            axisSide: meta.axisSide,
+                                            space: 8.0,
+                                            child: Text(
+                                              title,
+                                              textAlign: TextAlign.center,
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                color: AppColors.gray,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                    reservedSize: 38,
+                                  ),
+                                ),
+                                leftTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                topTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                rightTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                              ),
+                              borderData: FlBorderData(show: false),
+                              gridData: const FlGridData(show: false),
+                              barGroups: List.generate(data.keys.length, (
+                                index,
+                              ) {
+                                final monthKey = data.keys.elementAt(index);
+                                final vendorCounts = data[monthKey]!;
+                                return BarChartGroupData(
+                                  x: index,
+                                  barsSpace: barsSpace,
+                                  showingTooltipIndicators: List.generate(
+                                    vendors.length,
+                                    (i) => i,
+                                  ),
+                                  barRods: List.generate(vendors.length, (
+                                    vendorIndex,
+                                  ) {
+                                    final vendorName = vendors[vendorIndex];
+                                    final count =
+                                        vendorCounts[vendorName]?.toDouble() ??
+                                        0;
+                                    final bool isZero = count == 0;
+                                    final Color barColor =
+                                        vendorColors[vendorName] ?? Colors.grey;
+
+                                    // --- KODE BARU DENGAN LOGIKA HINT ---
+                                    return BarChartRodData(
+                                      // Jika nilainya 0, beri tinggi minimal agar terlihat. Jika tidak, gunakan nilai asli.
+                                      toY: isZero ? 0.1 : count,
+
+                                      // Jika nilainya 0, buat warna menjadi transparan. Jika tidak, gunakan warna solid.
+                                      color: barColor.withOpacity(
+                                        isZero ? 1.0 : 1.0,
+                                      ),
+
+                                      width: barWidth,
+                                      borderRadius: isZero
+                                          ? BorderRadius.circular(2)
+                                          : BorderRadius.circular(6),
+                                    );
+                                  }),
+                                );
+                              }),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- Widget Skeleton (tidak ada perubahan) ---
   Widget _buildSkeletonView() {
     return SingleChildScrollView(
       physics: const NeverScrollableScrollPhysics(),

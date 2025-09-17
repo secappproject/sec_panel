@@ -6,7 +6,7 @@ import 'package:secpanel/components/issue/issue_chat/ask_ai.dart';
 import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/theme/colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shimmer/shimmer.dart'; // <-- TAMBAHKAN IMPORT INI
+import 'package:shimmer/shimmer.dart';
 
 import '../../models/issue.dart';
 
@@ -42,6 +42,9 @@ class PanelIssuesScreen extends StatefulWidget {
   State<PanelIssuesScreen> createState() => _PanelIssuesScreenState();
 }
 
+// --- ▼▼▼ [PERUBAHAN 1] Menggunakan Record untuk menyimpan 2 count ▼▼▼ ---
+typedef RootCauseCount = ({int unsolved, int solved});
+
 class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
@@ -53,7 +56,11 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
 
   List<String> _allRootCauses = [];
   List<String> _selectedRootCauses = [];
-  Map<String, int> _rootCauseCounts = {};
+
+  // --- ▼▼▼ [PERUBAHAN 2] State variable diubah untuk menyimpan 2 count ▼▼▼ ---
+  Map<String, RootCauseCount> _rootCauseCounts = {};
+  int _totalUnsolvedCount = 0;
+  int _totalSolvedCount = 0;
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -89,19 +96,42 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     }
   }
 
+  // --- ▼▼▼ [PERUBAHAN 3] Logika kalkulasi count diubah total ▼▼▼ ---
   void _processIssueData(
     List<IssueWithPhotos> issues, {
     List<Map<String, dynamic>>? rootCauseMaps,
   }) {
-    final counts = <String, int>{};
+    final counts = <String, ({int unsolved, int solved})>{};
+    int totalUnsolved = 0;
+    int totalSolved = 0;
+
     for (var issue in issues) {
       final trimmedTitle = issue.title.trim();
-      counts.update(trimmedTitle, (value) => value + 1, ifAbsent: () => 1);
+      // Inisialisasi jika belum ada
+      counts.putIfAbsent(trimmedTitle, () => (unsolved: 0, solved: 0));
+
+      var current = counts[trimmedTitle]!;
+      if (issue.status == 'solved') {
+        counts[trimmedTitle] = (
+          unsolved: current.unsolved,
+          solved: current.solved + 1,
+        );
+        totalSolved++;
+      } else {
+        counts[trimmedTitle] = (
+          unsolved: current.unsolved + 1,
+          solved: current.solved,
+        );
+        totalUnsolved++;
+      }
     }
 
     setState(() {
       _allIssues = issues;
       _rootCauseCounts = counts;
+      _totalUnsolvedCount = totalUnsolved;
+      _totalSolvedCount = totalSolved;
+
       if (rootCauseMaps != null) {
         _allRootCauses = rootCauseMaps
             .map((map) => map['title'] as String)
@@ -146,6 +176,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
         widget.panelNoPp,
       );
       if (mounted) {
+        // Hanya memproses ulang issue, tidak perlu load ulang root cause
         _processIssueData(issues);
       }
     } catch (e) {
@@ -206,7 +237,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildPanelHeader(),
-                      _buildRootCauseFilter(), // <-- Widget ini akan menampilkan skeleton saat loading
+                      _buildRootCauseFilter(),
                       const Divider(
                         height: 1,
                         thickness: 1,
@@ -286,12 +317,8 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     );
   }
 
-  // --- ▼▼▼ PERUBAHAN UTAMA DI SINI ▼▼▼ ---
   Widget _buildRootCauseFilter() {
-    // Jika sedang loading, tampilkan skeleton
     if (_isLoading) return _buildRootCauseFilterSkeleton();
-
-    // Jika sudah tidak loading tapi tidak ada isu sama sekali, jangan tampilkan apa-apa
     if (_allIssues.isEmpty) return const SizedBox(height: 52);
 
     void _onChipTap(String? cause) {
@@ -309,7 +336,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
       });
     }
 
-    // Tampilkan chip yang sesungguhnya jika data sudah ada
+    // --- ▼▼▼ [PERUBAHAN 4] Memperbarui cara memanggil _buildFilterChip ▼▼▼ ---
     return Container(
       height: 52,
       color: AppColors.white,
@@ -321,17 +348,22 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
             label: 'Semua',
             isSelected: _selectedRootCauses.isEmpty,
             onTap: () => _onChipTap(null),
-            count: _allIssues.length,
+            unsolvedCount: _totalUnsolvedCount,
+            solvedCount: _totalSolvedCount,
           ),
           ..._allRootCauses.map((cause) {
-            final count = _rootCauseCounts[cause] ?? 0;
-            if (count == 0 && !_selectedRootCauses.contains(cause))
+            final counts = _rootCauseCounts[cause] ?? (unsolved: 0, solved: 0);
+            if (counts.unsolved == 0 &&
+                counts.solved == 0 &&
+                !_selectedRootCauses.contains(cause)) {
               return const SizedBox.shrink();
+            }
             return _buildFilterChip(
               label: cause,
               isSelected: _selectedRootCauses.contains(cause),
               onTap: () => _onChipTap(cause),
-              count: count,
+              unsolvedCount: counts.unsolved,
+              solvedCount: counts.solved,
             );
           }).toList(),
         ],
@@ -339,7 +371,6 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     );
   }
 
-  // --- ▼▼▼ FUNGSI BARU UNTUK MEMBUAT SKELETON CHIP ▼▼▼ ---
   Widget _buildRootCauseFilterSkeleton() {
     Widget placeholderChip({double width = 80}) {
       return Container(
@@ -374,7 +405,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         child: ListView(
           scrollDirection: Axis.horizontal,
-          physics: const NeverScrollableScrollPhysics(), // Non-aktifkan scroll
+          physics: const NeverScrollableScrollPhysics(),
           children: [
             placeholderChip(width: 50),
             placeholderChip(width: 70),
@@ -386,11 +417,13 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     );
   }
 
+  // --- ▼▼▼ [PERUBAHAN 5] Widget _buildFilterChip diubah untuk menampilkan 2 count ▼▼▼ ---
   Widget _buildFilterChip({
     required String label,
     required bool isSelected,
     required VoidCallback onTap,
-    int? count,
+    int? unsolvedCount,
+    int? solvedCount,
   }) {
     final Color textColor = isSelected
         ? AppColors.schneiderGreen
@@ -401,6 +434,9 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     final Color backgroundColor = isSelected
         ? AppColors.schneiderGreen.withOpacity(0.08)
         : Colors.white;
+
+    final hasUnsolved = unsolvedCount != null && unsolvedCount > 0;
+    final hasSolved = solvedCount != null && solvedCount > 0;
 
     return GestureDetector(
       onTap: onTap,
@@ -423,27 +459,34 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
                 fontSize: 12,
               ),
             ),
-            if (count != null) ...[
+            if (hasUnsolved || hasSolved) ...[
               const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.schneiderGreen
-                      : AppColors.gray.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  count.toString(),
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : AppColors.black,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
+              if (hasUnsolved)
+                _buildCountPill(unsolvedCount, Colors.red.shade700),
+              if (hasUnsolved && hasSolved) const SizedBox(width: 4),
+              if (hasSolved)
+                _buildCountPill(solvedCount, AppColors.schneiderGreen),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  // --- ▼▼▼ [PERUBAHAN 6] Widget helper baru untuk membuat pill count ▼▼▼ ---
+  Widget _buildCountPill(int count, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        count.toString(),
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -632,6 +675,8 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
   }
 }
 
+// ... (Sisa kode: _SliverAppBarDelegate dan AddIssuePostBox tidak berubah) ...
+// (Salin sisa kode dari file asli Anda ke sini)
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   _SliverAppBarDelegate(this._tabBar);
   final TabBar _tabBar;
