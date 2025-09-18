@@ -653,7 +653,7 @@ class PanelProgressCard extends StatelessWidget {
                         ),
                       ),
                       SizedBox(
-                        width: 60,
+                        width: 64,
                         child: Align(
                           alignment: Alignment.centerRight,
                           child: _buildEditButton(),
@@ -679,7 +679,7 @@ class PanelProgressCard extends StatelessWidget {
                         ),
                       ),
                       SizedBox(
-                        width: 60,
+                        width: 64,
                       ),
                     ],
                   ),
@@ -753,7 +753,13 @@ class PanelProgressCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: AppColors.grayLight, width: 1),
         ),
-        child: Image.asset('assets/images/edit-green.png', height: 20),
+        child: Row(
+          children: [
+            Image.asset('assets/images/edit-green.png', height: 20),
+            SizedBox(width: 4,),
+            Text("Edit", style: TextStyle(color: AppColors.schneiderGreen, fontSize: 10),)
+          ],
+        ),
       ),
     );
   }
