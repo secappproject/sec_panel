@@ -20,12 +20,18 @@ class Company {
     };
   }
 
+  
   factory Company.fromMap(Map<String, dynamic> map) {
+    final roleString = map['role'] as String? ?? ''; // Ambil role sebagai string
     return Company(
-      id: map['id'],
-      // password: map['password'],
-      name: map['name'],
-      role: AppRole.values.firstWhere((e) => e.name == map['role']),
+      id: map['id'] as String,
+      name: map['name'] as String,
+      // Ubah string ke lowercase sebelum mencari di enum
+      role: AppRole.values.firstWhere(
+        (e) => e.name == roleString.toLowerCase(),
+        // Jika tidak ditemukan, berikan nilai default agar tidak crash
+        orElse: () => AppRole.viewer, 
+      ),
     );
   }
 }

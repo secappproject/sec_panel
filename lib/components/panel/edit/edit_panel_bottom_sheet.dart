@@ -70,8 +70,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
   String? _selectedPaletVendorId;
   String? _selectedCorepartVendorId;
 
-  String? _selectedBusbarPccStatus;
-  String? _selectedBusbarMccStatus;
+  String? _selectedBusbarStatus;
   String? _selectedComponentStatus;
   String? _selectedPaletStatus;
   String? _selectedCorepartStatus;
@@ -92,7 +91,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     "Plating/Epoxy",
     "100% Siap Kirim",
     "Close",
-    "Redblock",
+    "Red Block",
   ];
   final List<String> componentStatusOptions = ["Open", "On Progress", "Close"];
   final List<String> paletCorepartStatusOptions = ["Open", "Close"];
@@ -127,8 +126,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       widget.panelData.busbarVendorIds,
     );
 
-    _selectedBusbarPccStatus = _panel.statusBusbarPcc;
-    _selectedBusbarMccStatus = _panel.statusBusbarMcc;
+    _selectedBusbarStatus = _panel.statusBusbarPcc;
     _selectedComponentStatus = _panel.statusComponent;
     _selectedPaletStatus = _panel.statusPalet;
     _selectedCorepartStatus = _panel.statusCorepart;
@@ -196,13 +194,14 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     final progress = int.tryParse(_progressController.text) ?? 0;
     final paletReady = _selectedPaletStatus == 'Close';
     final corepartReady = _selectedCorepartStatus == 'Close';
-    final busbarMccReady = _selectedBusbarMccStatus == 'Close';
+    // final busbarMccReady = _selectedBusbarMccStatus == 'Close';
 
     bool allConditionsMet;
     switch (_selectedPanelType) {
       case 'MCCW':
         allConditionsMet =
-            progress == 100 && paletReady && corepartReady && busbarMccReady;
+            progress == 100 && paletReady && corepartReady ;
+            // progress == 100 && paletReady && corepartReady && busbarMccReady;
         break;
       case 'PCC':
       case 'MCCF':
@@ -279,8 +278,8 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       panelToSave.panelType = _selectedPanelType;
       panelToSave.isClosed = _isClosed;
       panelToSave.closedDate = _closedDate;
-      panelToSave.statusBusbarPcc = _selectedBusbarPccStatus;
-      panelToSave.statusBusbarMcc = _selectedBusbarMccStatus;
+      panelToSave.statusBusbarPcc = _selectedBusbarStatus;
+      panelToSave.statusBusbarMcc = _selectedBusbarStatus;
       panelToSave.statusComponent = _selectedComponentStatus;
       panelToSave.statusPalet = _selectedPaletStatus;
       panelToSave.statusCorepart = _selectedCorepartStatus;
@@ -629,13 +628,13 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                         _buildMultiSelectorBusbarVendor(),
                         const SizedBox(height: 16),
                         _buildSelectorSection(
-                          label: "Status Busbar PCC",
+                          label: "Status Busbar",
                           options: Map.fromEntries(
                             busbarStatusOptions.map((s) => MapEntry(s, s)),
                           ),
-                          selectedValue: _selectedBusbarPccStatus,
+                          selectedValue: _selectedBusbarStatus,
                           onTap: (val) => setState(() {
-                            _selectedBusbarPccStatus = val;
+                            _selectedBusbarStatus = val;
                             // ▼▼▼ [BARU] Logika otomatisasi tanggal ▼▼▼
                             if (val == 'Close') {
                               _closeDateBusbar = DateTime.now();
@@ -649,41 +648,12 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                         const SizedBox(height: 16),
                         // ▼▼▼ [BARU] Field Tanggal Close Busbar PCC ▼▼▼
                         _buildDatePickerField(
-                          label: "Close Date Busbar PCC",
+                          label: "Close Date Busbar",
                           selectedDate: _closeDateBusbar,
                           onDateChanged: (date) =>
                               setState(() => _closeDateBusbar = date),
                           icon: Icons.event_available,
-                          isEnabled: _selectedBusbarPccStatus == 'Close',
-                        ),
-                        const SizedBox(height: 16),
-                        _buildSelectorSection(
-                          label: "Status Busbar MCC",
-                          options: Map.fromEntries(
-                            busbarStatusOptions.map((s) => MapEntry(s, s)),
-                          ),
-                          selectedValue: _selectedBusbarMccStatus,
-                          onTap: (val) => setState(() {
-                            _selectedBusbarMccStatus = val;
-                            // ▼▼▼ [BARU] Logika otomatisasi tanggal ▼▼▼
-                            if (val == 'Close') {
-                              _closeDateBusbar = DateTime.now();
-                            } else {
-                              _closeDateBusbar = null;
-                            }
-                            _updateCanMarkAsSent();
-                          }),
-                          isEnabled: _selectedBusbarVendorIds.isNotEmpty,
-                        ),
-                        const SizedBox(height: 16),
-                        // ▼▼▼ [BARU] Field Tanggal Close Busbar MCC ▼▼▼
-                        _buildDatePickerField(
-                          label: "Close Date Busbar MCC",
-                          selectedDate: _closeDateBusbar,
-                          onDateChanged: (date) =>
-                              setState(() => _closeDateBusbar = date),
-                          icon: Icons.event_available,
-                          isEnabled: _selectedBusbarMccStatus == 'Close',
+                          isEnabled: _selectedBusbarStatus == 'Close',
                         ),
                         const SizedBox(height: 16),
                         _buildDatePickerField(
