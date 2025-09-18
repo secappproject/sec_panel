@@ -54,22 +54,31 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (mounted) setState(() => _isLoading = false);
   }
 
-  Future<void> _loadCompanyData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final username = prefs.getString('loggedInUsername');
-    if (username != null) {
-      final company = await DatabaseHelper.instance.getCompanyByUsername(
-        username,
-      );
+Future<void> _loadCompanyData() async {
+  final prefs = await SharedPreferences.getInstance();
+  final username = prefs.getString('loggedInUsername');
+  
+  print('DEBUG: Username from SharedPreferences: $username'); // Add this
+  
+  if (username != null) {
+    print('DEBUG: Calling API for username: $username'); // Add this
+    try {
+      final company = await DatabaseHelper.instance.getCompanyByUsername(username);
+      print('DEBUG: Company received: $company'); // Add this
       if (mounted) {
         setState(() {
           _currentCompany = company;
           _loggedInUsername = username;
         });
       }
+    } catch (e) {
+      print('DEBUG: Error in getCompanyByUsername: $e'); // Add this
+      rethrow;
     }
+  } else {
+    print('DEBUG: No username found in SharedPreferences'); // Add this
   }
-
+}
   Future<void> _loadAndGroupAllUsers() async {
     if (mounted) setState(() => _isLoadingUsers = true);
 

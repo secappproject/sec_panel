@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:excel/excel.dart';
@@ -34,9 +35,9 @@ class DatabaseHelper {
       return "https://secpanel-server.onrender.com";
     } else {
       if (Platform.isAndroid) {
-        return "https://secpanel-server.onrender.com";
+      return "https://secpanel-server.onrender.com";
       } else {
-        return "https://secpanel-server.onrender.com";
+      return "https://secpanel-server.onrender.com";
       }
     }
   }
@@ -99,14 +100,32 @@ class DatabaseHelper {
         }
         throw Exception(errorMessage);
       }
-    } on SocketException catch (e) {
-      throw Exception(
-        'Tidak dapat terhubung ke server. Periksa koneksi internet Anda. (Detail: ${e.message})',
-      );
-    } catch (e) {
-      // Rethrow a more specific error or the original one
+  } on SocketException catch (e) {
+    print('DEBUG: SocketException caught: ${e.message}');
+    print('DEBUG: SocketException address: ${e.address}');
+    print('DEBUG: SocketException port: ${e.port}');
+    throw Exception(
+      'Tidak dapat terhubung ke server. Periksa koneksi internet Anda. (Detail: ${e.message})',
+    );
+  } on TimeoutException catch (e) {
+    print('DEBUG: TimeoutException: ${e.message}');
+    throw Exception('Request timeout: ${e.message}');
+  } on FormatException catch (e) {
+    print('DEBUG: FormatException: ${e.message}');
+    throw Exception('Format error: ${e.message}');
+  } catch (e, stackTrace) {
+    print('DEBUG: Unexpected error type: ${e.runtimeType}');
+    print('DEBUG: Unexpected error: $e');
+    print('DEBUG: Stack trace: $stackTrace');
+    
+    // Re-throw with more context
+    if (e.toString().contains('Database error')) {
+      print('DEBUG: Re-throwing existing Database error');
       rethrow;
     }
+    
+    throw Exception('Request error: $e');
+  }
   }
 
   // =========================================================================
@@ -185,10 +204,22 @@ class DatabaseHelper {
     return data != null ? Company.fromMap(data) : null;
   }
 
-  Future<Company?> getCompanyByUsername(String username) async {
-    final data = await _apiRequest('GET', '/company-by-username/$username');
-    return data != null ? Company.fromMap(data) : null;
+Future<Company?> getCompanyByUsername(String username) async {
+  final data = await _apiRequest('GET', '/company-by-username/$username');
+  if (data == null) return null;
+  
+  // Handle jika backend mengembalikan array
+  if (data is List && data.isNotEmpty) {
+    return Company.fromMap(data[0] as Map<String, dynamic>);
   }
+  
+  // Handle jika backend mengembalikan object langsung
+  if (data is Map<String, dynamic>) {
+    return Company.fromMap(data);
+  }
+  
+  throw Exception('Unexpected response format: ${data.runtimeType}');
+}
 
   Future<List<String>> searchUsernames(String query) async {
     // Hindari panggilan API jika input kosong
