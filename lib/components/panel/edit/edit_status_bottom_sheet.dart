@@ -36,14 +36,12 @@ class EditStatusBottomSheet extends StatefulWidget {
 }
 
 class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
-  late String? _selectedPccStatus;
-  late String? _selectedMccStatus;
+  late String? _selectedStatus;
   late String? _selectedComponentStatus;
   late final TextEditingController _remarkController;
   bool _isLoading = false;
 
-  late DateTime? _aoBusbarPcc;
-  late DateTime? _aoBusbarMcc;
+  late DateTime? _aoBusbar;
 
   bool get _isK5 => widget.currentCompany.role == AppRole.k5;
   bool get _isWHS => widget.currentCompany.role == AppRole.warehouse;
@@ -54,7 +52,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
     "Plating/Epoxy",
     "100% Siap Kirim",
     "Close",
-    "Redblock",
+    "Red Block",
   ];
   final List<String> _componentStatusOptions = [
     "Open",
@@ -83,10 +81,8 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
     final panel = widget.panelData.panel;
 
     if (_isK5) {
-      _selectedPccStatus = panel.statusBusbarPcc ?? "On Progress";
-      _selectedMccStatus = panel.statusBusbarMcc ?? "On Progress";
-      _aoBusbarPcc = panel.aoBusbarPcc;
-      _aoBusbarMcc = panel.aoBusbarMcc;
+      _selectedStatus = panel.statusBusbarPcc ?? "On Progress";
+      _aoBusbar = panel.aoBusbarPcc;
     } else if (_isWHS) {
       _selectedComponentStatus = panel.statusComponent ?? "Open";
     }
@@ -106,21 +102,21 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
       );
       if (panelToUpdate != null) {
         if (_isK5) {
-          panelToUpdate.statusBusbarPcc = _selectedPccStatus;
-          panelToUpdate.statusBusbarMcc = _selectedMccStatus;
-          panelToUpdate.aoBusbarPcc = _aoBusbarPcc;
-          panelToUpdate.aoBusbarMcc = _aoBusbarMcc;
+          panelToUpdate.statusBusbarPcc = _selectedStatus;
+          panelToUpdate.statusBusbarMcc = _selectedStatus;
+          panelToUpdate.aoBusbarPcc = _aoBusbar;
+          panelToUpdate.aoBusbarMcc = _aoBusbar;
 
-          String? aoBusbarMcc = _aoBusbarMcc?.toIso8601String() ?? '';
-          String? aoBusbarPcc = _aoBusbarPcc?.toIso8601String() ?? '';
+          String? aoBusbarMcc = _aoBusbar?.toIso8601String() ?? '';
+          String? aoBusbarPcc = _aoBusbar?.toIso8601String() ?? '';
 
           await DatabaseHelper.instance.upsertStatusAOK5(
             panelNoPp: widget.panelData.panel.noPp,
             vendorId: widget.currentCompany.id,
             aoBusbarPcc: aoBusbarPcc,
             aoBusbarMcc: aoBusbarMcc,
-            statusBusbarPcc: _selectedPccStatus ?? '',
-            statusBusbarMcc: _selectedMccStatus ?? '',
+            statusBusbarPcc: _selectedStatus ?? '',
+            statusBusbarMcc: _selectedStatus ?? '',
           );
 
           // Remark yang diisi oleh user K5 saat ini akan disimpan untuk vendornya sendiri
@@ -194,7 +190,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
       return 'assets/images/on-progress-blue.png';
     }
     if (lower.contains('100% siap kirim')) return 'assets/images/done-blue.png';
-    if (lower.contains('red block')) return 'assets/images/on-block.png';
+    if (lower.contains('red block')) return 'assets/images/on-block-red.png';
     return 'assets/images/no-status-gray.png';
   }
 
@@ -402,29 +398,16 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
                 const SizedBox(height: 20),
                 if (_isK5) ...[
                   _buildStatusOptionsList(
-                    title: "Status Busbar PCC",
-                    selectedValue: _selectedPccStatus,
+                    title: "Status Busbar",
+                    selectedValue: _selectedStatus,
                     onChanged: (newValue) {
-                      setState(() => _selectedPccStatus = newValue);
+                      setState(() => _selectedStatus = newValue);
                     },
                   ),
                   _buildAODatePicker(
-                    "AO Busbar PCC",
-                    _aoBusbarPcc,
-                    (date) => setState(() => _aoBusbarPcc = date),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildStatusOptionsList(
-                    title: "Status Busbar MCC",
-                    selectedValue: _selectedMccStatus,
-                    onChanged: (newValue) {
-                      setState(() => _selectedMccStatus = newValue);
-                    },
-                  ),
-                  _buildAODatePicker(
-                    "AO Busbar MCC",
-                    _aoBusbarMcc,
-                    (date) => setState(() => _aoBusbarMcc = date),
+                    "AO Busbar",
+                    _aoBusbar,
+                    (date) => setState(() => _aoBusbar = date),
                   ),
                 ] else if (_isWHS) ...[
                   _buildStatusOptionsList(

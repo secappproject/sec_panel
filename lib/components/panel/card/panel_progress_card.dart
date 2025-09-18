@@ -37,8 +37,7 @@ class PanelProgressCard extends StatelessWidget {
   final String progressLabel;
   final String panelTitle;
   final String panelType;
-  final String statusBusbarPcc;
-  final String statusBusbarMcc;
+  final String statusBusbar;
   final String statusComponent;
   final String statusPalet;
   final String statusCorepart;
@@ -66,8 +65,7 @@ class PanelProgressCard extends StatelessWidget {
     required this.progressLabel,
     required this.panelType,
     required this.panelTitle,
-    required this.statusBusbarPcc,
-    required this.statusBusbarMcc,
+    required this.statusBusbar,
     required this.statusComponent,
     required this.statusPalet,
     required this.statusCorepart,
@@ -203,7 +201,7 @@ class PanelProgressCard extends StatelessWidget {
       return 'assets/images/on-progress-blue.png';
     }
     if (lower.contains('100% siap kirim')) return 'assets/images/done-blue.png';
-    if (lower.contains('red block')) return 'assets/images/on-block.png';
+    if (lower.contains('red block')) return 'assets/images/on-block-red.png';
     return 'assets/images/no-status-gray.png';
   }
 
@@ -286,12 +284,15 @@ class PanelProgressCard extends StatelessWidget {
     final bool hasPanelRemarks =
         panelRemarks != null && panelRemarks!.trim().isNotEmpty;
 
-    final String pccDisplayStatus = statusBusbarPcc.isEmpty
+    // final String pccDisplayStatus = statusBusbarPcc.isEmpty
+    //     ? 'On Progress'
+    //     : statusBusbarPcc;
+    // final String mccDisplayStatus = statusBusbarMcc.isEmpty
+    //     ? 'On Progress'
+    //     : statusBusbarMcc;
+    final String displayStatus = statusBusbar.isEmpty
         ? 'On Progress'
-        : statusBusbarPcc;
-    final String mccDisplayStatus = statusBusbarMcc.isEmpty
-        ? 'On Progress'
-        : statusBusbarMcc;
+        : statusBusbar;
     final String componentDisplayStatus = statusComponent.isEmpty
         ? 'Open'
         : statusComponent;
@@ -639,16 +640,16 @@ class PanelProgressCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: _buildStatusColumn(
-                          "Busbar Pcc",
-                          pccDisplayStatus,
-                          _getBusbarStatusImage(statusBusbarPcc),
+                          "Busbar",
+                          displayStatus,
+                          _getBusbarStatusImage(statusBusbar),
                         ),
                       ),
                       Expanded(
                         child: _buildStatusColumn(
-                          "Busbar Mcc",
-                          mccDisplayStatus,
-                          _getBusbarStatusImage(statusBusbarMcc),
+                          "Component",
+                          componentDisplayStatus,
+                          _getComponentStatusImage(statusComponent),
                         ),
                       ),
                       SizedBox(
@@ -665,25 +666,20 @@ class PanelProgressCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: _buildStatusColumn(
-                          "Component",
-                          componentDisplayStatus,
-                          _getComponentStatusImage(statusComponent),
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildStatusColumn(
                           "Palet",
                           paletDisplayStatus,
                           _getPaletStatusImage(statusPalet),
                         ),
                       ),
-                      SizedBox(
-                        width: 60,
+                      Expanded(
                         child: _buildStatusColumn(
                           "Corepart",
                           corepartDisplayStatus,
                           _getCorepartStatusImage(statusCorepart),
                         ),
+                      ),
+                      SizedBox(
+                        width: 60,
                       ),
                     ],
                   ),
