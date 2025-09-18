@@ -92,6 +92,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     "Plating/Epoxy",
     "100% Siap Kirim",
     "Close",
+    "Redblock",
   ];
   final List<String> componentStatusOptions = ["Open", "On Progress", "Close"];
   final List<String> paletCorepartStatusOptions = ["Open", "Close"];

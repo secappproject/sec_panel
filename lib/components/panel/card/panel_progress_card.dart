@@ -203,6 +203,7 @@ class PanelProgressCard extends StatelessWidget {
       return 'assets/images/on-progress-blue.png';
     }
     if (lower.contains('100% siap kirim')) return 'assets/images/done-blue.png';
+    if (lower.contains('red block')) return 'assets/images/on-block.png';
     return 'assets/images/no-status-gray.png';
   }
 

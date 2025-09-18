@@ -49,16 +49,16 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
   bool get _isWHS => widget.currentCompany.role == AppRole.warehouse;
 
   final List<String> _busbarStatusOptions = [
-    "On Progress",
-    "Siap 100%",
-    "Close",
-    "Red Block",
-  ];
-  final List<String> _componentStatusOptions = [
     "Open",
     "Punching/Bending",
     "Plating/Epoxy",
     "100% Siap Kirim",
+    "Close",
+    "Redblock",
+  ];
+  final List<String> _componentStatusOptions = [
+    "Open",
+    "On Progress",
     "Close",
   ];
 
@@ -184,16 +184,17 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
 
   String _getBusbarStatusImage(String status) {
     final lower = status.toLowerCase();
-    if (lower == '' || lower.contains('open')) {
-      return 'assets/images/no-status-gray.png';
-    } else if (lower.contains('done') || lower.contains('close')) {
+    if (lower.contains('open')) return 'assets/images/no-status-gray.png';
+    if (lower.contains('done') || lower.contains('close')) {
       return 'assets/images/done-green.png';
-    } else if (lower.contains('punching/bending') ||
-        lower.contains('plating/epoxy') ||
-        lower.contains('on progress') ||
-        lower.contains('100% siap kirim')) {
+    }
+    if (lower.contains('on progress') ||
+        lower.contains('punching/bending') ||
+        lower.contains('plating/epoxy')) {
       return 'assets/images/on-progress-blue.png';
     }
+    if (lower.contains('100% siap kirim')) return 'assets/images/done-blue.png';
+    if (lower.contains('red block')) return 'assets/images/on-block.png';
     return 'assets/images/no-status-gray.png';
   }
 
