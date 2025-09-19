@@ -479,36 +479,36 @@ class PanelProgressCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            // if (hasPanelRemarks) ...[
-                            //   const SizedBox(width: 4),
-                            //   InkWell(
-                            //     onTap: () => _showRemarksBottomSheet(
-                            //       context,
-                            //       title: 'Panel Remarks',
-                            //       remarksMap: {
-                            //         panelVendorName.isNotEmpty
-                            //                 ? panelVendorName
-                            //                 : 'Panel':
-                            //             panelRemarks,
-                            //       },
-                            //     ),
-                            //     borderRadius: BorderRadius.circular(16),
-                            //     child: Container(
-                            //       padding: const EdgeInsets.all(4),
-                            //       decoration: BoxDecoration(
-                            //         borderRadius: BorderRadius.circular(16),
-                            //         border: Border.all(
-                            //           color: AppColors.grayLight,
-                            //           width: 1,
-                            //         ),
-                            //       ),
-                            //       child: Image.asset(
-                            //         'assets/images/remarks.png',
-                            //         height: 16,
-                            //       ),
-                            //     ),
-                            //   ),
-                            // ],
+                            if (hasPanelRemarks) ...[
+                              const SizedBox(width: 4),
+                              InkWell(
+                                onTap: () => _showRemarksBottomSheet(
+                                  context,
+                                  title: 'Panel Remarks',
+                                  remarksMap: {
+                                    panelVendorName.isNotEmpty
+                                            ? panelVendorName
+                                            : 'Panel':
+                                        panelRemarks,
+                                  },
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: AppColors.grayLight,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Image.asset(
+                                    'assets/images/remarks.png',
+                                    height: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                         // InkWell(
@@ -584,34 +584,34 @@ class PanelProgressCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            // if (hasBusbarRemarks) ...[
-                            //   const SizedBox(width: 4),
-                            //   InkWell(
-                            //     onTap: () => _showRemarksBottomSheet(
-                            //       context,
-                            //       title: 'Busbar Remarks',
-                            //       remarksMap: {
-                            //         for (var e in busbarRemarks)
-                            //           e.vendorName: e.remark,
-                            //       },
-                            //     ),
-                            //     borderRadius: BorderRadius.circular(16),
-                            //     child: Container(
-                            //       padding: const EdgeInsets.all(4),
-                            //       decoration: BoxDecoration(
-                            //         borderRadius: BorderRadius.circular(16),
-                            //         border: Border.all(
-                            //           color: AppColors.grayLight,
-                            //           width: 1,
-                            //         ),
-                            //       ),
-                            //       child: Image.asset(
-                            //         'assets/images/remarks.png',
-                            //         height: 16,
-                            //       ),
-                            //     ),
-                            //   ),
-                            // ],
+                            if (hasBusbarRemarks) ...[
+                              const SizedBox(width: 4),
+                              InkWell(
+                                onTap: () => _showRemarksBottomSheet(
+                                  context,
+                                  title: 'Busbar Remarks',
+                                  remarksMap: {
+                                    for (var e in busbarRemarks)
+                                      e.vendorName: e.remark,
+                                  },
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: AppColors.grayLight,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Image.asset(
+                                    'assets/images/remarks.png',
+                                    height: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ],
