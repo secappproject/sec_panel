@@ -73,8 +73,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<String> selectedComponentVendors = [];
   List<String> selectedPaletVendors = [];
   List<String> selectedCorepartVendors = [];
-  List<String> selectedPccStatuses = [];
-  List<String> selectedMccStatuses = [];
+  List<String> selectedStatuses = [];
   List<String> selectedComponents = [];
   List<String> selectedPalet = [];
   List<String> selectedCorepart = [];
@@ -193,8 +192,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) => PanelFilterBottomSheet(
-        selectedPccStatuses: selectedPccStatuses,
-        selectedMccStatuses: selectedMccStatuses,
+        selectedStatuses: selectedStatuses,
         selectedComponents: selectedComponents,
         selectedPalet: selectedPalet,
         selectedCorepart: selectedCorepart,
@@ -220,10 +218,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         closedDateStatus: closedDateStatus,
         pccClosedDateStatus: pccClosedDateStatus,
         mccClosedDateStatus: mccClosedDateStatus,
-        onPccStatusesChanged: (value) =>
-            setState(() => selectedPccStatuses = value),
-        onMccStatusesChanged: (value) =>
-            setState(() => selectedMccStatuses = value),
+        onStatusesChanged: (value) =>
+            setState(() => selectedStatuses = value),
         onComponentsChanged: (value) =>
             setState(() => selectedComponents = value),
         onPaletChanged: (value) => setState(() => selectedPalet = value),
@@ -278,8 +274,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             selectedComponentVendors = [];
             selectedPaletVendors = [];
             selectedCorepartVendors = [];
-            selectedPccStatuses = [];
-            selectedMccStatuses = [];
+            selectedStatuses = [];
             selectedComponents = [];
             selectedPalet = [];
             selectedCorepart = [];
@@ -371,8 +366,9 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   PanelFilterStatus _getPanelFilterStatus(Panel panel) {
     final progress = panel.percentProgress ?? 0;
-    if (progress < 50) return PanelFilterStatus.progressRed;
-    if (progress < 75) return PanelFilterStatus.progressOrange;
+    if (progress == 0) return PanelFilterStatus.progressGrey;
+    if (progress > 0 && progress < 50) return PanelFilterStatus.progressRed;
+    if (progress >= 50 && progress < 75) return PanelFilterStatus.progressOrange;
     if (progress < 100) return PanelFilterStatus.progressBlue;
     if (progress >= 100) {
       if (!panel.isClosed) return PanelFilterStatus.readyToDelivery;
@@ -382,7 +378,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
       return PanelFilterStatus.closed;
     }
-    return PanelFilterStatus.progressRed;
+    return PanelFilterStatus.progressGrey;
   }
 
   List<PanelDisplayData> get _panelsAfterPrimaryFilters {
@@ -482,15 +478,10 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             return data.corepartVendorIds.contains(selectedId);
           });
 
-      final bool matchPccStatus =
-          selectedPccStatuses.isEmpty ||
+      final bool matchStatus =
+          selectedStatuses.isEmpty ||
           (panel.statusBusbarPcc != null &&
-              selectedPccStatuses.contains(panel.statusBusbarPcc));
-
-      final bool matchMccStatus =
-          selectedMccStatuses.isEmpty ||
-          (panel.statusBusbarMcc != null &&
-              selectedMccStatuses.contains(panel.statusBusbarMcc));
+              selectedStatuses.contains(panel.statusBusbarPcc));
 
       final bool matchComponent =
           selectedComponents.isEmpty ||
@@ -564,8 +555,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           matchComponentVendor &&
           matchPaletVendor &&
           matchCorepartVendor &&
-          matchPccStatus &&
-          matchMccStatus &&
+          matchStatus &&
           matchComponent &&
           matchPalet &&
           matchCorepart &&

@@ -604,7 +604,7 @@ Future<Company?> getCompanyByUsername(String username) async {
     List<String>? selectedComponentVendors,
     List<String>? selectedPaletVendors,
     List<String>? selectedCorepartVendors,
-    List<String>? selectedPccStatuses,
+    List<String>? selectedStatuses,
     List<String>? selectedMccStatuses,
     List<String>? selectedComponents,
     List<String>? selectedPalet,
@@ -666,8 +666,7 @@ Future<Company?> getCompanyByUsername(String username) async {
     addListToParams('component_vendors', selectedComponentVendors);
     addListToParams('palet_vendors', selectedPaletVendors);
     addListToParams('corepart_vendors', selectedCorepartVendors);
-    addListToParams('pcc_statuses', selectedPccStatuses);
-    addListToParams('mcc_statuses', selectedMccStatuses);
+    addListToParams('pcc_statuses', selectedStatuses);
     addListToParams('component_statuses', selectedComponents);
     addListToParams('palet_statuses', selectedPalet);
     addListToParams('corepart_statuses', selectedCorepart);
@@ -749,8 +748,7 @@ Future<Company?> getCompanyByUsername(String username) async {
     List<String>? selectedComponentVendors,
     List<String>? selectedPaletVendors,
     List<String>? selectedCorepartVendors,
-    List<String>? selectedPccStatuses,
-    List<String>? selectedMccStatuses,
+    List<String>? selectedStatuses,
     List<String>? selectedComponents,
     List<String>? selectedPalet,
     List<String>? selectedCorepart,
@@ -782,12 +780,9 @@ Future<Company?> getCompanyByUsername(String username) async {
         'Progres Panel',
         'Status Corepart',
         'Status Palet',
-        'Status Busbar PCC',
-        'Status Busbar MCC',
-        'Close Date Busbar PCC',
-        'Close Date Busbar MCC',
-        'AO Busbar PCC',
-        'AO Busbar MCC',
+        'Status Busbar',
+        'Close Date Busbar',
+        'AO Busbar',
       ];
       panelSheet.appendRow(panelHeaders.map((h) => TextCellValue(h)).toList());
 
@@ -828,7 +823,6 @@ Future<Company?> getCompanyByUsername(String username) async {
           TextCellValue(panel.statusCorepart ?? ''),
           TextCellValue(panel.statusPalet ?? ''),
           TextCellValue(panel.statusBusbarPcc ?? ''),
-          TextCellValue(panel.statusBusbarMcc ?? ''),
           TextCellValue(formatDate(latestAoBusbar) ?? ''),
           TextCellValue(formatDate(latestCloseDateBusbar) ?? ''),
         ]);
@@ -847,8 +841,7 @@ Future<Company?> getCompanyByUsername(String username) async {
         selectedComponentVendors: selectedComponentVendors,
         selectedPaletVendors: selectedPaletVendors,
         selectedCorepartVendors: selectedCorepartVendors,
-        selectedPccStatuses: selectedPccStatuses,
-        selectedMccStatuses: selectedMccStatuses,
+        selectedStatuses: selectedStatuses,
         selectedComponents: selectedComponents,
         selectedPalet: selectedPalet,
         selectedCorepart: selectedCorepart,
@@ -890,8 +883,7 @@ Future<Company?> getCompanyByUsername(String username) async {
     List<String>? selectedComponentVendors,
     List<String>? selectedPaletVendors,
     List<String>? selectedCorepartVendors,
-    List<String>? selectedPccStatuses,
-    List<String>? selectedMccStatuses,
+    List<String>? selectedStatuses,
     List<String>? selectedComponents,
     List<String>? selectedPalet,
     List<String>? selectedCorepart,
@@ -949,8 +941,7 @@ Future<Company?> getCompanyByUsername(String username) async {
     addListToParams('component_vendors', selectedComponentVendors);
     addListToParams('palet_vendors', selectedPaletVendors);
     addListToParams('corepart_vendors', selectedCorepartVendors);
-    addListToParams('pcc_statuses', selectedPccStatuses);
-    addListToParams('mcc_statuses', selectedMccStatuses);
+    addListToParams('pcc_statuses', selectedStatuses);
     addListToParams('component_statuses', selectedComponents);
     addListToParams('palet_statuses', selectedPalet);
     addListToParams('corepart_statuses', selectedCorepart);
@@ -979,8 +970,7 @@ Future<Company?> getCompanyByUsername(String username) async {
     List<String>? selectedComponentVendors,
     List<String>? selectedPaletVendors,
     List<String>? selectedCorepartVendors,
-    List<String>? selectedPccStatuses,
-    List<String>? selectedMccStatuses,
+    List<String>? selectedStatuses,
     List<String>? selectedComponents,
     List<String>? selectedPalet,
     List<String>? selectedCorepart,
@@ -1041,8 +1031,7 @@ Future<Company?> getCompanyByUsername(String username) async {
     addListToParams('component_vendors', selectedComponentVendors);
     addListToParams('palet_vendors', selectedPaletVendors);
     addListToParams('corepart_vendors', selectedCorepartVendors);
-    addListToParams('pcc_statuses', selectedPccStatuses);
-    addListToParams('mcc_statuses', selectedMccStatuses);
+    addListToParams('pcc_statuses', selectedStatuses);
     addListToParams('component_statuses', selectedComponents);
     addListToParams('palet_statuses', selectedPalet);
     addListToParams('corepart_statuses', selectedCorepart);

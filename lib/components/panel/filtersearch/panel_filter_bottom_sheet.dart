@@ -19,6 +19,7 @@ enum SortOption {
 }
 
 enum PanelFilterStatus {
+  progressGrey,
   progressRed,
   progressOrange,
   progressBlue,
@@ -30,8 +31,7 @@ enum PanelFilterStatus {
 enum DateFilterType { notSet, set, any }
 
 class PanelFilterBottomSheet extends StatefulWidget {
-  final List<String> selectedPccStatuses;
-  final List<String> selectedMccStatuses;
+  final List<String> selectedStatuses;
   final List<String> selectedComponents;
   final List<String> selectedPalet;
   final List<String> selectedCorepart;
@@ -60,8 +60,7 @@ class PanelFilterBottomSheet extends StatefulWidget {
   final DateFilterType pccClosedDateStatus;
   final DateFilterType mccClosedDateStatus;
 
-  final Function(List<String>) onPccStatusesChanged;
-  final Function(List<String>) onMccStatusesChanged;
+  final Function(List<String>) onStatusesChanged;
   final Function(List<String>) onComponentsChanged;
   final Function(List<String>) onPaletChanged;
   final Function(List<String>) onCorepartChanged;
@@ -91,8 +90,7 @@ class PanelFilterBottomSheet extends StatefulWidget {
 
   const PanelFilterBottomSheet({
     super.key,
-    required this.selectedPccStatuses,
-    required this.selectedMccStatuses,
+    required this.selectedStatuses,
     required this.selectedComponents,
     required this.selectedPalet,
     required this.selectedCorepart,
@@ -107,8 +105,7 @@ class PanelFilterBottomSheet extends StatefulWidget {
     required this.selectedComponentVendors,
     required this.selectedPaletVendors,
     required this.selectedCorepartVendors,
-    required this.onPccStatusesChanged,
-    required this.onMccStatusesChanged,
+    required this.onStatusesChanged,
     required this.onComponentsChanged,
     required this.onPaletChanged,
     required this.onCorepartChanged,
@@ -150,8 +147,7 @@ class PanelFilterBottomSheet extends StatefulWidget {
 }
 
 class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
-  late List<String> _selectedPccStatuses;
-  late List<String> _selectedMccStatuses;
+  late List<String> _selectedStatuses;
   late List<String> _selectedComponents;
   late List<String> _selectedPalet;
   late List<String> _selectedCorepart;
@@ -179,9 +175,11 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
   late DateFilterType _closedDateStatus;
 
   final List<String> busbarStatusOptions = [
+    "Open",
+    "Punching/Bending",
+    "Plating/Epoxy",
     "Close",
-    "On Progress",
-    "Siap 100%",
+    "100% Siap Kirim",
     "Red Block",
   ];
   final List<String> componentStatusOptions = ["Done", "On Progress", "Open"];
@@ -190,8 +188,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _selectedPccStatuses = List.from(widget.selectedPccStatuses);
-    _selectedMccStatuses = List.from(widget.selectedMccStatuses);
+    _selectedStatuses = List.from(widget.selectedStatuses);
     _selectedComponents = List.from(widget.selectedComponents);
     _selectedPalet = List.from(widget.selectedPalet);
     _selectedCorepart = List.from(widget.selectedCorepart);
@@ -235,8 +232,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
   }
 
   void _applyFilters() {
-    widget.onPccStatusesChanged(_selectedPccStatuses);
-    widget.onMccStatusesChanged(_selectedMccStatuses);
+    widget.onStatusesChanged(_selectedStatuses);
     widget.onComponentsChanged(_selectedComponents);
     widget.onPaletChanged(_selectedPalet);
     widget.onCorepartChanged(_selectedCorepart);
@@ -577,16 +573,16 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  _buildDateField(
-                    title: "Range Tanggal Mulai Pengerjaan",
-                    currentRange: _startDateRange,
-                    onRangeChanged: (range) =>
-                        setState(() => _startDateRange = range),
-                    currentStatus: _startDateStatus,
-                    onStatusChanged: (status) =>
-                        setState(() => _startDateStatus = status),
-                  ),
+                  // const SizedBox(height: 24),
+                  // _buildDateField(
+                  //   title: "Range Tanggal Mulai Pengerjaan",
+                  //   currentRange: _startDateRange,
+                  //   onRangeChanged: (range) =>
+                  //       setState(() => _startDateRange = range),
+                  //   currentStatus: _startDateStatus,
+                  //   onStatusChanged: (status) =>
+                  //       setState(() => _startDateStatus = status),
+                  // ),
                   const SizedBox(height: 24),
                   _buildDateField(
                     title: "Range Target Delivery Panel",
@@ -599,7 +595,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                   ),
                   const SizedBox(height: 24),
                   _buildDateField(
-                    title: "Range Delivered Panel",
+                    title: "Range Delivered (Close) Panel",
                     currentRange: _closedDateRange,
                     onRangeChanged: (range) =>
                         setState(() => _closedDateRange = range),
@@ -609,7 +605,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                   ),
                   const SizedBox(height: 24),
                   _buildDateField(
-                    title: "Range Busbar Closed",
+                    title: "Range Delivered (Close) Busbar",
                     currentRange: _busbarClosedDateRange,
                     onRangeChanged: (range) =>
                         setState(() => _busbarClosedDateRange = range),
@@ -626,7 +622,21 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                   Wrap(
                     children: [
                       _buildOptionButton(
-                        label: "< 50%",
+                        label: "0%",
+                        leading: const CircleAvatar(
+                          backgroundColor: AppColors.red,
+                          radius: 7,
+                        ),
+                        selected: _selectedPanelStatuses.contains(
+                          PanelFilterStatus.progressGrey,
+                        ),
+                        onTap: () => _toggleSelection(
+                          _selectedPanelStatuses,
+                          PanelFilterStatus.progressGrey,
+                        ),
+                      ),
+                      _buildOptionButton(
+                        label: "1-49%",
                         leading: const CircleAvatar(
                           backgroundColor: AppColors.red,
                           radius: 7,
@@ -654,7 +664,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                         ),
                       ),
                       _buildOptionButton(
-                        label: "75-99%",
+                        label: "76-99%",
                         leading: const CircleAvatar(
                           backgroundColor: AppColors.blue,
                           radius: 7,
@@ -717,7 +727,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    "Status Busbar PCC",
+                    "Status Busbar",
                     style: TextStyle(fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 12),
@@ -726,27 +736,9 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                         .map(
                           (status) => _buildOptionButton(
                             label: status,
-                            selected: _selectedPccStatuses.contains(status),
+                            selected: _selectedStatuses.contains(status),
                             onTap: () =>
-                                _toggleSelection(_selectedPccStatuses, status),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    "Status Busbar MCC",
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    children: busbarStatusOptions
-                        .map(
-                          (status) => _buildOptionButton(
-                            label: status,
-                            selected: _selectedMccStatuses.contains(status),
-                            onTap: () =>
-                                _toggleSelection(_selectedMccStatuses, status),
+                                _toggleSelection(_selectedStatuses, status),
                           ),
                         )
                         .toList(),
