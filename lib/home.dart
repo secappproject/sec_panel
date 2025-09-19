@@ -78,6 +78,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<String> selectedPalet = [];
   List<String> selectedCorepart = [];
   List<String> selectedPanelTypes = [];
+  IssueFilter selectedIssueStatus = IssueFilter.any;
   DateTimeRange? startDateRange;
   DateTimeRange? deliveryDateRange;
   DateTimeRange? closedDateRange;
@@ -192,6 +193,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) => PanelFilterBottomSheet(
+        selectedIssueStatus: selectedIssueStatus, 
         selectedStatuses: selectedStatuses,
         selectedComponents: selectedComponents,
         selectedPalet: selectedPalet,
@@ -237,6 +239,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             setState(() => selectedComponentVendors = value),
         onPaletVendorsChanged: (value) =>
             setState(() => selectedPaletVendors = value),
+        onIssueStatusChanged: (value) =>
+            setState(() => selectedIssueStatus = value),
         onCorepartVendorsChanged: (value) =>
             setState(() => selectedCorepartVendors = value),
         onPanelTypesChanged: (value) =>
@@ -277,6 +281,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             selectedStatuses = [];
             selectedComponents = [];
             selectedPalet = [];
+            selectedIssueStatus = IssueFilter.any;
             selectedCorepart = [];
             selectedPanelTypes = [];
             startDateRange = null;
@@ -537,7 +542,20 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         mccClosedDateRange,
         panel.closeDateBusbarMcc,
       );
-
+      final bool matchIssueStatus;
+      switch (selectedIssueStatus) {
+        case IssueFilter.withIssues:
+          matchIssueStatus = data.issueCount > 0;
+          break;
+        case IssueFilter.withoutIssues:
+          matchIssueStatus = data.issueCount == 0;
+          break;
+        case IssueFilter.any:
+        default:
+          matchIssueStatus = true;
+          break;
+      }
+      
       final panelStatus = _getPanelFilterStatus(panel);
       final bool matchStatusAndArchive;
       if (panelStatus == PanelFilterStatus.closedArchived) {
@@ -550,6 +568,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       return matchSearch &&
           matchPanelType &&
+          matchIssueStatus &&
           matchPanelVendor &&
           matchBusbarVendor &&
           matchComponentVendor &&

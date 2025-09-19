@@ -30,6 +30,9 @@ enum PanelFilterStatus {
 
 enum DateFilterType { notSet, set, any }
 
+// [BARU] Enum untuk filter isu
+enum IssueFilter { any, withIssues, withoutIssues }
+
 class PanelFilterBottomSheet extends StatefulWidget {
   final List<String> selectedStatuses;
   final List<String> selectedComponents;
@@ -47,6 +50,7 @@ class PanelFilterBottomSheet extends StatefulWidget {
   final List<String> selectedPaletVendors;
   final List<String> selectedCorepartVendors;
   final List<String> selectedPanelTypes;
+  final IssueFilter selectedIssueStatus; // [BARU]
 
   final DateTimeRange? startDateRange;
   final DateTimeRange? deliveryDateRange;
@@ -73,6 +77,7 @@ class PanelFilterBottomSheet extends StatefulWidget {
   final Function(List<String>) onPaletVendorsChanged;
   final Function(List<String>) onCorepartVendorsChanged;
   final Function(List<String>) onPanelTypesChanged;
+  final Function(IssueFilter) onIssueStatusChanged; // [BARU]
 
   final Function(DateTimeRange?) onStartDateRangeChanged;
   final Function(DateTimeRange?) onDeliveryDateRangeChanged;
@@ -119,6 +124,8 @@ class PanelFilterBottomSheet extends StatefulWidget {
     required this.onCorepartVendorsChanged,
     required this.selectedPanelTypes,
     required this.onPanelTypesChanged,
+    required this.selectedIssueStatus, // [BARU]
+    required this.onIssueStatusChanged, // [BARU]
     required this.startDateRange,
     required this.deliveryDateRange,
     required this.closedDateRange,
@@ -160,6 +167,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
   late List<String> _selectedPaletVendors;
   late List<String> _selectedCorepartVendors;
   late List<String> _selectedPanelTypes;
+  late IssueFilter _selectedIssueStatus; // [BARU]
 
   late DateTimeRange? _startDateRange;
   late DateTimeRange? _deliveryDateRange;
@@ -201,17 +209,16 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
     _selectedPaletVendors = List.from(widget.selectedPaletVendors);
     _selectedCorepartVendors = List.from(widget.selectedCorepartVendors);
     _selectedPanelTypes = List.from(widget.selectedPanelTypes);
+    _selectedIssueStatus = widget.selectedIssueStatus; // [BARU]
 
     _startDateRange = widget.startDateRange;
     _deliveryDateRange = widget.deliveryDateRange;
     _closedDateRange = widget.closedDateRange;
 
-    // Inisialisasi variabel yang hilang
     _startDateStatus = widget.startDateStatus;
     _deliveryDateStatus = widget.deliveryDateStatus;
     _closedDateStatus = widget.closedDateStatus;
 
-    // Logika untuk menginisialisasi _busbarClosedDateRange dan _busbarClosedDateStatus
     _busbarClosedDateRange =
         widget.pccClosedDateRange ?? widget.mccClosedDateRange;
     if (widget.pccClosedDateRange != null &&
@@ -226,9 +233,9 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
     }
     _busbarClosedDateStatus =
         widget.pccClosedDateStatus == DateFilterType.notSet ||
-            widget.mccClosedDateStatus == DateFilterType.notSet
-        ? DateFilterType.notSet
-        : DateFilterType.any;
+                widget.mccClosedDateStatus == DateFilterType.notSet
+            ? DateFilterType.notSet
+            : DateFilterType.any;
   }
 
   void _applyFilters() {
@@ -245,15 +252,14 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
     widget.onPaletVendorsChanged(_selectedPaletVendors);
     widget.onCorepartVendorsChanged(_selectedCorepartVendors);
     widget.onPanelTypesChanged(_selectedPanelTypes);
+    widget.onIssueStatusChanged(_selectedIssueStatus); // [BARU]
 
     widget.onStartDateRangeChanged(_startDateRange);
     widget.onDeliveryDateRangeChanged(_deliveryDateRange);
     widget.onClosedDateRangeChanged(_closedDateRange);
 
-    // Menerapkan nilai filter yang digabungkan ke kedua fungsi callback
     widget.onPccClosedDateRangeChanged(_busbarClosedDateRange);
     widget.onMccClosedDateRangeChanged(_busbarClosedDateRange);
-
     widget.onPccClosedDateStatusChanged(_busbarClosedDateStatus);
     widget.onMccClosedDateStatusChanged(_busbarClosedDateStatus);
 
@@ -279,6 +285,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
     });
   }
 
+  // ... (fungsi _buildOptionButton dan _buildDateField tidak perlu diubah) ...
   Widget _buildOptionButton({
     required String label,
     required bool selected,
@@ -540,7 +547,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
+                  // ... (Widget arsip dan tanggal tidak berubah) ...
+                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 8,
@@ -573,16 +581,6 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                       ],
                     ),
                   ),
-                  // const SizedBox(height: 24),
-                  // _buildDateField(
-                  //   title: "Range Tanggal Mulai Pengerjaan",
-                  //   currentRange: _startDateRange,
-                  //   onRangeChanged: (range) =>
-                  //       setState(() => _startDateRange = range),
-                  //   currentStatus: _startDateStatus,
-                  //   onStatusChanged: (status) =>
-                  //       setState(() => _startDateStatus = status),
-                  // ),
                   const SizedBox(height: 24),
                   _buildDateField(
                     title: "Range Target Delivery Panel",
@@ -614,6 +612,41 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                         setState(() => _busbarClosedDateStatus = status),
                   ),
                   const SizedBox(height: 24),
+                  // [BARU] UI untuk Filter Isu
+                  const Text("Status Isu",
+                      style: TextStyle(fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    children: [
+                      // _buildOptionButton(
+                      //   label: "Semua",
+                      //   selected: _selectedIssueStatus == IssueFilter.any,
+                      //   onTap: () =>
+                      //       setState(() => _selectedIssueStatus = IssueFilter.any),
+                      // ),
+                      _buildOptionButton(
+                        label: "Ada Isu",
+                        selected: _selectedIssueStatus == IssueFilter.withIssues,
+                        onTap: () => setState(() => _selectedIssueStatus =
+                            _selectedIssueStatus == IssueFilter.withIssues
+                                ? IssueFilter.any 
+                                : IssueFilter.withIssues 
+                        ),
+                      ),
+                      _buildOptionButton(
+                        label: "Tidak Ada Isu",
+                        selected:
+                            _selectedIssueStatus == IssueFilter.withoutIssues,
+                        onTap: () => setState(() => _selectedIssueStatus =
+                            _selectedIssueStatus == IssueFilter.withoutIssues
+                                ? IssueFilter.any 
+                                : IssueFilter.withoutIssues 
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // --- Widget lainnya tetap sama ---
                   const Text(
                     "Status Panel (% Progres)",
                     style: TextStyle(fontWeight: FontWeight.w500),
