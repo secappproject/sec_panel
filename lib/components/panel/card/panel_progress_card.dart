@@ -36,6 +36,7 @@ class PanelProgressCard extends StatelessWidget {
   final DateTime? startDate;
   final String progressLabel;
   final String panelTitle;
+  final int issueCount;
   final String panelType;
   final String statusBusbar;
   final String statusComponent;
@@ -64,6 +65,7 @@ class PanelProgressCard extends StatelessWidget {
     required this.startDate,
     required this.progressLabel,
     required this.panelType,
+    required this.issueCount,
     required this.panelTitle,
     required this.statusBusbar,
     required this.statusComponent,
@@ -477,75 +479,75 @@ class PanelProgressCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            if (hasPanelRemarks) ...[
-                              const SizedBox(width: 4),
-                              InkWell(
-                                onTap: () => _showRemarksBottomSheet(
-                                  context,
-                                  title: 'Panel Remarks',
-                                  remarksMap: {
-                                    panelVendorName.isNotEmpty
-                                            ? panelVendorName
-                                            : 'Panel':
-                                        panelRemarks,
-                                  },
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: AppColors.grayLight,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Image.asset(
-                                    'assets/images/remarks.png',
-                                    height: 16,
-                                  ),
-                                ),
-                              ),
-                            ],
+                            // if (hasPanelRemarks) ...[
+                            //   const SizedBox(width: 4),
+                            //   InkWell(
+                            //     onTap: () => _showRemarksBottomSheet(
+                            //       context,
+                            //       title: 'Panel Remarks',
+                            //       remarksMap: {
+                            //         panelVendorName.isNotEmpty
+                            //                 ? panelVendorName
+                            //                 : 'Panel':
+                            //             panelRemarks,
+                            //       },
+                            //     ),
+                            //     borderRadius: BorderRadius.circular(16),
+                            //     child: Container(
+                            //       padding: const EdgeInsets.all(4),
+                            //       decoration: BoxDecoration(
+                            //         borderRadius: BorderRadius.circular(16),
+                            //         border: Border.all(
+                            //           color: AppColors.grayLight,
+                            //           width: 1,
+                            //         ),
+                            //       ),
+                            //       child: Image.asset(
+                            //         'assets/images/remarks.png',
+                            //         height: 16,
+                            //       ),
+                            //     ),
+                            //   ),
+                            // ],
                           ],
                         ),
-                        InkWell(
-                          onTap: () {
-                            // The actual navigation logic
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => PanelIssuesScreen(
-                                  panelNoPp: ppNumber,
-                                  panelNoWBS: wbsNumber,
-                                  panelNoPanel: panelTitle,
-                                  panelVendor: panelVendorName,
-                                  busbarVendor: busbarVendorNames,
-                                ),
-                              ),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            padding: const EdgeInsets.only(
-                              top: 4,
-                              bottom: 4,
-                              left: 8,
-                              right: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: AppColors.grayLight,
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              "Issues",
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ),
-                        ),
+                        // InkWell(
+                        //   onTap: () {
+                        //     // The actual navigation logic
+                        //     Navigator.push(
+                        //       context,
+                        //       MaterialPageRoute(
+                        //         builder: (context) => PanelIssuesScreen(
+                        //           panelNoPp: ppNumber,
+                        //           panelNoWBS: wbsNumber,
+                        //           panelNoPanel: panelTitle,
+                        //           panelVendor: panelVendorName,
+                        //           busbarVendor: busbarVendorNames,
+                        //         ),
+                        //       ),
+                        //     );
+                        //   },
+                        //   borderRadius: BorderRadius.circular(16),
+                        //   child: Container(
+                        //     padding: const EdgeInsets.only(
+                        //       top: 4,
+                        //       bottom: 4,
+                        //       left: 8,
+                        //       right: 8,
+                        //     ),
+                        //     decoration: BoxDecoration(
+                        //       borderRadius: BorderRadius.circular(16),
+                        //       border: Border.all(
+                        //         color: AppColors.grayLight,
+                        //         width: 1,
+                        //       ),
+                        //     ),
+                        //     child: Text(
+                        //       "Issues",
+                        //       style: TextStyle(fontSize: 12),
+                        //     ),
+                        //   ),
+                        // ),
                         Row(
                           children: [
                             const Text(
@@ -582,34 +584,34 @@ class PanelProgressCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (hasBusbarRemarks) ...[
-                              const SizedBox(width: 4),
-                              InkWell(
-                                onTap: () => _showRemarksBottomSheet(
-                                  context,
-                                  title: 'Busbar Remarks',
-                                  remarksMap: {
-                                    for (var e in busbarRemarks)
-                                      e.vendorName: e.remark,
-                                  },
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: AppColors.grayLight,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Image.asset(
-                                    'assets/images/remarks.png',
-                                    height: 16,
-                                  ),
-                                ),
-                              ),
-                            ],
+                            // if (hasBusbarRemarks) ...[
+                            //   const SizedBox(width: 4),
+                            //   InkWell(
+                            //     onTap: () => _showRemarksBottomSheet(
+                            //       context,
+                            //       title: 'Busbar Remarks',
+                            //       remarksMap: {
+                            //         for (var e in busbarRemarks)
+                            //           e.vendorName: e.remark,
+                            //       },
+                            //     ),
+                            //     borderRadius: BorderRadius.circular(16),
+                            //     child: Container(
+                            //       padding: const EdgeInsets.all(4),
+                            //       decoration: BoxDecoration(
+                            //         borderRadius: BorderRadius.circular(16),
+                            //         border: Border.all(
+                            //           color: AppColors.grayLight,
+                            //           width: 1,
+                            //         ),
+                            //       ),
+                            //       child: Image.asset(
+                            //         'assets/images/remarks.png',
+                            //         height: 16,
+                            //       ),
+                            //     ),
+                            //   ),
+                            // ],
                           ],
                         ),
                       ],
@@ -680,6 +682,10 @@ class PanelProgressCard extends StatelessWidget {
                       ),
                       SizedBox(
                         width: 64,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: _buildIssueButton(context),
+                        ),
                       ),
                     ],
                   ),
@@ -748,22 +754,98 @@ class PanelProgressCard extends StatelessWidget {
       onTap: onEdit,
       borderRadius: BorderRadius.circular(8),
       child: Container(
+        alignment: Alignment.center,
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: AppColors.grayLight, width: 1),
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Image.asset('assets/images/edit-green.png', height: 20),
             SizedBox(width: 4,),
-            Text("Edit", style: TextStyle(color: AppColors.schneiderGreen, fontSize: 10),)
+            // Text("Edit", style: TextStyle(color: AppColors.black, fontSize: 10),)
           ],
         ),
       ),
     );
   }
-
+  Widget _buildIssueButton(BuildContext context) {
+    if (currentUserRole == AppRole.viewer) return const SizedBox.shrink();
+    return InkWell(
+      onTap: () => {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PanelIssuesScreen(
+              issueCount: issueCount,
+              panelNoPp: ppNumber,
+              panelNoWBS: wbsNumber,
+              panelNoPanel: panelTitle,
+              panelVendor: panelVendorName,
+              busbarVendor: busbarVendorNames,
+            ),
+          ),
+        )},
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.grayLight, width: 1),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (issueCount == 0)...[
+            Image.asset('assets/images/issue-no.png', height: 20),
+            ],
+            if (issueCount != 0) ...[
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Image.asset(
+                    'assets/images/issue-no.png',
+                    height: 20,
+                  ),
+                  Positioned(
+                    right: -3, // posisi ke kanan
+                    top: -6,   // posisi ke atas
+                    child: Container(
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 15,
+                        minHeight: 15,
+                      ),
+                      child: Text(
+                        issueCount.toString(),
+                        style:  TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            SizedBox(width: 4,),
+            // Text("Issue", style: TextStyle(color: AppColors.black, fontSize: 10),)
+          ],
+        ),
+      ),
+    );
+  }
   Widget _buildInfoRow(String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

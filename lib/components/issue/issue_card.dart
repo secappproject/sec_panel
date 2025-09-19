@@ -180,19 +180,20 @@ class _IssueCardState extends State<IssueCard> {
                   text: TextSpan(
                     style: const TextStyle(
                       color: AppColors.black,
+                      fontWeight: FontWeight.w300,
                       fontSize: 12,
-                      fontFamily: 'Poppins',
+                      fontFamily: 'Lexend',
                     ),
                     children: [
                       TextSpan(
                         text: '${user.name} ',
-                        style: const TextStyle(fontWeight: FontWeight.w500),
+                        style: const TextStyle(fontWeight: FontWeight.w400),
                       ),
                       TextSpan(
                         text: actionText,
                         style: const TextStyle(
                           color: AppColors.gray,
-                          fontWeight: FontWeight.w400,
+                          fontWeight: FontWeight.w300,
                         ),
                       ),
                     ],

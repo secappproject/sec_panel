@@ -475,17 +475,19 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-
-  void _showSuccessSnackBar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
+void _showSuccessSnackBar(String message) {
+  if (!mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        message,
+        style: const TextStyle(fontWeight: FontWeight.w300, fontSize: 12),
       ),
-    );
-  }
+      backgroundColor: const Color.fromARGB(255, 39, 40, 39),
+      behavior: SnackBarBehavior.floating,
+    ),
+  );
+}
 
   Future<void> _showSettingsDialog({
     required String title,

@@ -19,6 +19,7 @@ class PanelIssuesScreen extends StatefulWidget {
   final String panelNoPanel;
   final String panelNoWBS;
   final String busbarVendor;
+  final int issueCount;
 
   const PanelIssuesScreen({
     super.key,
@@ -27,6 +28,7 @@ class PanelIssuesScreen extends StatefulWidget {
     required this.busbarVendor,
     required this.panelNoPanel,
     required this.panelNoWBS,
+    required this.issueCount
   });
 
   static void showSnackBar(String message, {bool isError = false}) {
@@ -82,8 +84,14 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => AskAiScreen(
-            panelNoPp: widget.panelNoPp,
-            panelTitle: "${widget.panelNoPanel} ${widget.panelNoWBS}".trim(),
+            panelNoPp: widget.panelNoPp ,
+            panelTitle: (() {
+              final title = "${widget.panelNoPanel} ${widget.panelNoWBS}".trim();
+              if (title.isEmpty || title.startsWith("TEMP")) {
+                return "Belum Diatur";
+              }
+              return title;
+            })(),
             currentUser: currentUser,
             onUpdate: () => _loadIssues(showLoading: false),
           ),
@@ -223,13 +231,20 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
         appBar: _buildAppBar(),
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
-            final newTitle = innerBoxIsScrolled ? widget.panelNoPp : ' ';
+            final newTitle = (() {
+            final title = innerBoxIsScrolled ? widget.panelNoPp : 'Belum Diatur';
+            if (title.trim().isEmpty || title.startsWith("TEMP")) {
+              return '';
+            }
+            return title;
+          })();
             if (newTitle != _appBarTitle) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) setState(() => _appBarTitle = newTitle);
               });
             }
             return [
+              if (widget.issueCount != 0)...[
               SliverToBoxAdapter(
                 child: Container(
                   color: AppColors.white,
@@ -247,7 +262,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
                     ],
                   ),
                 ),
-              ),
+              )],
               SliverPersistentHeader(
                 delegate: _SliverAppBarDelegate(
                   TabBar(
@@ -336,7 +351,6 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
       });
     }
 
-    // --- ▼▼▼ [PERUBAHAN 4] Memperbarui cara memanggil _buildFilterChip ▼▼▼ ---
     return Container(
       height: 52,
       color: AppColors.white,
@@ -500,7 +514,10 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     );
   }
 
-  Widget _buildPanelHeader() {
+  Widget _buildPanelHeader() { 
+    final title = "${widget.panelNoPanel} ${widget.panelNoWBS}".trim();
+    final noPanel = widget.panelNoPanel;
+    final noWBS = widget.panelNoWBS;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: Row(
@@ -512,10 +529,10 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "${widget.panelNoPanel} ${widget.panelNoWBS}".trim(),
+                  ((noPanel == "" && noWBS == "") || title.startsWith("TEMP")) ? "Belum Diatur" : title,
                   style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w400,
                     color: AppColors.black,
                   ),
                 ),

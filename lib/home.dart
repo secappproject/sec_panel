@@ -839,13 +839,14 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: AppColors.grayLight),
                       ),
-                      child: Icon(
-                        _isChartView
-                            ? Icons.list_alt_rounded
-                            : Icons.bar_chart_rounded,
-                        color: AppColors.gray,
-                        size: 20,
-                      ),
+                      child: 
+                        _isChartView? Image.asset(
+                          'assets/images/panel.png',
+                          height: 20,
+                        ):Image.asset(
+                          'assets/images/graph.png',
+                          height: 20,
+                        ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -937,6 +938,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               final data = panelsToDisplay[index];
               final panel = data.panel;
               return PanelProgressCard(
+                issueCount: data.issueCount ?? 0,
                 currentUserRole: widget.currentCompany.role,
                 targetDelivery: panel.targetDelivery,
                 duration: _formatDuration(panel.startDate),
@@ -991,6 +993,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               final data = panelsToDisplay[index];
               final panel = data.panel;
               return PanelProgressCard(
+                issueCount: data.issueCount ?? 0,
                 currentUserRole: widget.currentCompany.role,
                 targetDelivery: panel.targetDelivery,
                 duration: _formatDuration(panel.startDate),

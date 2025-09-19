@@ -1,6 +1,7 @@
 // lib/models/paneldisplaydata.dart
 
 import 'dart:convert';
+import 'dart:ffi';
 import 'package:secpanel/models/busbarremark.dart';
 import 'package:secpanel/models/panels.dart';
 
@@ -17,6 +18,7 @@ class PanelDisplayData {
   final List<String> paletVendorIds;
   final String corepartVendorNames;
   final List<String> corepartVendorIds;
+  final int issueCount;
 
   PanelDisplayData({
     required this.panel,
@@ -31,6 +33,7 @@ class PanelDisplayData {
     required this.paletVendorIds,
     required this.corepartVendorNames,
     required this.corepartVendorIds,
+    required this.issueCount
   });
 
   factory PanelDisplayData.fromJson(Map<String, dynamic> json) {
@@ -71,6 +74,7 @@ class PanelDisplayData {
       paletVendorIds: parseIdList(json['palet_vendor_ids']),
       corepartVendorNames: json['corepart_vendor_names'] as String? ?? '',
       corepartVendorIds: parseIdList(json['corepart_vendor_ids']),
+      issueCount: json['issue_count'] as int? ?? 0,
     );
   }
 }
