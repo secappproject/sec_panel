@@ -1164,11 +1164,11 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     } else if (view == ChartTimeView.monthly) { // Logika baru untuk label bulan/kuartal
       if (quartile == null) { // Jika "Semua Bulan", buat label untuk 12 bulan
           for (int i = 1; i <= 12; i++) {
-              allKeys.add(keyFormat.format(DateTime(year, i)));
+            allKeys.add(keyFormat.format(DateTime(year, i)));
           }
       } else { // Jika Kuartal, buat label untuk 3 bulan
           for (int i = 0; i < 3; i++) {
-              allKeys.add(keyFormat.format(DateTime(year, (quartile - 1) * 3 + 1 + i)));
+            allKeys.add(keyFormat.format(DateTime(year, (quartile - 1) * 3 + 1 + i)));
           }
       }
     } else { // Yearly
@@ -1605,13 +1605,13 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final weekItems = [
       DropdownMenuItem<int?>(
         value: null,
-        child: Text("Semua Minggu", style: dropdownStyle),
+        child: Text("All Week", style: dropdownStyle),
       ),
       ...List.generate(
         weekCount,
         (index) => DropdownMenuItem<int?>(
           value: index + 1,
-          child: Text("Minggu ${index + 1}", style: dropdownStyle),
+          child: Text("Week ${index + 1}", style: dropdownStyle),
         ),
       )
     ];
@@ -1638,7 +1638,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           isExpanded: false,
           icon: const Icon(Icons.keyboard_arrow_down, size: 16),
           hint: Text(hint, style: dropdownStyle),
-          
+
           // --- PENYESUAIAN DESAIN DROPDOWN ---
           dropdownColor: Colors.white,
           borderRadius: BorderRadius.circular(6),
@@ -1702,7 +1702,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     },
                 ),
                 const SizedBox(width: 8),
-                
+
                 // Kuartal (dengan opsi "Semua Bulan")
                 buildDropdown<int?>( // Tipe datanya diubah ke int?
                     value: _selectedQuartile,
@@ -1710,7 +1710,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         // Item baru untuk "Semua Bulan"
                         DropdownMenuItem<int?>(
                             value: null, // 'null' merepresentasikan "Semua Bulan"
-                            child: Text("Semua Bulan", style: dropdownStyle),
+                            child: Text("All Week", style: dropdownStyle),
                         ),
                         // Item untuk Kuartal 1-4
                         ...List.generate(
@@ -1760,11 +1760,13 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     double maxValue = 0;
     data.values.forEach((projectMap) {
+      double groupTotal = 0;
       projectMap.values.forEach((count) {
-        if (count > maxValue) {
-          maxValue = count.toDouble();
-        }
+        groupTotal += count;
       });
+      if (groupTotal > maxValue) {
+        maxValue = groupTotal;
+      }
     });
     if (maxValue == 0) maxValue = 50;
 
@@ -1905,9 +1907,54 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               leftTitles: const AxisTitles(
                                 sideTitles: SideTitles(showTitles: false),
                               ),
-                              topTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
+                              // === PERUBAHAN DIMULAI DI SINI ===
+                              topTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  reservedSize: 26, // Beri ruang lebih untuk garis
+                                  getTitlesWidget: (double value, TitleMeta meta) {
+                                    final index = value.toInt();
+                                    if (index >= data.keys.length) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    final groupKey = data.keys.elementAt(index);
+                                    final projectCounts = data[groupKey]!;
+
+                                    // Hitung total untuk grup ini
+                                    final total = projectCounts.values.fold(0, (sum, item) => sum + item);
+
+                                    // Jangan tampilkan total jika nilainya 0
+                                    if (total == 0) {
+                                      return const SizedBox.shrink();
+                                    }
+
+                                    return SideTitleWidget(
+                                      axisSide: meta.axisSide,
+                                      space: 4.0, // Jarak di atas bar
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            total.toString(),
+                                            style: const TextStyle(
+                                              color: AppColors.gray,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Container(
+                                            height: 4,
+                                            width: widthPerGroup, // ### FIX DI SINI ###
+                                            color: AppColors.grayNeutral,
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
+                              // === PERUBAHAN BERAKHIR DI SINI ===
                               rightTitles: const AxisTitles(
                                 sideTitles: SideTitles(showTitles: false),
                               ),
@@ -2242,11 +2289,13 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     double maxValue = 0;
     data.values.forEach((vendorMap) {
+      double groupTotal = 0;
       vendorMap.values.forEach((count) {
-        if (count > maxValue) {
-          maxValue = count.toDouble();
-        }
+        groupTotal += count;
       });
+      if (groupTotal > maxValue) {
+        maxValue = groupTotal;
+      }
     });
     if (maxValue == 0) maxValue = 50;
 
@@ -2383,9 +2432,54 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           leftTitles: const AxisTitles(
                             sideTitles: SideTitles(showTitles: false),
                           ),
-                          topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
+                          // === PERUBAHAN DIMULAI DI SINI ===
+                          topTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 26, // Beri ruang lebih untuk garis
+                              getTitlesWidget: (double value, TitleMeta meta) {
+                                final index = value.toInt();
+                                if (index >= data.keys.length) {
+                                  return const SizedBox.shrink();
+                                }
+                                final groupKey = data.keys.elementAt(index);
+                                final vendorCounts = data[groupKey]!;
+
+                                // Hitung total untuk grup ini
+                                final total = vendorCounts.values.fold(0, (sum, item) => sum + item);
+
+                                // Jangan tampilkan total jika nilainya 0
+                                if (total == 0) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                return SideTitleWidget(
+                                  axisSide: meta.axisSide,
+                                  space: 4.0, // Jarak di atas bar
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        total.toString(),
+                                        style: const TextStyle(
+                                          color: AppColors.gray,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Container(
+                                        height: 4,
+                                        width: widthPerGroup, // ### FIX DI SINI ###
+                                        color: AppColors.grayNeutral,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
                           ),
+                          // === PERUBAHAN BERAKHIR DI SINI ===
                           rightTitles: const AxisTitles(
                             sideTitles: SideTitles(showTitles: false),
                           ),
@@ -2643,7 +2737,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       final previousValue = previousGroupData?[seriesName] ?? 0;
 
       final diff = currentValue - previousValue;
-      
+
       // Format teks perubahan berdasarkan nilai perbedaan (diff)
       if (diff > 0) {
         tooltipText += ' (+${diff})'; // Hasil: 20 (+2)
