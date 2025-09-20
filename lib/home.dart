@@ -62,6 +62,12 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Map<String, dynamic> _busbarChartData = {};
   Map<String, dynamic> _projectChartData = {};
 
+  // --- BARU: State untuk filter dropdown di chart ---
+  int _selectedYear = DateTime.now().year;
+  int _selectedMonth = DateTime.now().month;
+  int? _selectedWeek; // Bisa null, artinya "semua minggu"
+  int? _selectedQuartile = (DateTime.now().month / 3).ceil(); // Diubah menjadi nullable
+
   // --- State untuk filter (tidak ada perubahan di sini) ---
   List<String> searchChips = [];
   String activeSearchText = "";
@@ -146,6 +152,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
     }
 
+    // --- BARU: Mengirim state filter ke fungsi kalkulasi ---
     _panelChartData = _calculateDeliveryByTime(
       panelsToDisplay,
       (data) => [
@@ -153,6 +160,10 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ],
       view: _panelChartView,
       allPossibleVendors: allPanelVendorNames,
+      year: _selectedYear,
+      month: _selectedMonth,
+      week: _selectedWeek,
+      quartile: _selectedQuartile,
     );
 
     _busbarChartData = _calculateDeliveryByTime(
@@ -168,11 +179,19 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       },
       view: _busbarChartView,
       allPossibleVendors: allBusbarVendorNames,
+      year: _selectedYear,
+      month: _selectedMonth,
+      week: _selectedWeek,
+      quartile: _selectedQuartile,
     );
 
     _projectChartData = _calculateDeliveryByProject(
       panelsToDisplay,
       view: _projectChartView,
+      year: _selectedYear,
+      month: _selectedMonth,
+      week: _selectedWeek,
+      quartile: _selectedQuartile,
     );
   }
 
@@ -193,7 +212,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) => PanelFilterBottomSheet(
-        selectedIssueStatus: selectedIssueStatus, 
+        selectedIssueStatus: selectedIssueStatus,
         selectedStatuses: selectedStatuses,
         selectedComponents: selectedComponents,
         selectedPalet: selectedPalet,
@@ -401,8 +420,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             : data.busbarVendorNames!.toLowerCase();
         final displayComponentVendors =
             (data.componentVendorNames ?? '').isEmpty
-            ? 'no vendor'
-            : data.componentVendorNames!.toLowerCase();
+                ? 'no vendor'
+                : data.componentVendorNames!.toLowerCase();
         final displayPaletVendors = (data.paletVendorNames ?? '').isEmpty
             ? 'no vendor'
             : data.paletVendorNames!.toLowerCase();
@@ -555,7 +574,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           matchIssueStatus = true;
           break;
       }
-      
+
       final panelStatus = _getPanelFilterStatus(panel);
       final bool matchStatusAndArchive;
       if (panelStatus == PanelFilterStatus.closedArchived) {
@@ -687,12 +706,12 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           );
         case SortOption.panelNoAZ:
           return (a.panel.noPanel ?? "").toLowerCase().compareTo(
-            (b.panel.noPanel ?? "").toLowerCase(),
-          );
+                (b.panel.noPanel ?? "").toLowerCase(),
+              );
         case SortOption.panelNoZA:
           return (b.panel.noPanel ?? "").toLowerCase().compareTo(
-            (a.panel.noPanel ?? "").toLowerCase(),
-          );
+                (a.panel.noPanel ?? "").toLowerCase(),
+              );
         case SortOption.ppNoAZ:
           return (a.panel.noPp).compareTo(b.panel.noPp);
         case SortOption.ppNoZA:
@@ -703,12 +722,12 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           return (b.panel.noWbs ?? "").compareTo(a.panel.noWbs ?? "");
         case SortOption.projectNoAZ:
           return (a.panel.project ?? "").toLowerCase().compareTo(
-            (b.panel.project ?? "").toLowerCase(),
-          );
+                (b.panel.project ?? "").toLowerCase(),
+              );
         case SortOption.projectNoZA:
           return (b.panel.project ?? "").toLowerCase().compareTo(
-            (a.panel.project ?? "").toLowerCase(),
-          );
+                (a.panel.project ?? "").toLowerCase(),
+              );
         default:
           return (b.panel.startDate ?? DateTime(1900)).compareTo(
             a.panel.startDate ?? DateTime(1900),
@@ -848,14 +867,14 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: AppColors.grayLight),
                       ),
-                      child: 
-                        _isChartView? Image.asset(
-                          'assets/images/panel.png',
-                          height: 20,
-                        ):Image.asset(
-                          'assets/images/graph.png',
-                          height: 20,
-                        ),
+                      child:
+                          _isChartView? Image.asset(
+                            'assets/images/panel.png',
+                            height: 20,
+                          ):Image.asset(
+                            'assets/images/graph.png',
+                            height: 20,
+                          ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -985,9 +1004,9 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           );
         } else {
           final int crossAxisCount = (constraints.maxWidth / 500).floor().clamp(
-            2,
-            4,
-          );
+                  2,
+                  4,
+                );
 
           return GridView.builder(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
@@ -1043,33 +1062,72 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // --- BARU: Helper untuk menghitung jumlah minggu dalam sebulan ---
+  int _getWeeksInMonth(int year, int month) {
+    final firstDay = DateTime(year, month, 1);
+    final lastDay = DateTime(year, month + 1, 0);
+    // Hitung hari dari Senin pertama hingga hari terakhir
+    final days = lastDay.day + (firstDay.weekday - 1);
+    return (days / 7).ceil();
+  }
+
   Map<String, dynamic> _calculateDeliveryByTime(
     List<PanelDisplayData> panels,
     List<String> Function(PanelDisplayData) getVendors, {
     required ChartTimeView view,
     required List<String> allPossibleVendors,
+    // --- BARU: parameter filter ---
+    required int year,
+    required int month,
+    int? week,
+    int? quartile,
   }) {
     final Map<String, Map<String, int>> counts = {};
-    final now = DateTime.now();
-
-    late DateTime timeLimit;
+    late DateTimeRange displayRange;
     late DateFormat keyFormat;
     late int limit;
+    final now = DateTime.now();
 
     switch (view) {
       case ChartTimeView.daily:
-        timeLimit = DateTime(now.year, now.month, now.day - 6);
-        keyFormat = DateFormat('E, d MMM', 'id_ID'); // Format: Sen, 17 Sep
-        limit = 7;
+        keyFormat = DateFormat('E, d', 'id_ID'); // Format: Sen, 17
+        if (week != null) {
+          // Tampilkan 7 hari dalam minggu yang dipilih
+          final firstDayOfMonth = DateTime(year, month, 1);
+          final dayOfWeekOffset = (1 - firstDayOfMonth.weekday + 7) % 7;
+          final firstMonday = firstDayOfMonth.subtract(Duration(days: dayOfWeekOffset));
+          final startDate = firstMonday.add(Duration(days: (week - 1) * 7));
+          displayRange = DateTimeRange(start: startDate, end: startDate.add(const Duration(days: 6)));
+        } else {
+          // Tampilkan seluruh bulan
+          displayRange = DateTimeRange(
+            start: DateTime(year, month, 1),
+            end: DateTime(year, month + 1, 0),
+          );
+        }
         break;
       case ChartTimeView.monthly:
-        timeLimit = DateTime(now.year, now.month - 4, 1);
-        keyFormat = DateFormat('MMMM yyyy', 'id_ID');
-        limit = 5;
+        if (quartile == null) { // KONDISI BARU: Jika "Semua Bulan" dipilih
+            keyFormat = DateFormat('MMM', 'id_ID'); // Format: Jan, Feb, Mar
+            displayRange = DateTimeRange(
+              start: DateTime(year, 1, 1),
+              end: DateTime(year, 12, 31),
+            );
+        } else { // LOGIKA LAMA: Jika Kuartal dipilih
+            keyFormat = DateFormat('MMM yyyy', 'id_ID');
+            final startMonth = (quartile - 1) * 3 + 1;
+            displayRange = DateTimeRange(
+              start: DateTime(year, startMonth, 1),
+              end: DateTime(year, startMonth + 3, 0),
+            );
+        }
         break;
       case ChartTimeView.yearly:
-        timeLimit = DateTime(now.year - 4, 1, 1);
         keyFormat = DateFormat('yyyy');
+        displayRange = DateTimeRange(
+          start: DateTime(now.year - 4, 1, 1),
+          end: DateTime(now.year, 12, 31),
+        );
         limit = 5;
         break;
     }
@@ -1077,26 +1135,50 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final relevantPanels = panels.where(
       (data) =>
           data.panel.closedDate != null &&
-          data.panel.closedDate!.isAfter(
-            timeLimit.subtract(const Duration(days: 1)),
-          ) &&
-          data.panel.closedDate!.isBefore(now.add(const Duration(days: 1))),
+          !data.panel.closedDate!.isBefore(displayRange.start) &&
+          !data.panel.closedDate!.isAfter(displayRange.end.add(const Duration(days: 1))),
     );
 
     for (var data in relevantPanels) {
       final date = data.panel.closedDate!;
       final key = keyFormat.format(date);
-
       final vendorsFromPanel = getVendors(data);
-      if (!counts.containsKey(key)) {
-        counts[key] = {};
-      }
-
+      counts.putIfAbsent(key, () => {});
       for (var vendor in vendorsFromPanel) {
         if (vendor.isNotEmpty && allPossibleVendors.contains(vendor)) {
           counts[key]![vendor] = (counts[key]![vendor] ?? 0) + 1;
         }
       }
+    }
+
+    // --- BARU: Pastikan semua label ada di chart ---
+    final allKeys = <String>{};
+    if (view == ChartTimeView.daily && week == null) { // Tampilkan semua tanggal di bulan
+      for (int i = 0; i < displayRange.duration.inDays + 1; i++) {
+        allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
+      }
+    } else if (view == ChartTimeView.daily && week != null) { // Tampilkan 7 hari di minggu
+        for (int i = 0; i < 7; i++) {
+        allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
+      }
+    } else if (view == ChartTimeView.monthly) { // Logika baru untuk label bulan/kuartal
+      if (quartile == null) { // Jika "Semua Bulan", buat label untuk 12 bulan
+          for (int i = 1; i <= 12; i++) {
+              allKeys.add(keyFormat.format(DateTime(year, i)));
+          }
+      } else { // Jika Kuartal, buat label untuk 3 bulan
+          for (int i = 0; i < 3; i++) {
+              allKeys.add(keyFormat.format(DateTime(year, (quartile - 1) * 3 + 1 + i)));
+          }
+      }
+    } else { // Yearly
+      for (int i = 0; i < limit; i++) {
+        allKeys.add(keyFormat.format(DateTime(now.year - (limit - 1) + i)));
+      }
+    }
+
+    for (final key in allKeys) {
+      counts.putIfAbsent(key, () => {});
     }
 
     final sortedKeys = counts.keys.toList()
@@ -1108,11 +1190,11 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       });
 
-    final limitedKeys = sortedKeys.length > limit
+    final finalKeys = (view == ChartTimeView.yearly && sortedKeys.length > limit)
         ? sortedKeys.sublist(sortedKeys.length - limit)
         : sortedKeys;
-    final sortedMap = {for (var k in limitedKeys) k: counts[k]!};
 
+    final sortedMap = {for (var k in finalKeys) k: counts[k]!};
     final sortedVendors = allPossibleVendors..sort();
     return {'data': sortedMap, 'vendors': sortedVendors};
   }
@@ -1120,28 +1202,57 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Map<String, dynamic> _calculateDeliveryByProject(
     List<PanelDisplayData> panels, {
     required ChartTimeView view,
+    // --- BARU: parameter filter ---
+    required int year,
+    required int month,
+    int? week,
+    int? quartile,
   }) {
     final Map<String, Map<String, int>> counts = {};
-    final now = DateTime.now();
-
-    late DateTime timeLimit;
+    late DateTimeRange displayRange;
     late DateFormat keyFormat;
     late int limit;
+    final now = DateTime.now();
 
+    // --- BARU: Logika penentuan rentang waktu disamakan dengan _calculateDeliveryByTime ---
     switch (view) {
       case ChartTimeView.daily:
-        timeLimit = DateTime(now.year, now.month, now.day - 6);
-        keyFormat = DateFormat('E, d MMM', 'id_ID');
-        limit = 7;
+        keyFormat = DateFormat('E, d', 'id_ID');
+        if (week != null) {
+          final firstDayOfMonth = DateTime(year, month, 1);
+          final dayOfWeekOffset = (1 - firstDayOfMonth.weekday + 7) % 7;
+          final firstMonday = firstDayOfMonth.subtract(Duration(days: dayOfWeekOffset));
+          final startDate = firstMonday.add(Duration(days: (week - 1) * 7));
+          displayRange = DateTimeRange(start: startDate, end: startDate.add(const Duration(days: 6)));
+        } else {
+          displayRange = DateTimeRange(
+            start: DateTime(year, month, 1),
+            end: DateTime(year, month + 1, 0),
+          );
+        }
         break;
       case ChartTimeView.monthly:
-        timeLimit = DateTime(now.year, now.month - 4, 1);
-        keyFormat = DateFormat('MMMM yyyy', 'id_ID');
-        limit = 5;
+        if (quartile == null) { // KONDISI BARU: Jika "Semua Bulan" dipilih
+            keyFormat = DateFormat('MMM', 'id_ID');
+            displayRange = DateTimeRange(
+              start: DateTime(year, 1, 1),
+              end: DateTime(year, 12, 31),
+            );
+        } else { // LOGIKA LAMA: Jika Kuartal dipilih
+            keyFormat = DateFormat('MMM yyyy', 'id_ID');
+            final startMonth = (quartile - 1) * 3 + 1;
+            displayRange = DateTimeRange(
+              start: DateTime(year, startMonth, 1),
+              end: DateTime(year, startMonth + 3, 0),
+            );
+        }
         break;
       case ChartTimeView.yearly:
-        timeLimit = DateTime(now.year - 4, 1, 1);
         keyFormat = DateFormat('yyyy');
+        displayRange = DateTimeRange(
+          start: DateTime(now.year - 4, 1, 1),
+          end: DateTime(now.year, 12, 31),
+        );
         limit = 5;
         break;
     }
@@ -1149,10 +1260,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final relevantPanels = panels.where(
       (data) =>
           data.panel.closedDate != null &&
-          data.panel.closedDate!.isAfter(
-            timeLimit.subtract(const Duration(days: 1)),
-          ) &&
-          data.panel.closedDate!.isBefore(now.add(const Duration(days: 1))),
+          !data.panel.closedDate!.isBefore(displayRange.start) &&
+          !data.panel.closedDate!.isAfter(displayRange.end.add(const Duration(days: 1))),
     );
 
     final allPossibleProjects = relevantPanels
@@ -1179,12 +1288,38 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ? "No Project"
           : projectName;
 
-      if (!counts.containsKey(key)) {
-        counts[key] = {};
-      }
+      counts.putIfAbsent(key, () => {});
+      counts[key]![finalProjectName] = (counts[key]![finalProjectName] ?? 0) + 1;
+    }
 
-      counts[key]![finalProjectName] =
-          (counts[key]![finalProjectName] ?? 0) + 1;
+    // --- BARU: Pastikan semua label ada di chart ---
+    final allKeys = <String>{};
+    if (view == ChartTimeView.daily && week == null) { // Tampilkan semua tanggal di bulan
+      for (int i = 0; i < displayRange.duration.inDays + 1; i++) {
+        allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
+      }
+    } else if (view == ChartTimeView.daily && week != null) { // Tampilkan 7 hari di minggu
+        for (int i = 0; i < 7; i++) {
+        allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
+      }
+    } else if (view == ChartTimeView.monthly) { // Logika baru untuk label bulan/kuartal
+        if (quartile == null) { // Jika "Semua Bulan", buat label untuk 12 bulan
+            for (int i = 1; i <= 12; i++) {
+                allKeys.add(keyFormat.format(DateTime(year, i)));
+            }
+        } else { // Jika Kuartal, buat label untuk 3 bulan
+            for (int i = 0; i < 3; i++) {
+                allKeys.add(keyFormat.format(DateTime(year, (quartile - 1) * 3 + 1 + i)));
+            }
+        }
+    } else { // Yearly
+      for (int i = 0; i < limit; i++) {
+        allKeys.add(keyFormat.format(DateTime(now.year - (limit - 1) + i)));
+      }
+    }
+
+    for (final key in allKeys) {
+      counts.putIfAbsent(key, () => {});
     }
 
     final sortedKeys = counts.keys.toList()
@@ -1196,14 +1331,15 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       });
 
-    final limitedKeys = sortedKeys.length > limit
+    final finalKeys = (view == ChartTimeView.yearly && sortedKeys.length > limit)
         ? sortedKeys.sublist(sortedKeys.length - limit)
         : sortedKeys;
-    final sortedMap = {for (var k in limitedKeys) k: counts[k]!};
 
+    final sortedMap = {for (var k in finalKeys) k: counts[k]!};
     final sortedProjects = allPossibleProjects..sort();
     return {'data': sortedMap, 'projects': sortedProjects};
   }
+
 
   Widget _buildChartView() {
     _prepareChartData();
@@ -1262,8 +1398,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     summaryList.sort((a, b) {
       int projectComp = a.project.toLowerCase().compareTo(
-        b.project.toLowerCase(),
-      );
+            b.project.toLowerCase(),
+          );
       if (projectComp != 0) return projectComp;
       return a.wbs.toLowerCase().compareTo(b.wbs.toLowerCase());
     });
@@ -1432,6 +1568,172 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // --- BARU: Widget untuk dropdown filter di chart ---
+  Widget _buildChartFilterDropdowns({
+    required ChartTimeView currentView,
+  }) {
+    // Dropdown Item Style
+    final dropdownStyle = TextStyle(
+      fontSize: 12,
+      color: Colors.grey[700],
+      fontWeight: FontWeight.w400,
+    );
+
+    // Dropdown Years
+    final yearItems = List.generate(
+      5,
+      (index) => DropdownMenuItem<int>(
+        value: DateTime.now().year - index,
+        child: Text('${DateTime.now().year - index}', style: dropdownStyle),
+      ),
+    );
+
+    // Dropdown Months
+    final monthItems = List.generate(
+      12,
+      (index) => DropdownMenuItem<int>(
+        value: index + 1,
+        child: Text(
+          DateFormat('MMMM', 'id_ID').format(DateTime(0, index + 1)),
+          style: dropdownStyle,
+        ),
+      ),
+    );
+
+    // Dropdown Weeks
+    final weekCount = _getWeeksInMonth(_selectedYear, _selectedMonth);
+    final weekItems = [
+      DropdownMenuItem<int?>(
+        value: null,
+        child: Text("Semua Minggu", style: dropdownStyle),
+      ),
+      ...List.generate(
+        weekCount,
+        (index) => DropdownMenuItem<int?>(
+          value: index + 1,
+          child: Text("Minggu ${index + 1}", style: dropdownStyle),
+        ),
+      )
+    ];
+
+    Widget buildDropdown<T>({
+      required T value,
+      required List<DropdownMenuItem<T>> items,
+      required ValueChanged<T?> onChanged,
+      required String hint,
+    }) {
+      return Container(
+        height: 30,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: AppColors.grayLight),
+        ),
+        child: DropdownButton<T>(
+          value: value,
+          items: items,
+          onChanged: onChanged,
+          underline: const SizedBox(),
+          isExpanded: false,
+          icon: const Icon(Icons.keyboard_arrow_down, size: 16),
+          hint: Text(hint, style: dropdownStyle),
+          
+          // --- PENYESUAIAN DESAIN DROPDOWN ---
+          dropdownColor: Colors.white,
+          borderRadius: BorderRadius.circular(6),
+          elevation: 2,
+          // ---------------------------------
+        ),
+      );
+    }
+
+    if (currentView == ChartTimeView.daily) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Tahun
+          buildDropdown<int>(
+            value: _selectedYear,
+            items: yearItems,
+            hint: 'Tahun',
+            onChanged: (val) {
+              if (val != null) setState(() => _selectedYear = val);
+            },
+          ),
+          const SizedBox(width: 8),
+          // Bulan
+          buildDropdown<int>(
+            value: _selectedMonth,
+            items: monthItems,
+            hint: 'Bulan',
+            onChanged: (val) {
+              if (val != null) {
+                setState(() {
+                  _selectedMonth = val;
+                  _selectedWeek = null; // Reset minggu jika bulan berubah
+                });
+              }
+            },
+          ),
+            const SizedBox(width: 8),
+          // Minggu
+          buildDropdown<int?>(
+            value: _selectedWeek,
+            items: weekItems,
+            hint: 'Minggu',
+            onChanged: (val) {
+              setState(() => _selectedWeek = val);
+            },
+          ),
+        ],
+      );
+    } else if (currentView == ChartTimeView.monthly) {
+        return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+                // Tahun (tidak berubah)
+                buildDropdown<int>(
+                    value: _selectedYear,
+                    items: yearItems,
+                    hint: 'Tahun',
+                    onChanged: (val) {
+                        if (val != null) setState(() => _selectedYear = val);
+                    },
+                ),
+                const SizedBox(width: 8),
+                
+                // Kuartal (dengan opsi "Semua Bulan")
+                buildDropdown<int?>( // Tipe datanya diubah ke int?
+                    value: _selectedQuartile,
+                    items: [
+                        // Item baru untuk "Semua Bulan"
+                        DropdownMenuItem<int?>(
+                            value: null, // 'null' merepresentasikan "Semua Bulan"
+                            child: Text("Semua Bulan", style: dropdownStyle),
+                        ),
+                        // Item untuk Kuartal 1-4
+                        ...List.generate(
+                            4,
+                            (index) => DropdownMenuItem<int?>(
+                                value: index + 1,
+                                child: Text("Q${index + 1}", style: dropdownStyle),
+                            ),
+                        )
+                    ],
+                    hint: 'Periode',
+                    onChanged: (val) {
+                        setState(() => _selectedQuartile = val);
+                    },
+                ),
+            ],
+        );
+    }
+
+    return const SizedBox.shrink(); // Tampilan yearly tidak punya dropdown
+  }
+
+
   // --- WIDGET HELPER BARU: HANYA UNTUK KONTEN CHART PROJECT ---
   Widget _buildProjectBarChartItself({
     required Map<String, dynamic> chartData,
@@ -1442,14 +1744,14 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         (chartData['projects'] as List<String>? ?? []);
 
     final List<Color> colorPalette = [
-      AppColors.schneiderGreen,
+      const Color(0xFF1D20E4),
+      const Color(0xFFED1B3A),
+      const Color(0xFFFEB019),
+      const Color(0xFF09AF77),
+      const Color(0xFF008FFB),
       const Color(0xFFFF5DD1),
-      const Color(0xFF0400FF),
-      const Color(0xFFFF9E50),
-      const Color(0xFFFF0000),
-      Colors.orange,
-      Colors.purple,
-      Colors.brown,
+      const Color(0xFF5D5FFF),
+      const Color(0xFFC83CFF),
     ];
     final Map<String, Color> projectColors = {
       for (int i = 0; i < projects.length; i++)
@@ -1526,7 +1828,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   builder: (context, constraints) {
                     final double calculatedWidth =
                         (data.keys.length * widthPerGroup) +
-                        ((data.keys.length - 1) * groupsSpace);
+                            ((data.keys.length - 1) * groupsSpace);
                     final double availableWidth = constraints.maxWidth;
                     final double finalChartWidth = math.max(
                       availableWidth,
@@ -1552,16 +1854,16 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 tooltipMargin: 8,
                                 getTooltipItem:
                                     (group, groupIndex, rod, rodIndex) {
-                                      if (rod.toY == 0) return null;
-                                      return BarTooltipItem(
-                                        rod.toY.round().toString(),
-                                        const TextStyle(
-                                          color: AppColors.black,
-                                          fontWeight: FontWeight.w400,
-                                          fontSize: 14,
-                                        ),
-                                      );
-                                    },
+                                  if (rod.toY == 0) return null;
+                                  return BarTooltipItem(
+                                    rod.toY.round().toString(),
+                                    const TextStyle(
+                                      color: AppColors.black,
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 14,
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                             titlesData: FlTitlesData(
@@ -1571,32 +1873,32 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   showTitles: true,
                                   getTitlesWidget:
                                       (double value, TitleMeta meta) {
-                                        final index = value.toInt();
-                                        if (index >= data.keys.length) {
-                                          return const SizedBox.shrink();
-                                        }
-                                        final key = data.keys.elementAt(index);
-                                        final title =
-                                            _projectChartView ==
+                                    final index = value.toInt();
+                                    if (index >= data.keys.length) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    final key = data.keys.elementAt(index);
+                                    final title =
+                                        _projectChartView ==
                                                 ChartTimeView.monthly
                                             ? key.split(' ')[0]
                                             : _projectChartView ==
-                                                  ChartTimeView.daily
-                                            ? key.replaceAll(', ', '\n')
-                                            : key;
-                                        return SideTitleWidget(
-                                          axisSide: meta.axisSide,
-                                          space: 8.0,
-                                          child: Text(
-                                            title,
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              fontSize: 10,
-                                              color: AppColors.gray,
-                                            ),
-                                          ),
-                                        );
-                                      },
+                                                    ChartTimeView.daily
+                                                ? key.replaceAll(', ', '\n')
+                                                : key;
+                                    return SideTitleWidget(
+                                      axisSide: meta.axisSide,
+                                      space: 8.0,
+                                      child: Text(
+                                        title,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: AppColors.gray,
+                                        ),
+                                      ),
+                                    );
+                                  },
                                   reservedSize: 38,
                                 ),
                               ),
@@ -1628,7 +1930,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   final projectName = projects[projectIndex];
                                   final count =
                                       projectCounts[projectName]?.toDouble() ??
-                                      0;
+                                          0;
                                   final bool isZero = count == 0;
                                   final Color barColor =
                                       projectColors[projectName] ?? Colors.grey;
@@ -1704,12 +2006,16 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   flex: 4,
                   child: Column(
                     children: [
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: _buildToggleButtons(
-                          currentView: currentView,
-                          onToggle: onToggle,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          _buildChartFilterDropdowns(currentView: currentView),
+                          const SizedBox(width: 8),
+                          _buildToggleButtons(
+                            currentView: currentView,
+                            onToggle: onToggle,
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 12),
                       _buildDeliveredSummaryTable(summaryData),
@@ -1743,6 +2049,11 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       onToggle: onToggle,
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: _buildChartFilterDropdowns(currentView: currentView),
                 ),
                 const SizedBox(height: 16),
                 _buildProjectBarChartItself(chartData: chartData),
@@ -1904,23 +2215,25 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // --- WIDGET INI TELAH DIUBAH UNTUK RESPONSIVE LAYOUT ---
   Widget _buildGroupedBarChartCard({
     required String title,
     required Map<String, dynamic> chartData,
     required ChartTimeView currentView,
     required ValueChanged<ChartTimeView> onToggle,
   }) {
-    // (Fungsi ini tidak berubah sama sekali, tetap seperti sebelumnya)
     final Map<String, Map<String, int>> data =
         (chartData['data'] as Map<String, Map<String, int>>? ?? {});
     final List<String> vendors = (chartData['vendors'] as List<String>? ?? []);
-
     final List<Color> colorPalette = [
-      AppColors.schneiderGreen,
+      const Color(0xFF1D20E4),
+      const Color(0xFFED1B3A),
+      const Color(0xFFFEB019),
+      const Color(0xFF09AF77),
+      const Color(0xFF008FFB),
       const Color(0xFFFF5DD1),
-      const Color(0xFF0400FF),
-      const Color(0xFFFF9E50),
-      const Color(0xFFFF0000),
+      const Color(0xFF5D5FFF),
+      const Color(0xFFC83CFF),
     ];
     final Map<String, Color> vendorColors = {
       for (int i = 0; i < vendors.length; i++)
@@ -1937,6 +2250,191 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
     if (maxValue == 0) maxValue = 50;
 
+    Widget legendWidget = vendors.isNotEmpty
+        ? Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            children: vendors.map((vendor) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: vendorColors[vendor],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    vendor,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w300,
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          )
+        : const SizedBox.shrink();
+
+    Widget chartItself = SizedBox(
+      height: 250,
+      child: data.isEmpty
+          ? const Center(
+              child: Text(
+                "Tidak ada data delivery\nyang sesuai filter.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.gray,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            )
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                const double barWidth = 24.0;
+                const double barsSpace = 6.0;
+                const double groupsSpace = 32.0;
+
+                final double widthPerGroup = vendors.isEmpty
+                    ? barWidth
+                    : (vendors.length * barWidth) +
+                        ((vendors.length - 1) * barsSpace);
+                final double calculatedWidth =
+                    (data.keys.length * widthPerGroup) +
+                        ((data.keys.length - 1) * groupsSpace);
+                final double availableWidth = constraints.maxWidth;
+                final double finalChartWidth = math.max(
+                  availableWidth,
+                  calculatedWidth,
+                );
+
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: finalChartWidth,
+                    child: BarChart(
+                      BarChartData(
+                        alignment: calculatedWidth < availableWidth
+                            ? BarChartAlignment.spaceAround
+                            : BarChartAlignment.start,
+                        groupsSpace: groupsSpace,
+                        maxY: maxValue * 1.25,
+                        barTouchData: BarTouchData(
+                          handleBuiltInTouches: false,
+                          touchTooltipData: BarTouchTooltipData(
+                            getTooltipColor: (_) => Colors.transparent,
+                            tooltipPadding: EdgeInsets.zero,
+                            tooltipMargin: 8,
+                            getTooltipItem:
+                                (group, groupIndex, rod, rodIndex) {
+                              if (rod.toY == 0) return null;
+                              return BarTooltipItem(
+                                rod.toY.round().toString(),
+                                const TextStyle(
+                                  color: AppColors.black,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 14,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        titlesData: FlTitlesData(
+                          show: true,
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget:
+                                  (double value, TitleMeta meta) {
+                                final index = value.toInt();
+                                if (index >= data.keys.length) {
+                                  return const SizedBox.shrink();
+                                }
+                                final key = data.keys.elementAt(
+                                  index,
+                                );
+                                final title =
+                                    currentView == ChartTimeView.monthly
+                                        ? key.split(' ')[0]
+                                        : currentView == ChartTimeView.daily
+                                            ? key.replaceAll(', ', '\n')
+                                            : key;
+                                return SideTitleWidget(
+                                  axisSide: meta.axisSide,
+                                  space: 8.0,
+                                  child: Text(
+                                    title,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: AppColors.gray,
+                                    ),
+                                  ),
+                                );
+                              },
+                              reservedSize: 38,
+                            ),
+                          ),
+                          leftTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                        ),
+                        borderData: FlBorderData(show: false),
+                        gridData: const FlGridData(show: false),
+                        barGroups: List.generate(data.keys.length, (
+                          index,
+                        ) {
+                          final monthKey = data.keys.elementAt(index);
+                          final vendorCounts = data[monthKey]!;
+                          return BarChartGroupData(
+                            x: index,
+                            barsSpace: barsSpace,
+                            showingTooltipIndicators: List.generate(
+                              vendors.length,
+                              (i) => i,
+                            ),
+                            barRods: List.generate(vendors.length, (
+                              vendorIndex,
+                            ) {
+                              final vendorName = vendors[vendorIndex];
+                              final count =
+                                  vendorCounts[vendorName]?.toDouble() ?? 0;
+                              final bool isZero = count == 0;
+                              final Color barColor =
+                                  vendorColors[vendorName] ?? Colors.grey;
+
+                              return BarChartRodData(
+                                toY: isZero ? 0.1 : count,
+                                color: barColor.withOpacity(
+                                  isZero ? 1.0 : 1.0,
+                                ),
+                                width: barWidth,
+                                borderRadius: isZero
+                                    ? BorderRadius.circular(2)
+                                    : BorderRadius.circular(6),
+                              );
+                            }),
+                          );
+                        }),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+    );
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1944,215 +2442,91 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.grayLight),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.black,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          const double breakpoint = 850.0;
+          if (constraints.maxWidth > breakpoint) {
+            // DESKTOP LAYOUT
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      chartItself,
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              _buildToggleButtons(currentView: currentView, onToggle: onToggle),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (vendors.isNotEmpty)
-            Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              children: vendors.map((vendor) {
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: vendorColors[vendor],
-                        borderRadius: BorderRadius.circular(4),
+                const SizedBox(width: 24),
+                Expanded(
+                  flex: 4,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          _buildChartFilterDropdowns(currentView: currentView),
+                          const SizedBox(width: 8),
+                          _buildToggleButtons(
+                              currentView: currentView, onToggle: onToggle),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      vendor,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w300,
-                      ),
-                    ),
-                  ],
-                );
-              }).toList(),
-            ),
-          const SizedBox(height: 24),
-          SizedBox(
-            height: 250,
-            child: data.isEmpty
-                ? const Center(
-                    child: Text(
-                      "Tidak ada data delivery\nyang sesuai filter.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.gray,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  )
-                : LayoutBuilder(
-                    builder: (context, constraints) {
-                      const double barWidth = 24.0;
-                      const double barsSpace = 6.0;
-                      const double groupsSpace = 32.0;
-
-                      final double widthPerGroup = vendors.isEmpty
-                          ? barWidth
-                          : (vendors.length * barWidth) +
-                                ((vendors.length - 1) * barsSpace);
-                      final double calculatedWidth =
-                          (data.keys.length * widthPerGroup) +
-                          ((data.keys.length - 1) * groupsSpace);
-                      final double availableWidth = constraints.maxWidth;
-                      final double finalChartWidth = math.max(
-                        availableWidth,
-                        calculatedWidth,
-                      );
-
-                      return SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: SizedBox(
-                          width: finalChartWidth,
-                          child: BarChart(
-                            BarChartData(
-                              alignment: calculatedWidth < availableWidth
-                                  ? BarChartAlignment.spaceAround
-                                  : BarChartAlignment.start,
-                              groupsSpace: groupsSpace,
-                              maxY: maxValue * 1.25,
-                              barTouchData: BarTouchData(
-                                handleBuiltInTouches: false,
-                                touchTooltipData: BarTouchTooltipData(
-                                  getTooltipColor: (_) => Colors.transparent,
-                                  tooltipPadding: EdgeInsets.zero,
-                                  tooltipMargin: 8,
-                                  getTooltipItem:
-                                      (group, groupIndex, rod, rodIndex) {
-                                        if (rod.toY == 0) return null;
-                                        return BarTooltipItem(
-                                          rod.toY.round().toString(),
-                                          const TextStyle(
-                                            color: AppColors.black,
-                                            fontWeight: FontWeight.w400,
-                                            fontSize: 14,
-                                          ),
-                                        );
-                                      },
-                                ),
-                              ),
-                              titlesData: FlTitlesData(
-                                show: true,
-                                bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    getTitlesWidget:
-                                        (double value, TitleMeta meta) {
-                                          final index = value.toInt();
-                                          if (index >= data.keys.length) {
-                                            return const SizedBox.shrink();
-                                          }
-                                          final key = data.keys.elementAt(
-                                            index,
-                                          );
-                                          final title =
-                                              currentView ==
-                                                  ChartTimeView.monthly
-                                              ? key.split(' ')[0]
-                                              : currentView ==
-                                                    ChartTimeView.daily
-                                              ? key.replaceAll(', ', '\n')
-                                              : key;
-                                          return SideTitleWidget(
-                                            axisSide: meta.axisSide,
-                                            space: 8.0,
-                                            child: Text(
-                                              title,
-                                              textAlign: TextAlign.center,
-                                              style: const TextStyle(
-                                                fontSize: 10,
-                                                color: AppColors.gray,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                    reservedSize: 38,
-                                  ),
-                                ),
-                                leftTitles: const AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                topTitles: const AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                rightTitles: const AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                              ),
-                              borderData: FlBorderData(show: false),
-                              gridData: const FlGridData(show: false),
-                              barGroups: List.generate(data.keys.length, (
-                                index,
-                              ) {
-                                final monthKey = data.keys.elementAt(index);
-                                final vendorCounts = data[monthKey]!;
-                                return BarChartGroupData(
-                                  x: index,
-                                  barsSpace: barsSpace,
-                                  showingTooltipIndicators: List.generate(
-                                    vendors.length,
-                                    (i) => i,
-                                  ),
-                                  barRods: List.generate(vendors.length, (
-                                    vendorIndex,
-                                  ) {
-                                    final vendorName = vendors[vendorIndex];
-                                    final count =
-                                        vendorCounts[vendorName]?.toDouble() ??
-                                        0;
-                                    final bool isZero = count == 0;
-                                    final Color barColor =
-                                        vendorColors[vendorName] ?? Colors.grey;
-
-                                    return BarChartRodData(
-                                      toY: isZero ? 0.1 : count,
-                                      color: barColor.withOpacity(
-                                        isZero ? 1.0 : 1.0,
-                                      ),
-                                      width: barWidth,
-                                      borderRadius: isZero
-                                          ? BorderRadius.circular(2)
-                                          : BorderRadius.circular(6),
-                                    );
-                                  }),
-                                );
-                              }),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+                      const SizedBox(height: 16),
+                      legendWidget,
+                    ],
                   ),
-          ),
-        ],
+                ),
+              ],
+            );
+          } else {
+            // MOBILE LAYOUT
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.black,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildToggleButtons(
+                        currentView: currentView, onToggle: onToggle),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft, // Disamakan dengan Project
+                  child: _buildChartFilterDropdowns(currentView: currentView),
+                ),
+                const SizedBox(height: 16),
+                legendWidget,
+                const SizedBox(height: 24),
+                chartItself,
+              ],
+            );
+          }
+        },
       ),
     );
   }
@@ -2239,6 +2613,52 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
+      ),
+    );
+  }
+  BarTooltipItem? _getTooltipWithComparison(
+    BarChartGroupData group,
+    int groupIndex,
+    BarChartRodData rod,
+    int rodIndex,
+    Map<String, Map<String, int>> chartData,
+    List<String> seriesNames, // Ini bisa berupa 'vendors' atau 'projects'
+  ) {
+    // Jangan tampilkan tooltip untuk bar yang nilainya nol
+    if (rod.toY.round() == 0) return null;
+
+    final currentValue = rod.toY.round();
+    String tooltipText = '$currentValue';
+
+    // Lakukan perbandingan hanya jika ini bukan grup data pertama (indeks > 0)
+    if (groupIndex > 0) {
+      // Ambil key dari grup data sebelumnya (misal: "Sep 2025")
+      final previousGroupKey = chartData.keys.elementAt(groupIndex - 1);
+      final previousGroupData = chartData[previousGroupKey];
+
+      // Ambil nama dari seri data saat ini (misal: "ABACUS" atau nama project)
+      final seriesName = seriesNames[rodIndex];
+
+      // Ambil nilai dari seri yang sama pada periode sebelumnya, default ke 0 jika tidak ada
+      final previousValue = previousGroupData?[seriesName] ?? 0;
+
+      final diff = currentValue - previousValue;
+      
+      // Format teks perubahan berdasarkan nilai perbedaan (diff)
+      if (diff > 0) {
+        tooltipText += ' (+${diff})'; // Hasil: 20 (+2)
+      } else if (diff < 0) {
+        tooltipText += ' (${diff})'; // Hasil: 18 (-2)
+      }
+      // Jika tidak ada perubahan (diff == 0), kita tidak menambahkan apa-apa
+    }
+
+    return BarTooltipItem(
+      tooltipText,
+      const TextStyle(
+        color: AppColors.black,
+        fontWeight: FontWeight.w500, // Sedikit tebalkan agar mudah dibaca
+        fontSize: 12, // Sedikit kecilkan agar muat
       ),
     );
   }
