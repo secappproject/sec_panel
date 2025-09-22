@@ -680,6 +680,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
                   );
                 }
                 return IssueCard(
+                  panelNoPp: widget.panelNoPp,
                   issue: issues[index - 1],
                   onUpdate: () => _loadIssues(showLoading: false),
                 );

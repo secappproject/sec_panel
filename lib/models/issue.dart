@@ -80,6 +80,7 @@ class Issue {
   final String createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? notifyEmail;
 
   Issue({
     required this.id,
@@ -91,6 +92,7 @@ class Issue {
     required this.createdBy,
     required this.createdAt,
     required this.updatedAt,
+    this.notifyEmail, 
   });
 
   LogEntry get lastLog {
@@ -124,6 +126,7 @@ class Issue {
       createdBy: json['created_by'] ?? 'unknown',
       createdAt: DateTime.parse(json['created_at']).toLocal(),
       updatedAt: DateTime.parse(json['updated_at']).toLocal(),
+      notifyEmail: json['notify_email'], 
     );
   }
 }
@@ -142,6 +145,7 @@ class IssueWithPhotos extends Issue {
     required super.createdAt,
     required super.updatedAt,
     required this.photos,
+    required super.notifyEmail,
   });
 
   factory IssueWithPhotos.fromJson(Map<String, dynamic> json) {
@@ -165,7 +169,8 @@ class IssueWithPhotos extends Issue {
       createdBy: issuePart.createdBy,
       createdAt: issuePart.createdAt,
       updatedAt: issuePart.updatedAt,
-      photos: photoList,
+      photos: photoList,      
+      notifyEmail: issuePart.notifyEmail, 
     );
   }
 }

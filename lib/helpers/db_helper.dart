@@ -15,7 +15,6 @@ import 'package:secpanel/models/companyaccount.dart';
 import 'package:secpanel/models/component.dart';
 import 'package:secpanel/models/corepart.dart';
 import 'package:secpanel/models/issue.dart';
-import 'package:secpanel/models/issuetest.dart' hide Issue;
 import 'package:secpanel/models/palet.dart';
 import 'package:secpanel/models/paneldisplaydata.dart';
 import 'package:secpanel/models/panels.dart';
@@ -1300,4 +1299,18 @@ Future<Company?> getCompanyByUsername(String username) async {
       throw Exception('Format respon dari AI tidak valid.');
     }
   }
+
+  Future<List<String>> getEmailRecommendations({required String panelNoPp}) async {
+  // Hanya panggil API jika panelNoPp tidak kosong
+  if (panelNoPp.isEmpty) {
+    return [];
+  }
+
+  final endpoint = '/issues/email-recommendations?panel_no_pp=${Uri.encodeComponent(panelNoPp)}';
+
+  final List<dynamic>? data = await _apiRequest('GET', endpoint);
+
+  if (data == null) return [];
+  return List<String>.from(data);
+}
 }
