@@ -53,6 +53,8 @@ dependencies:
   uuid: ^4.3.3 
   rich_text_controller: ^3.0.1
   fl_chart: ^0.68.0 
+  video_player: ^2.10.0
+  animations: ^2.0.11
 
 dev_dependencies:
   flutter_test:
@@ -122,6 +124,7 @@ flutter:
     - .env
     - assets/images/
     - assets/images/factory-background.png
+    - assets/videos/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

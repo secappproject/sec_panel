@@ -1,12 +1,18 @@
+// lib/login_page.dart
+
+import 'dart:async';
+import 'package:secpanel/login_change_password.dart';
+import 'package:secpanel/login_custom_page_route.dart';
+import 'package:video_player/video_player.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:secpanel/components/issue/panel_issue_screen.dart';
 import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/models/company.dart';
 import 'package:secpanel/theme/colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
+
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -92,7 +98,7 @@ class _LoginPageState extends State<LoginPage> {
       }
     }
   }
-
+  
   @override
   Widget build(BuildContext context) {
     if (_isPageLoading) {
@@ -113,69 +119,70 @@ class _LoginPageState extends State<LoginPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth > 768) {
-              return _buildWebAppLayout();
-            }
-            return _buildMobileLayout();
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWebAppLayout() {
-    return Row(
-      children: [
-        Expanded(
-          flex: 1,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    _buildFormFields(),
-                    const SizedBox(height: 32),
-                    _buildActionButtons(),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 1,
-          child: Image.asset(
-            'assets/images/factory-background.png',
-            fit: BoxFit.cover,
-            height: double.infinity,
-            width: double.infinity,
-            errorBuilder: (context, error, stackTrace) => Container(
-              color: Colors.grey.shade200,
-              child: const Center(child: Text('Gagal memuat gambar.')),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMobileLayout() {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: Stack(
+        alignment: Alignment.center,
         children: [
-          Expanded(child: SingleChildScrollView(child: _buildFormFields())),
-          _buildActionButtons(),
+          const VideoBackground(),
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth > 768) {
+                  return _buildWebAppLayout();
+                }
+                return _buildMobileLayout();
+              },
+            ),
+          ),
         ],
       ),
     );
   }
+  
+  Widget _buildWebAppLayout() {
+    return Center(
+      child: Container(
+        width: 400,
+        padding: const EdgeInsets.all(32.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              spreadRadius: 5,
+            )
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildFormFields(),
+            const SizedBox(height: 32),
+            _buildActionButtons(isWebLayout: true),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return Container(
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(child: SingleChildScrollView(child: _buildFormFields())),
+            _buildActionButtons(isWebLayout: false),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildFormFields() {
     return Column(
@@ -184,14 +191,28 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 50),
         Image.asset('assets/images/logo.jpeg', height: 120),
         const SizedBox(height: 24),
-        const Text(
-          'Login',
-          style: TextStyle(
-            fontFamily: 'Lexend',
-            fontWeight: FontWeight.w400,
-            fontSize: 24,
-            color: AppColors.black,
-          ),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Masuk dengan Akun Anda',
+              style: TextStyle(
+                fontFamily: 'Lexend',
+                fontWeight: FontWeight.w400,
+                fontSize: 24,
+                color: AppColors.black,
+              ),
+            ),const Text(
+              'Hubungi admin jika ada kendala akun.',
+              style: TextStyle(
+                fontFamily: 'Lexend',
+                fontWeight: FontWeight.w300,
+                fontSize: 14,
+                color: AppColors.gray,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 40),
         _buildUsernameField(),
@@ -201,14 +222,84 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  /// [PERUBAHAN UTAMA] Widget yang hanya berisi tombol-tombol aksi.
-  /// Diubah dari Column menjadi Row untuk posisi kanan-kiri.
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons({bool isWebLayout = false}) {
     final areButtonsDisabled = _isLoading || _isPageLoading;
-    // Menggunakan Row untuk menata tombol secara horizontal
+
+    if (isWebLayout) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 52),
+              shadowColor: Colors.transparent,
+              backgroundColor: AppColors.schneiderGreen,
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: AppColors.schneiderGreen.withOpacity(0.7),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            onPressed: areButtonsDisabled ? null : _login,
+            child: _isLoading
+                ? const SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 3,
+                    ),
+                  )
+                : const Text(
+                    'Masuk',
+                    style: TextStyle(
+                      fontFamily: 'Lexend',
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 24),
+          TextButton(
+            // [PERUBAHAN] Menggunakan route kustom untuk transisi
+            onPressed: areButtonsDisabled
+                ? null
+                : () => Navigator.of(context).push(
+                      FadeThroughPageRoute(page: const LoginChangePasswordPage()),
+                    ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'Pertama Kali Masuk Akun? ',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Lexend',
+                    fontWeight: FontWeight.w300,
+                    fontSize: 12,
+                    color: AppColors.gray,
+                  ),
+                ),
+                const Text(
+                  ' Ganti Password',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Lexend',
+                    fontWeight: FontWeight.w400,
+                    fontSize: 12,
+                    color: AppColors.schneiderGreen,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
     return Row(
       children: [
-        // Tombol "Masuk & Ubah Password" di sisi kiri
         Expanded(
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
@@ -218,21 +309,14 @@ class _LoginPageState extends State<LoginPage> {
                 borderRadius: BorderRadius.circular(6),
               ),
             ),
+            // [PERUBAHAN] Menggunakan route kustom untuk transisi
             onPressed: areButtonsDisabled
                 ? null
-                : () => Navigator.pushNamed(context, '/login-change-password'),
-            // : () => Navigator.push(
-            //     context,
-            //     MaterialPageRoute(
-            //       builder: (context) => PanelIssuesScreen(
-            //         panelNoPp: 'F05_NO PP', // Ambil dari data panel
-            //         panelVendor: 'ABACUS', // Ambil dari data panel
-            //         busbarVendor: 'Presisi', // Ambil dari data panel
-            //       ),
-            //     ),
-            //   ),
+                : () => Navigator.of(context).push(
+                      FadeThroughPageRoute(page: const LoginChangePasswordPage()),
+                    ),
             child: const Text(
-              'Ubah Password', // Disingkat agar muat
+              'Ubah Password',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'Lexend',
@@ -243,18 +327,15 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-        const SizedBox(width: 12), // Jarak antar tombol
-        // Tombol "Masuk" di sisi kanan
+        const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size(0, 52), // Lebar diatur oleh Expanded
+              minimumSize: const Size(0, 52),
               shadowColor: Colors.transparent,
               backgroundColor: AppColors.schneiderGreen,
               foregroundColor: Colors.white,
-              disabledBackgroundColor: AppColors.schneiderGreen.withOpacity(
-                0.7,
-              ),
+              disabledBackgroundColor: AppColors.schneiderGreen.withOpacity(0.7),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(6),
               ),
@@ -282,8 +363,6 @@ class _LoginPageState extends State<LoginPage> {
       ],
     );
   }
-
-  // --- SKELETON LAYOUTS & WIDGET HELPERS (Tidak ada perubahan) ---
 
   Widget _buildWebAppSkeletonLayout() {
     return Row(
@@ -319,14 +398,9 @@ class _LoginPageState extends State<LoginPage> {
             const SizedBox(height: 16),
             _buildSkeletonBox(height: 52),
             const SizedBox(height: 32),
-            // Skeleton untuk tombol yang bersebelahan
-            Row(
-              children: [
-                Expanded(child: _buildSkeletonBox(height: 52)),
-                const SizedBox(width: 12),
-                Expanded(child: _buildSkeletonBox(height: 52)),
-              ],
-            ),
+            _buildSkeletonBox(height: 52),
+            const SizedBox(height: 16),
+            _buildSkeletonBox(height: 20, width: 250),
           ],
         ),
       ),
@@ -355,41 +429,58 @@ class _LoginPageState extends State<LoginPage> {
       onSelected: (String selection) {
         _usernameController.text = selection;
       },
-      fieldViewBuilder:
-          (
-            context,
-            fieldTextEditingController,
-            fieldFocusNode,
-            onFieldSubmitted,
-          ) {
-            if (_usernameController.text != fieldTextEditingController.text) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _usernameController.text = fieldTextEditingController.text;
-              });
-            }
-            return TextField(
-              controller: fieldTextEditingController,
-              focusNode: fieldFocusNode,
-              decoration: _inputDecoration('Username'),
-            );
-          },
+      fieldViewBuilder: (
+        context,
+        fieldTextEditingController,
+        fieldFocusNode,
+        onFieldSubmitted,
+      ) {
+        if (_usernameController.text != fieldTextEditingController.text) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _usernameController.text = fieldTextEditingController.text;
+          });
+        }
+        return TextField(
+          controller: fieldTextEditingController,
+          focusNode: fieldFocusNode,
+          decoration: _inputDecoration('Username'),
+        );
+      },
       optionsViewBuilder: (context, onSelected, options) {
+        final field = context.findRenderObject() as RenderBox;
+        final size = field.size;
+
         return Align(
           alignment: Alignment.topLeft,
-          child: Material(
-            elevation: 4.0,
-            borderRadius: BorderRadius.circular(8),
+          child: Container(
+            width: size.width,
+            margin: const EdgeInsets.only(top: 8.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.grayNeutral.withOpacity(0.5)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 200),
               child: ListView.builder(
-                padding: EdgeInsets.zero,
+                padding: const EdgeInsets.all(8.0),
                 itemCount: options.length,
                 itemBuilder: (context, index) {
                   final option = options.elementAt(index);
                   return InkWell(
                     onTap: () => onSelected(option),
+                    borderRadius: BorderRadius.circular(6),
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 12.0),
                       child: Text(option),
                     ),
                   );
@@ -429,7 +520,7 @@ class _LoginPageState extends State<LoginPage> {
         color: Colors.black87,
       ),
       filled: true,
-      fillColor: AppColors.white,
+      fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
@@ -475,19 +566,20 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-void _showSuccessSnackBar(String message) {
-  if (!mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        message,
-        style: const TextStyle(fontWeight: FontWeight.w300, fontSize: 12),
+
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(fontWeight: FontWeight.w300, fontSize: 12),
+        ),
+        backgroundColor: const Color.fromARGB(255, 39, 40, 39),
+        behavior: SnackBarBehavior.floating,
       ),
-      backgroundColor: const Color.fromARGB(255, 39, 40, 39),
-      behavior: SnackBarBehavior.floating,
-    ),
-  );
-}
+    );
+  }
 
   Future<void> _showSettingsDialog({
     required String title,
@@ -515,5 +607,154 @@ void _showSuccessSnackBar(String message) {
         ),
       );
     }
+  }
+}
+
+// [WIDGET VIDEO BACKGROUND] - Disederhanakan dan lebih stabil
+class VideoBackground extends StatefulWidget {
+  const VideoBackground({super.key});
+
+  @override
+  State<VideoBackground> createState() => _VideoBackgroundState();
+}
+
+class _VideoBackgroundState extends State<VideoBackground> {
+  late VideoPlayerController _controller;
+
+  Timer? _textAnimationTimer;
+  int _currentTextIndex = 0;
+  double _textOpacity = 0.0;
+
+  final List<String> _sloganTexts = [
+    'Trisutorpro',
+    'Lacak panel yang perlu diselesaikan segera',
+    'Pastikan pengiriman panel tepat waktu.',
+    'Catat dan selesaikan setiap kendala dengan mudah.',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller =
+        VideoPlayerController.asset('assets/videos/factory-background.mp4')
+          ..initialize().then((_) {
+            _controller.play();
+            _controller.setVolume(0.0);
+            _controller.addListener(_checkVideoPosition);
+            setState(() {});
+            _startTextAnimation();
+          });
+  }
+
+  void _startTextAnimation() {
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _textOpacity = 1.0;
+        });
+      }
+    });
+
+    _textAnimationTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted) {
+        setState(() {
+          _textOpacity = 0.0;
+        });
+
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            setState(() {
+              _currentTextIndex = (_currentTextIndex + 1) % _sloganTexts.length;
+              _textOpacity = 1.0;
+            });
+          }
+        });
+      }
+    });
+  }
+
+  void _checkVideoPosition() {
+    if (_controller.value.position >= const Duration(seconds: 30)) {
+      _controller.seekTo(Duration.zero);
+    }
+  }
+
+  @override
+  void dispose() {
+    _textAnimationTimer?.cancel();
+    _controller.removeListener(_checkVideoPosition);
+    _controller.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_controller.value.isInitialized) {
+      return Container(color: Colors.grey.shade200);
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        FittedBox(
+          fit: BoxFit.cover,
+          alignment: Alignment.centerRight,
+          child: SizedBox(
+            width: _controller.value.size.width,
+            height: _controller.value.size.height,
+            child: VideoPlayer(_controller),
+          ),
+        ),
+        Container(
+          color: AppColors.schneiderGreen.withOpacity(0.3),
+        ),
+        Positioned(
+          bottom: 40,
+          left: 40,
+          right: 40,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AnimatedOpacity(
+                opacity: _textOpacity,
+                duration: const Duration(milliseconds: 500),
+                child: Text(
+                  _sloganTexts[_currentTextIndex],
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w600,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 10.0,
+                        color: Colors.black.withOpacity(0.5),
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: _sloganTexts.asMap().entries.map((entry) {
+                  int index = entry.key;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: index == _currentTextIndex ? 30.0 : 10.0,
+                    height: 5.0,
+                    margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                    decoration: BoxDecoration(
+                      color: index == _currentTextIndex
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }

@@ -400,7 +400,7 @@ class PanelProgressCard extends StatelessWidget {
                         children: [
                           Container(
                             height: 11,
-                            width: MediaQuery.of(context).size.width * 0.17,
+                            width: MediaQuery.of(context).size.width * 0.10,
                             decoration: BoxDecoration(
                               color: Colors.grey[300],
                               borderRadius: BorderRadius.circular(20),

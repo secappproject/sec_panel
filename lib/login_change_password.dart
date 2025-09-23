@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:secpanel/helpers/db_helper.dart';
+import 'package:secpanel/login.dart';
 import 'package:secpanel/models/company.dart';
 import 'package:secpanel/theme/colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -87,159 +88,126 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
     }
   }
 
+  // [PERUBAHAN] Widget build() diubah total untuk meniru struktur LoginPage
   @override
   Widget build(BuildContext context) {
-    final bool isMobileView = MediaQuery.of(context).size.width <= 768;
-
     return Scaffold(
       backgroundColor: Colors.white,
-      // [PERBAIKAN 1] AppBar dengan judul yang benar untuk mobile
-      appBar: isMobileView
-          ? AppBar(
-              backgroundColor: Colors.white,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              iconTheme: const IconThemeData(color: Colors.black),
-              title: const Text(
-                'Change Password',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontFamily: 'Lexend',
-                  fontSize: 24,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+      body: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Lapisan 1: Video background, akan tertutup warna putih di mobile
+          const VideoBackground(),
+
+          // Lapisan 2: Konten form
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth > 768) {
+                  return _buildWebAppLayout();
+                }
+                return _buildMobileLayout();
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // [PERUBAHAN] Layout Web diubah agar sama persis dengan LoginPage
+  Widget _buildWebAppLayout() {
+    return Center(
+      child: Container(
+        width: 400,
+        padding: const EdgeInsets.all(32.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              spreadRadius: 5,
             )
-          : null,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth > 768) {
-              return _buildWebAppLayout();
-            }
-            return _buildMobileLayout();
-          },
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildChangePasswordForm(),
+            const SizedBox(height: 32),
+            _buildActionButtons(),
+          ],
         ),
       ),
     );
   }
 
-  // Layout untuk tampilan Web (layar lebar)
-  Widget _buildWebAppLayout() {
-    return Row(
-      children: [
-        Expanded(
-          flex: 1,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 450),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildChangePasswordForm(isWeb: true),
-                    const SizedBox(height: 32),
-                    _buildActionButtons(),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 1,
-          child: Image.asset(
-            'assets/images/factory-background.png',
-            fit: BoxFit.cover,
-            height: double.infinity,
-            width: double.infinity,
-            errorBuilder: (context, error, stackTrace) => Container(
-              color: Colors.grey.shade200,
-              child: const Center(child: Text('Gagal memuat gambar.')),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Layout untuk tampilan Mobile (layar sempit)
+  // [PERUBAHAN] Layout Mobile diubah untuk bekerja di dalam Stack
   Widget _buildMobileLayout() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+    return Container(
+      color: Colors.white, // Menutupi video background di layar kecil
       child: Column(
         children: [
-          const SizedBox(height: 40),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Image.asset('assets/images/logo.jpeg', height: 120),
-              const SizedBox(height: 24),
-              // [PERBAIKAN 1] Judul besar untuk tampilan web
-              Container(
-                width: MediaQuery.of(context).size.width,
-                child: const Text(
-                  'Change Password',
-                  style: TextStyle(
-                    fontFamily: 'Lexend',
-                    fontWeight: FontWeight.w400,
-                    fontSize: 24,
-                    color: AppColors.black,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 40),
-          Expanded(
-            child: SingleChildScrollView(
-              child: _buildChangePasswordForm(isWeb: false),
+          // AppBar kustom agar bisa ada di dalam body Stack
+          AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
             ),
           ),
-          _buildActionButtons(),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: _buildChangePasswordForm(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildActionButtons(),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // Widget yang berisi field-field form
-  Widget _buildChangePasswordForm({required bool isWeb}) {
+  // [PERUBAHAN] Form dibuat menjadi satu widget reusable
+  Widget _buildChangePasswordForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (isWeb) ...[
-          TextButton.icon(
-            icon: const Icon(Icons.arrow_back, color: AppColors.schneiderGreen),
-            label: const Text(
-              'Kembali ke Login',
-              style: TextStyle(
-                color: AppColors.schneiderGreen,
-                fontFamily: 'Lexend',
-              ),
-            ),
-            onPressed: () => Navigator.of(context).pop(),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              alignment: Alignment.centerLeft,
-            ),
+        Image.asset('assets/images/logo.jpeg', height: 120),
+        const SizedBox(height: 24),
+        const Text(
+          'Ubah Password Anda',
+          style: TextStyle(
+            fontFamily: 'Lexend',
+            fontWeight: FontWeight.w400,
+            fontSize: 24,
+            color: AppColors.black,
           ),
-          const SizedBox(height: 24),
-          Image.asset('assets/images/logo.jpeg', height: 120),
-          const SizedBox(height: 24),
-          // [PERBAIKAN 1] Judul besar untuk tampilan web
-          const Text(
-            'Change Password',
-            style: TextStyle(
-              fontFamily: 'Lexend',
-              fontWeight: FontWeight.w400,
-              fontSize: 24,
-              color: AppColors.black,
-            ),
+        ),
+        const Text(
+          'Gunakan password lama untuk mengganti ke password baru.',
+          style: TextStyle(
+            fontFamily: 'Lexend',
+            fontWeight: FontWeight.w300,
+            fontSize: 14,
+            color: AppColors.gray,
           ),
-          const SizedBox(height: 40),
-        ],
-        if (!isWeb) const SizedBox(height: 24),
+        ),
+        const SizedBox(height: 40),
         _buildUsernameField(),
         const SizedBox(height: 16),
         _buildCurrentPasswordField(),
@@ -249,7 +217,7 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
     );
   }
 
-  // [PERBAIKAN 2] Widget tombol sekarang menggunakan Row
+  // [PERUBAHAN] Tombol dibuat lebih konsisten, mirip _buildActionButtons di LoginPage
   Widget _buildActionButtons() {
     return Row(
       children: [
@@ -269,22 +237,20 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
               style: TextStyle(
                 fontFamily: 'Lexend',
                 fontWeight: FontWeight.w500,
-                fontSize: 12,
+                fontSize: 14,
                 color: AppColors.schneiderGreen,
               ),
             ),
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 52),
               backgroundColor: AppColors.schneiderGreen,
               foregroundColor: Colors.white,
-              disabledBackgroundColor: AppColors.schneiderGreen.withOpacity(
-                0.7,
-              ),
+              disabledBackgroundColor: AppColors.schneiderGreen.withOpacity(0.7),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(6),
               ),
@@ -300,11 +266,11 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
                     ),
                   )
                 : const Text(
-                    'Simpan & Masuk',
+                    'Simpan',
                     style: TextStyle(
                       fontFamily: 'Lexend',
                       fontWeight: FontWeight.w500,
-                      fontSize: 12,
+                      fontSize: 14,
                     ),
                   ),
           ),
@@ -313,7 +279,7 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
     );
   }
 
-  // Sisa kode di bawah ini tidak ada perubahan
+  // Sisa kode di bawah ini (fields, snackbars) tidak ada perubahan signifikan
   Widget _buildUsernameField() {
     return Autocomplete<String>(
       optionsBuilder: (TextEditingValue textEditingValue) {
@@ -324,40 +290,52 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
       },
       onSelected: (String selection) => _usernameController.text = selection,
       fieldViewBuilder:
-          (
-            context,
-            fieldTextEditingController,
-            fieldFocusNode,
-            onFieldSubmitted,
-          ) {
-            if (_usernameController.text != fieldTextEditingController.text) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _usernameController.text = fieldTextEditingController.text;
-              });
-            }
-            return TextField(
-              controller: fieldTextEditingController,
-              focusNode: fieldFocusNode,
-              decoration: _buildInputDecoration('Username'),
-            );
-          },
+          (context, fieldTextEditingController, fieldFocusNode, onFieldSubmitted) {
+        if (_usernameController.text != fieldTextEditingController.text) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _usernameController.text = fieldTextEditingController.text;
+          });
+        }
+        return TextField(
+          controller: fieldTextEditingController,
+          focusNode: fieldFocusNode,
+          decoration: _buildInputDecoration('Username'),
+        );
+      },
       optionsViewBuilder: (context, onSelected, options) {
+        final field = context.findRenderObject() as RenderBox;
+        final size = field.size;
         return Align(
           alignment: Alignment.topLeft,
-          child: Material(
-            elevation: 4.0,
-            borderRadius: BorderRadius.circular(8),
+          child: Container(
+            width: size.width,
+            margin: const EdgeInsets.only(top: 8.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.grayNeutral.withOpacity(0.5)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 200),
               child: ListView.builder(
-                padding: EdgeInsets.zero,
+                padding: const EdgeInsets.all(8.0),
                 itemCount: options.length,
                 itemBuilder: (context, index) {
                   final option = options.elementAt(index);
                   return InkWell(
                     onTap: () => onSelected(option),
+                    borderRadius: BorderRadius.circular(6),
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 12.0),
                       child: Text(option),
                     ),
                   );
@@ -419,7 +397,7 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
         color: Colors.black87,
       ),
       filled: true,
-      fillColor: AppColors.white,
+      fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),

@@ -29,6 +29,33 @@ class _ProjectWbsSummary {
   });
 }
 
+// ### BARU: Helper class untuk membuat TabBar menjadi sticky ###
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverAppBarDelegate(this._tabBar);
+
+  final TabBar _tabBar;
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor, // Warna background saat menempel
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return false;
+  }
+}
+
+
 class HomeScreen extends StatefulWidget {
   final Company currentCompany;
 
@@ -751,6 +778,243 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildProductionSummaryCard() {
+    // Helper widget for creating small tags (e.g., "1 di LV1")
+    Widget buildTag(String text) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        decoration: ShapeDecoration(
+          color: const Color(0xFFF5F5F5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 10,
+            fontFamily: 'Lexend',
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+      );
+    }
+
+    // Helper widget for creating a section row (e.g., "In Production")
+    Widget buildSection(String title, String subtitle, List<Widget> tags) {
+      return Container(
+        decoration: const ShapeDecoration(
+          shape: RoundedRectangleBorder(
+            side: BorderSide(width: 1, color: Color(0xFFF5F5F5)),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Placeholder for icon
+                  if (title == "In Production")...[
+                  Container(
+                    width: 28,
+                    height: 28,
+                    child: Image.asset("assets/images/in.png"),
+                  ),
+                  ],
+                  if (title == "Out Production")...[
+                  Container(
+                    width: 28,
+                    height: 28,
+                    child: Image.asset("assets/images/out.png"),
+                  ),
+                  ],
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 14,
+                          fontFamily: 'Lexend',
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: Color(0xFF5C5C5C),
+                          fontSize: 12,
+                          fontFamily: 'Lexend',
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: tags,
+              )
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: ShapeDecoration(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(
+            width: 1,
+            strokeAlign: BorderSide.strokeAlignOutside,
+            color: Color(0xFFF5F5F5),
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: const ShapeDecoration(
+              color: Colors.white,
+              shape: RoundedRectangleBorder(
+                side: BorderSide(width: 1, color: Color(0xFFF5F5F5)),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(8),
+                  topRight: Radius.circular(8),
+                ),
+              ),
+            ),
+            child: const Text(
+              'Production',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+                fontFamily: 'Lexend',
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+          // "In Production" Section
+          buildSection(
+            'In Production',
+            '7 Panel in Total',
+            [
+              buildTag('1 di LV1'),
+              buildTag('1 di LV2'),
+              buildTag('1 di LV3'),
+              buildTag('1 di LV4'),
+              buildTag('1 di LV5'),
+              buildTag('1 di LV6'),
+              buildTag('1 di LV7'),
+            ],
+          ),
+          // "Out Production" Section
+          buildSection(
+            'Out Production',
+            '7 Panel in Total',
+            [
+              buildTag('1 di LV1'),
+              buildTag('1 di LV2'),
+              buildTag('1 di LV3'),
+              buildTag('1 di LV4'),
+              buildTag('1 di LV5'),
+              buildTag('1 di LV6'),
+              buildTag('1 di LV7'),
+            ],
+          ),
+          // Buttons
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            child: Column(
+              children: [
+                InkWell(
+                  onTap: () {},
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: double.infinity,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                    decoration: ShapeDecoration(
+                      shape: RoundedRectangleBorder(
+                        side: const BorderSide(width: 1, color: Color(0xFF008A15)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'Move Panel to Production',
+                        style: TextStyle(
+                          color: Color(0xFF008A15),
+                          fontSize: 14,
+                          fontFamily: 'Lexend',
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: () {},
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: double.infinity,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                    decoration: ShapeDecoration(
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        side: const BorderSide(width: 1, color: Color(0xFFF5F5F5)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'See Detail',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 14,
+                            fontFamily: 'Lexend',
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        // Placeholder for icon
+                        Container(
+                          width: 16,
+                          height: 16,
+                          clipBehavior: Clip.antiAlias,
+                          decoration: const BoxDecoration(),
+                          child:  Image.asset("assets/images/arrow-up-right.png",height: 16,)
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildContentView() {
     final baseFilteredList = _panelsAfterPrimaryFilters;
     final role = widget.currentCompany.role;
@@ -803,9 +1067,39 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               (data.panel.percentProgress ?? 0) >= 100 && !data.panel.isClosed,
         )
         .length;
-    final closedPanelCount = baseFilteredList
-        .where((data) => data.panel.isClosed)
-        .length;
+    final closedPanelCount =
+        baseFilteredList.where((data) => data.panel.isClosed).length;
+
+    final tabBarWidget = TabBar(
+      controller: _tabController,
+      isScrollable: true,
+      labelColor: AppColors.black,
+      unselectedLabelColor: AppColors.gray,
+      indicatorColor: AppColors.schneiderGreen,
+      indicatorWeight: 2,
+      tabAlignment: TabAlignment.start,
+      padding: EdgeInsets.zero,
+      indicatorSize: TabBarIndicatorSize.label,
+      overlayColor: WidgetStateProperty.all(Colors.transparent),
+      dividerColor: Colors.transparent,
+      labelStyle: const TextStyle(
+        fontWeight: FontWeight.w500,
+        fontFamily: 'Lexend',
+        fontSize: 12,
+      ),
+      unselectedLabelStyle: const TextStyle(
+        fontWeight: FontWeight.w400,
+        fontFamily: 'Lexend',
+        fontSize: 12,
+      ),
+      tabs: [
+        Tab(text: "All ($allCount)"),
+        Tab(text: "Open Vendor ($openVendorCount)"),
+        Tab(text: "Need to Track ($onGoingPanelCount)"),
+        Tab(text: "Ready to Delivery ($readyToDeliveryCount)"),
+        Tab(text: "Closed Panel ($closedPanelCount)"),
+      ],
+    );
 
     return Column(
       children: [
@@ -867,14 +1161,15 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: AppColors.grayLight),
                       ),
-                      child:
-                          _isChartView? Image.asset(
-                            'assets/images/panel.png',
-                            height: 20,
-                          ):Image.asset(
-                            'assets/images/graph.png',
-                            height: 20,
-                          ),
+                      child: _isChartView
+                          ? Image.asset(
+                              'assets/images/panel.png',
+                              height: 20,
+                            )
+                          : Image.asset(
+                              'assets/images/graph.png',
+                              height: 20,
+                            ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -898,46 +1193,75 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ],
               ),
-              if (!_isChartView)
-                TabBar(
-                  controller: _tabController,
-                  isScrollable: true,
-                  labelColor: AppColors.black,
-                  unselectedLabelColor: AppColors.gray,
-                  indicatorColor: AppColors.schneiderGreen,
-                  indicatorWeight: 2,
-                  tabAlignment: TabAlignment.start,
-                  padding: EdgeInsets.zero,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  overlayColor: WidgetStateProperty.all(Colors.transparent),
-                  dividerColor: Colors.transparent,
-                  labelStyle: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Lexend',
-                    fontSize: 12,
-                  ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontWeight: FontWeight.w400,
-                    fontFamily: 'Lexend',
-                    fontSize: 12,
-                  ),
-                  tabs: [
-                    Tab(text: "All ($allCount)"),
-                    Tab(text: "Open Vendor ($openVendorCount)"),
-                    Tab(text: "Need to Track ($onGoingPanelCount)"),
-                    Tab(text: "Ready to Delivery ($readyToDeliveryCount)"),
-                    Tab(text: "Closed Panel ($closedPanelCount)"),
-                  ],
-                ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        Expanded(child: _isChartView ? _buildChartView() : _buildPanelView()),
+        
+        Expanded(
+          child: _isChartView
+              ? _buildChartView()
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    bool isDesktop = constraints.maxWidth > 950;
+
+                    if (isDesktop) {
+                      // Layout Desktop (2 Kolom)
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 320,
+                              child: SingleChildScrollView(
+                                child: _buildProductionSummaryCard(),
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  tabBarWidget,
+                                  const SizedBox(height:12),
+                                  Expanded(child: _buildPanelView()),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      // ### PERUBAHAN ###
+                      // Layout Mobile (Scrollable dengan Sticky Header)
+                      return CustomScrollView(
+                        slivers: [
+                          // Card di atas
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                              child: _buildProductionSummaryCard(),
+                            ),
+                          ),
+                          // TabBar yang menempel
+                          SliverPersistentHeader(
+                            delegate: _SliverAppBarDelegate(tabBarWidget),
+                            pinned: true,
+                          ),
+                          // Daftar Panel
+                          _buildPanelSliverList(),
+                        ],
+                      );
+                    }
+                  },
+                ),
+        ),
       ],
     );
   }
-
+  
+  // ### DIUBAH ###
+  // Method ini tidak lagi dipakai di mobile, hanya di desktop
   Widget _buildPanelView() {
     final panelsToDisplay = filteredPanelsForDisplay;
 
@@ -952,115 +1276,137 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
       );
     }
-
+    
+    // Hanya mengembalikan GridView untuk desktop
     return LayoutBuilder(
       builder: (context, constraints) {
-        const double gridBreakpoint = 740;
-
-        if (constraints.maxWidth < gridBreakpoint) {
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-            itemCount: panelsToDisplay.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 16),
-            itemBuilder: (context, index) {
-              final data = panelsToDisplay[index];
-              final panel = data.panel;
-              return PanelProgressCard(
-                issueCount: data.issueCount ?? 0,
-                currentUserRole: widget.currentCompany.role,
-                targetDelivery: panel.targetDelivery,
-                duration: _formatDuration(panel.startDate),
-                progress: (panel.percentProgress ?? 0) / 100.0,
-                startDate: panel.startDate,
-                progressLabel: "${panel.percentProgress?.toInt() ?? 0}%",
-                panelType: panel.panelType ?? "",
-                panelTitle: panel.noPanel ?? "",
-                panelRemarks: panel.remarks,
-                statusBusbar: panel.statusBusbarPcc ?? "",
-                statusComponent: panel.statusComponent ?? "",
-                statusPalet: panel.statusPalet ?? "",
-                statusCorepart: panel.statusCorepart ?? "",
-                ppNumber: panel.noPp,
-                wbsNumber: panel.noWbs ?? "",
-                project: panel.project ?? "",
-                onEdit: () {
-                  final role = widget.currentCompany.role;
-                  if (role == AppRole.admin || role == AppRole.k3) {
-                    _openEditPanelBottomSheet(data);
-                  } else if (role == AppRole.k5 || role == AppRole.warehouse) {
-                    _openEditStatusBottomSheet(data);
-                  }
-                },
-                panelVendorName: data.panelVendorName,
-                busbarVendorNames: data.busbarVendorNames,
-                componentVendorName: data.componentVendorNames,
-                paletVendorName: data.paletVendorNames,
-                corepartVendorName: data.corepartVendorNames,
-                isClosed: panel.isClosed,
-                closedDate: panel.closedDate,
-                busbarRemarks: data.busbarRemarks,
+        final int crossAxisCount = (constraints.maxWidth / 500).floor().clamp(
+                2,
+                4,
               );
-            },
-          );
-        } else {
-          final int crossAxisCount = (constraints.maxWidth / 500).floor().clamp(
-                  2,
-                  4,
-                );
 
-          return GridView.builder(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              mainAxisExtent: 440,
-            ),
-            itemCount: panelsToDisplay.length,
-            itemBuilder: (context, index) {
-              final data = panelsToDisplay[index];
-              final panel = data.panel;
-              return PanelProgressCard(
-                issueCount: data.issueCount ?? 0,
-                currentUserRole: widget.currentCompany.role,
-                targetDelivery: panel.targetDelivery,
-                duration: _formatDuration(panel.startDate),
-                progress: (panel.percentProgress ?? 0) / 100.0,
-                startDate: panel.startDate,
-                progressLabel: "${panel.percentProgress?.toInt() ?? 0}%",
-                panelType: panel.panelType ?? "",
-                panelTitle: panel.noPanel ?? "",
-                panelRemarks: panel.remarks,
-                statusBusbar: panel.statusBusbarPcc ?? "",
-                statusComponent: panel.statusComponent ?? "",
-                statusPalet: panel.statusPalet ?? "",
-                statusCorepart: panel.statusCorepart ?? "",
-                ppNumber: panel.noPp,
-                wbsNumber: panel.noWbs ?? "",
-                project: panel.project ?? "",
-                onEdit: () {
-                  final role = widget.currentCompany.role;
-                  if (role == AppRole.admin || role == AppRole.k3) {
-                    _openEditPanelBottomSheet(data);
-                  } else if (role == AppRole.k5 || role == AppRole.warehouse) {
-                    _openEditStatusBottomSheet(data);
-                  }
-                },
-                panelVendorName: data.panelVendorName,
-                busbarVendorNames: data.busbarVendorNames,
-                componentVendorName: data.componentVendorNames,
-                paletVendorName: data.paletVendorNames,
-                corepartVendorName: data.corepartVendorNames,
-                isClosed: panel.isClosed,
-                closedDate: panel.closedDate,
-                busbarRemarks: data.busbarRemarks,
-              );
-            },
-          );
-        }
-      },
+        return GridView.builder(
+          padding: const EdgeInsets.fromLTRB(0, 12, 0, 100),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            mainAxisExtent: 440,
+          ),
+          itemCount: panelsToDisplay.length,
+          itemBuilder: (context, index) {
+            final data = panelsToDisplay[index];
+            final panel = data.panel;
+            return PanelProgressCard(
+              issueCount: data.issueCount ?? 0,
+              currentUserRole: widget.currentCompany.role,
+              targetDelivery: panel.targetDelivery,
+              duration: _formatDuration(panel.startDate),
+              progress: (panel.percentProgress ?? 0) / 100.0,
+              startDate: panel.startDate,
+              progressLabel: "${panel.percentProgress?.toInt() ?? 0}%",
+              panelType: panel.panelType ?? "",
+              panelTitle: panel.noPanel ?? "",
+              panelRemarks: panel.remarks,
+              statusBusbar: panel.statusBusbarPcc ?? "",
+              statusComponent: panel.statusComponent ?? "",
+              statusPalet: panel.statusPalet ?? "",
+              statusCorepart: panel.statusCorepart ?? "",
+              ppNumber: panel.noPp,
+              wbsNumber: panel.noWbs ?? "",
+              project: panel.project ?? "",
+              onEdit: () {
+                final role = widget.currentCompany.role;
+                if (role == AppRole.admin || role == AppRole.k3) {
+                  _openEditPanelBottomSheet(data);
+                } else if (role == AppRole.k5 || role == AppRole.warehouse) {
+                  _openEditStatusBottomSheet(data);
+                }
+              },
+              panelVendorName: data.panelVendorName,
+              busbarVendorNames: data.busbarVendorNames,
+              componentVendorName: data.componentVendorNames,
+              paletVendorName: data.paletVendorNames,
+              corepartVendorName: data.corepartVendorNames,
+              isClosed: panel.isClosed,
+              closedDate: panel.closedDate,
+              busbarRemarks: data.busbarRemarks,
+            );
+          },
+        );
+      }
     );
   }
+
+  // ### BARU ###
+  // Method ini membuat daftar panel sebagai Sliver untuk layout mobile
+  Widget _buildPanelSliverList() {
+    final panelsToDisplay = filteredPanelsForDisplay;
+
+    if (panelsToDisplay.isEmpty) {
+      return SliverFillRemaining( // Mengisi sisa ruang jika kosong
+        hasScrollBody: false,
+        child: const Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 48.0),
+            child: Text(
+              "Tidak ada panel yang ditemukan",
+              style: TextStyle(color: AppColors.gray, fontSize: 14),
+            ),
+          ),
+        ),
+      );
+    }
+    
+    // Memberi padding horizontal pada list
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+      sliver: SliverList.separated(
+        itemCount: panelsToDisplay.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 16),
+        itemBuilder: (context, index) {
+          final data = panelsToDisplay[index];
+          final panel = data.panel;
+          return PanelProgressCard(
+            issueCount: data.issueCount ?? 0,
+            currentUserRole: widget.currentCompany.role,
+            targetDelivery: panel.targetDelivery,
+            duration: _formatDuration(panel.startDate),
+            progress: (panel.percentProgress ?? 0) / 100.0,
+            startDate: panel.startDate,
+            progressLabel: "${panel.percentProgress?.toInt() ?? 0}%",
+            panelType: panel.panelType ?? "",
+            panelTitle: panel.noPanel ?? "",
+            panelRemarks: panel.remarks,
+            statusBusbar: panel.statusBusbarPcc ?? "",
+            statusComponent: panel.statusComponent ?? "",
+            statusPalet: panel.statusPalet ?? "",
+            statusCorepart: panel.statusCorepart ?? "",
+            ppNumber: panel.noPp,
+            wbsNumber: panel.noWbs ?? "",
+            project: panel.project ?? "",
+            onEdit: () {
+              final role = widget.currentCompany.role;
+              if (role == AppRole.admin || role == AppRole.k3) {
+                _openEditPanelBottomSheet(data);
+              } else if (role == AppRole.k5 || role == AppRole.warehouse) {
+                _openEditStatusBottomSheet(data);
+              }
+            },
+            panelVendorName: data.panelVendorName,
+            busbarVendorNames: data.busbarVendorNames,
+            componentVendorName: data.componentVendorNames,
+            paletVendorName: data.paletVendorNames,
+            corepartVendorName: data.corepartVendorNames,
+            isClosed: panel.isClosed,
+            closedDate: panel.closedDate,
+            busbarRemarks: data.busbarRemarks,
+          );
+        },
+      ),
+    );
+  }
+
 
   // --- BARU: Helper untuk menghitung jumlah minggu dalam sebulan ---
   int _getWeeksInMonth(int year, int month) {
