@@ -54,31 +54,23 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (mounted) setState(() => _isLoading = false);
   }
 
-Future<void> _loadCompanyData() async {
-  final prefs = await SharedPreferences.getInstance();
-  final username = prefs.getString('loggedInUsername');
-  
-  print('DEBUG: Username from SharedPreferences: $username'); // Add this
-  
-  if (username != null) {
-    print('DEBUG: Calling API for username: $username'); // Add this
-    try {
-      final company = await DatabaseHelper.instance.getCompanyByUsername(username);
-      print('DEBUG: Company received: $company'); // Add this
-      if (mounted) {
-        setState(() {
-          _currentCompany = company;
-          _loggedInUsername = username;
-        });
+  Future<void> _loadCompanyData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final username = prefs.getString('loggedInUsername');
+    if (username != null) {
+      try {
+        final company = await DatabaseHelper.instance.getCompanyByUsername(username);
+        if (mounted) {
+          setState(() {
+            _currentCompany = company;
+            _loggedInUsername = username;
+          });
+        }
+      } catch (e) {
+        rethrow;
       }
-    } catch (e) {
-      print('DEBUG: Error in getCompanyByUsername: $e'); // Add this
-      rethrow;
     }
-  } else {
-    print('DEBUG: No username found in SharedPreferences'); // Add this
   }
-}
   Future<void> _loadAndGroupAllUsers() async {
     if (mounted) setState(() => _isLoadingUsers = true);
 
@@ -171,7 +163,6 @@ Future<void> _loadCompanyData() async {
     );
   }
 
-  // ---> PERUBAHAN 1: Teruskan status admin saat memanggil bottom sheet <---
   void _showCompanyFormBottomSheet({Company? company}) {
     showModalBottomSheet(
       context: context,
@@ -186,16 +177,12 @@ Future<void> _loadCompanyData() async {
           body: _CompanyFormBottomSheet(
             company: company,
             onSave: _loadInitialData,
-            // Teruskan status admin ke dalam form
             isAdmin: _currentCompany?.role == AppRole.admin,
           ),
         );
       },
     );
   }
-
-  // Fungsi ini tidak lagi diperlukan di sini, akan dipindah ke dalam _CompanyFormBottomSheetState
-  // void _showCompanyEditForm(Company company) { ... }
 
   String _formatRole(AppRole role) {
     return role.name[0].toUpperCase() + role.name.substring(1);
@@ -210,116 +197,163 @@ Future<void> _loadCompanyData() async {
             ? const _ProfileSkeleton()
             : _currentCompany == null || _loggedInUsername == null
             ? const Center(child: Text("Gagal memuat data pengguna."))
-            : _buildProfileContent(),
+            // --- PERUBAHAN: Gunakan LayoutBuilder untuk responsivitas ---
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  // Tentukan breakpoint untuk beralih ke layout desktop
+                  bool isDesktop = constraints.maxWidth > 800;
+                  
+                  return RefreshIndicator(
+                    onRefresh: _loadInitialData,
+                    color: AppColors.schneiderGreen,
+                    child: isDesktop
+                        ? _buildDesktopLayout() // Tampilan baru untuk desktop
+                        : _buildMobileLayout(), // Tampilan lama untuk mobile
+                  );
+                },
+              ),
       ),
     );
   }
 
-  Widget _buildProfileContent() {
-    return RefreshIndicator(
-      onRefresh: _loadInitialData,
-      color: AppColors.schneiderGreen,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Profil",
-              style: TextStyle(
-                color: AppColors.black,
-                fontSize: 24,
-                fontWeight: FontWeight.w500,
-              ),
+  // --- BARU: Widget untuk layout mobile (kode asli Anda) ---
+  Widget _buildMobileLayout() {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Profil",
+            style: TextStyle(
+              color: AppColors.black,
+              fontSize: 24,
+              fontWeight: FontWeight.w500,
             ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          ),
+          const SizedBox(height: 24),
+          _buildPrimaryProfileCard(isDesktop: false), // Kartu profil utama
+          const SizedBox(height: 16),
+          _buildUserListSection(), // Daftar pengguna
+        ],
+      ),
+    );
+  }
+
+  // --- BARU: Widget untuk layout desktop (dua kolom) ---
+  Widget _buildDesktopLayout() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Kolom Kiri: Profil Utama
+          SizedBox(
+            width: 350,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Image.asset('assets/images/user.png', height: 44, width: 44),
-                InkWell(
-                  onTap: _logout,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        left: BorderSide(color: AppColors.red, width: 1.5),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Image.asset(
-                          'assets/images/logout.png',
-                          height: 24,
-                          width: 24,
-                        ),
-                        const SizedBox(width: 4),
-                        const Text(
-                          "Keluar",
-                          style: TextStyle(
-                            color: AppColors.red,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
+                const Text(
+                  "Profil",
+                  style: TextStyle(
+                    color: AppColors.black,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
+                const SizedBox(height: 24),
+                _buildPrimaryProfileCard(isDesktop: true),
               ],
             ),
-            const SizedBox(height: 24),
-            // Ikon pensil di sini sudah dihapus sesuai permintaan baru Anda
-            Text(
-              _currentCompany!.name,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w400),
+          ),
+          const SizedBox(width: 24),
+
+          // Kolom Kanan: Daftar Pengguna (Scrollable)
+          Expanded(
+            child: SingleChildScrollView(
+              child: _buildUserListSection(),
             ),
-            const SizedBox(height: 24),
-            const Text(
-              "Username",
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: AppColors.grayLight,
-                borderRadius: BorderRadius.all(Radius.circular(8)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- BARU: Kartu profil utama (bisa dipakai di mobile & desktop) ---
+  Widget _buildPrimaryProfileCard({required bool isDesktop}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.grayLight),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Image.asset('assets/images/user.png', height: 44, width: 44),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _currentCompany!.name,
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w400),
+                    ),
+                    Text(
+                      _formatRole(_currentCompany!.role),
+                      style: const TextStyle(fontSize: 14, color: AppColors.gray, fontWeight: FontWeight.w300),
+                    ),
+                  ],
+                ),
               ),
-              child: Text(
-                _loggedInUsername!,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w300,
+              if (!isDesktop) // Tombol logout hanya muncul di mobile card header
+                IconButton(
+                  icon: Image.asset('assets/images/logout.png', width: 24),
+                  onPressed: _logout,
+                  tooltip: "Keluar",
+                ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            "Username",
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: AppColors.gray),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: AppColors.grayLight.withOpacity(0.5),
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
+            ),
+            child: Text(
+              _loggedInUsername!,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w300),
+            ),
+          ),
+          if (isDesktop) ...[ // Tombol logout muncul di bawah untuk desktop
+            const SizedBox(height: 24),
+            const Divider(color: AppColors.grayLight),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: Image.asset('assets/images/logout.png', width: 20, color: AppColors.red),
+                label: const Text("Keluar", style: TextStyle(color: AppColors.red)),
+                onPressed: _logout,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: const BorderSide(color: AppColors.red),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            const Text(
-              "Role",
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: AppColors.grayLight,
-                borderRadius: BorderRadius.all(Radius.circular(8)),
-              ),
-              child: Text(
-                _formatRole(_currentCompany!.role),
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w300,
-                ),
-              ),
-            ),
-            _buildUserListSection(),
-          ],
-        ),
+          ]
+        ],
       ),
     );
   }
@@ -329,12 +363,11 @@ Future<void> _loadCompanyData() async {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 32),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              isAdmin ? "Pengguna" : "Rekan di Perusahaan Anda",
+              isAdmin ? "Manajemen Pengguna" : "Rekan di Perusahaan Anda",
               style: const TextStyle(
                 color: AppColors.black,
                 fontSize: 20,
@@ -416,22 +449,26 @@ Future<void> _loadCompanyData() async {
           ),
           tabs: [allTab, ...groupTabs],
         ),
-        IndexedStack(
-          index: _tabController!.index,
-          children: [allTabView, ...groupTabViews]
-              .asMap()
-              .map(
-                (index, view) => MapEntry(
-                  index,
-                  Visibility(
-                    visible: _tabController!.index == index,
-                    maintainState: true,
-                    child: view,
+        // Menggunakan SizedBox untuk memberi tinggi pada IndexedStack
+        SizedBox(
+          height: 500, // Beri tinggi agar tidak error di dalam SingleChildScrollView
+          child: IndexedStack(
+            index: _tabController!.index,
+            children: [allTabView, ...groupTabViews]
+                .asMap()
+                .map(
+                  (index, view) => MapEntry(
+                    index,
+                    Visibility(
+                      visible: _tabController!.index == index,
+                      maintainState: true,
+                      child: view,
+                    ),
                   ),
-                ),
-              )
-              .values
-              .toList(),
+                )
+                .values
+                .toList(),
+          ),
         ),
       ],
     );
@@ -584,16 +621,16 @@ class _UserCard extends StatelessWidget {
   }
 }
 
-// ---> PERUBAHAN 2: Modifikasi _CompanyFormBottomSheet untuk menerima status admin <---
+
 class _CompanyFormBottomSheet extends StatefulWidget {
   final Company? company;
   final VoidCallback onSave;
-  final bool isAdmin; // Tambahkan properti ini
+  final bool isAdmin; 
 
   const _CompanyFormBottomSheet({
     this.company,
     required this.onSave,
-    this.isAdmin = false, // Beri nilai default
+    this.isAdmin = false,
   });
 
   @override
@@ -805,7 +842,6 @@ class _CompanyFormBottomSheetState extends State<_CompanyFormBottomSheet> {
     }
   }
 
-  // ---> PERUBAHAN 3: Buat fungsi untuk membuka form edit dari dalam sini <---
   Future<void> _showCompanyEditSheet(Map<String, dynamic> companyData) async {
     final companyToEdit = Company(
       id: companyData['id'] as String,
@@ -820,8 +856,8 @@ class _CompanyFormBottomSheetState extends State<_CompanyFormBottomSheet> {
       builder: (_) => _CompanyEditForm(
         company: companyToEdit,
         onSave: () {
-          Navigator.pop(context); // Tutup form edit
-          _loadCompaniesData(); // Muat ulang daftar perusahaan
+          Navigator.pop(context); 
+          _loadCompaniesData(); 
         },
       ),
     );
@@ -921,7 +957,7 @@ class _CompanyFormBottomSheetState extends State<_CompanyFormBottomSheet> {
                       name: name,
                       role: role,
                       selected: _selectedCompanyName == name,
-                      isAdmin: widget.isAdmin, // Teruskan status admin
+                      isAdmin: widget.isAdmin, 
                       onTap: () {
                         setState(() {
                           _selectedCompanyName = name;
@@ -931,7 +967,7 @@ class _CompanyFormBottomSheetState extends State<_CompanyFormBottomSheet> {
                         });
                       },
                       onEdit: () =>
-                          _showCompanyEditSheet(data), // Panggil fungsi edit
+                          _showCompanyEditSheet(data),
                     );
                   }),
                   _buildOtherButton(onTap: _showAddNewCompanySheet),
@@ -941,7 +977,6 @@ class _CompanyFormBottomSheetState extends State<_CompanyFormBottomSheet> {
     );
   }
 
-  // ---> PERUBAHAN 4: Modifikasi tombol pilihan perusahaan untuk bisa menampilkan ikon edit <---
   Widget _buildCompanyOptionButton({
     required Map<String, dynamic> companyData,
     required String name,
@@ -991,7 +1026,6 @@ class _CompanyFormBottomSheetState extends State<_CompanyFormBottomSheet> {
               visualDensity: VisualDensity.compact,
               side: BorderSide.none,
             ),
-            // Tampilkan ikon pensil jika admin
             if (isAdmin)
               InkWell(
                 onTap: onEdit,
@@ -1431,7 +1465,6 @@ class _DeleteConfirmationSheet extends StatelessWidget {
   }
 }
 
-// ---> GANTI SELURUH ISI CLASS _CompanyEditForm DENGAN INI <---
 class _CompanyEditForm extends StatefulWidget {
   final Company company;
   final VoidCallback onSave;
@@ -1500,7 +1533,6 @@ class _CompanyEditFormState extends State<_CompanyEditForm> {
 
   @override
   Widget build(BuildContext context) {
-    // Menggunakan struktur yang sama persis dengan _AddNewCompanyRoleSheet
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
         20,
@@ -1530,7 +1562,6 @@ class _CompanyEditFormState extends State<_CompanyEditForm> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 24),
-            // Field untuk Nama Perusahaan
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1577,10 +1608,8 @@ class _CompanyEditFormState extends State<_CompanyEditForm> {
               ],
             ),
             const SizedBox(height: 24),
-            // Pemilih Role
             _buildRoleSelector(),
             const SizedBox(height: 32),
-            // Tombol Aksi
             _isLoading
                 ? const Center(
                     child: CircularProgressIndicator(

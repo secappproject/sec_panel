@@ -41,6 +41,17 @@ class DatabaseHelper {
     }
   }
 
+  // String get _baseUrl {
+  //   if (kReleaseMode) {
+  //     return "http://localhost:8080";
+  //   } else {
+  //     if (Platform.isAndroid) {
+  //     return "http://localhost:8080";
+  //     } else {
+  //     return "http://localhost:8080";
+  //     }
+  //   }
+  // }
   static final _headers = {'Content-Type': 'application/json; charset=UTF-8'};
 
   Future<dynamic> _apiRequest(
