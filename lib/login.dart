@@ -131,7 +131,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
-        alignment: Alignment.center,
+        alignment: Alignment.centerLeft,
         children: [
           const VideoBackground(),
           AnimatedOpacity(
@@ -154,36 +154,39 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-
-  Widget _buildWebAppLayout() {
-    return Center(
-      child: Container(
-        width: 400,
-        padding: const EdgeInsets.all(32.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              spreadRadius: 5,
-            )
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildFormFields(),
-            const SizedBox(height: 32),
-            _buildActionButtons(isWebLayout: true),
-          ],
-        ),
+Widget _buildWebAppLayout() {
+  // Ganti Center dengan Align
+  return SingleChildScrollView(
+    child: Container(
+      constraints: BoxConstraints(
+        minHeight: MediaQuery.of(context).size.height, 
       ),
-    );
-  }
-
+      width: 400,
+      alignment: Alignment.centerLeft, 
+      padding: const EdgeInsets.all(32.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            spreadRadius: 5,
+          )
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildFormFields(),
+          const SizedBox(height: 32),
+          _buildActionButtons(isWebLayout: true),
+        ],
+      ),
+    ),
+  );
+}
   Widget _buildMobileLayout() {
     return Container(
       color: Colors.white,
@@ -253,7 +256,7 @@ class _LoginPageState extends State<LoginPage> {
               foregroundColor: Colors.white,
               disabledBackgroundColor: AppColors.schneiderGreen.withOpacity(0.7),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
             onPressed: areButtonsDisabled ? null : _login,
@@ -347,7 +350,7 @@ class _LoginPageState extends State<LoginPage> {
               foregroundColor: Colors.white,
               disabledBackgroundColor: AppColors.schneiderGreen.withOpacity(0.7),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
             onPressed: areButtonsDisabled ? null : _login,
@@ -430,6 +433,12 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildUsernameField() {
     return TextField(
+      style: const TextStyle(
+        fontFamily: 'Lexend',
+        fontWeight: FontWeight.w300,
+        fontSize: 14,
+        color: Colors.black, // warna teks yg diketik
+      ),
       controller: _usernameController,
       decoration: _inputDecoration('Username'),
     );
@@ -437,6 +446,12 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildPasswordField() {
     return TextField(
+      style: const TextStyle(
+        fontFamily: 'Lexend',
+        fontWeight: FontWeight.w300,
+        fontSize: 14,
+        color: Colors.black, // warna teks yg diketik
+      ),
       controller: _passwordController,
       obscureText: !_isPasswordVisible,
       decoration: _inputDecoration('Password').copyWith(
@@ -611,13 +626,14 @@ class _VideoBackgroundState extends State<VideoBackground> {
         Image.asset(
           "assets/videos/factory-background.gif",
           fit: BoxFit.cover,
+          alignment: Alignment.centerRight,
         ),
         Container(
           color: AppColors.schneiderGreen.withOpacity(0.3),
         ),
         Positioned(
           bottom: 40,
-          left: 40,
+          left: 440,
           right: 40,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

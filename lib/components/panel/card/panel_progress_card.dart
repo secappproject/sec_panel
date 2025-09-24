@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:secpanel/components/additionalsr/additionalsr_bottom_sheet.dart';
 import 'package:secpanel/components/issue/panel_issue_screen.dart';
 // AlertBox tidak lagi digunakan di sini, bisa dihapus jika tidak ada referensi lain
 // import 'package:secpanel/components/alert_box.dart';
@@ -55,6 +56,7 @@ class PanelProgressCard extends StatelessWidget {
   final DateTime? closedDate;
   final String? panelRemarks;
   final List<BusbarRemark> busbarRemarks;
+  final int additionalSrCount;
 
   const PanelProgressCard({
     super.key,
@@ -84,6 +86,7 @@ class PanelProgressCard extends StatelessWidget {
     this.closedDate,
     this.panelRemarks,
     required this.busbarRemarks,
+    required this.additionalSrCount, 
   });
 
   void _showRemarksBottomSheet(
@@ -772,6 +775,62 @@ class PanelProgressCard extends StatelessWidget {
       ),
     );
   }
+
+   Widget _buildAdditionalSRButton(BuildContext context) {
+    if (currentUserRole == AppRole.viewer) return const SizedBox.shrink();
+    return InkWell(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => AdditionalSrBottomSheet(
+            panelNoPp: ppNumber,
+            panelTitle: panelTitle,
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: 64,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.grayLight, width: 1),
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Image.asset('assets/images/package.png', height: 20, color: AppColors.gray), // Ganti dengan ikon yang sesuai
+            if (additionalSrCount > 0)
+              Positioned(
+                right: -5,
+                top: -8,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.blue, // Warna badge bisa disesuaikan
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
+                  child: Text(
+                    additionalSrCount.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildIssueButton(BuildContext context) {
     if (currentUserRole == AppRole.viewer) return const SizedBox.shrink();
     return InkWell(

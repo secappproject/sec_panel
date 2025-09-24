@@ -71,9 +71,14 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: 1, // 0 = All, 1 = Unsolved, 2 = Solved
+    );
     _loadInitialData();
   }
+
 
   void _showAiChatSheet() async {
     final prefs = await SharedPreferences.getInstance();

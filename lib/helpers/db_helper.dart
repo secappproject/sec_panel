@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:secpanel/components/panel/filtersearch/panel_filter_bottom_sheet.dart';
+import 'package:secpanel/models/additionalsr.dart';
 import 'package:secpanel/models/approles.dart';
 import 'package:secpanel/models/busbar.dart';
 import 'package:secpanel/models/busbarremark.dart';
@@ -1323,5 +1324,36 @@ Future<Company?> getCompanyByUsername(String username) async {
 
   if (data == null) return [];
   return List<String>.from(data);
-}
-}
+}  Future<List<AdditionalSR>> getAdditionalSRs(String panelNoPp) async {
+    final List<dynamic>? data = await _apiRequest('GET', '/panels/$panelNoPp/additional-sr');
+    if (data == null) {
+      return [];
+    }
+    return data.map((item) => AdditionalSR.fromMap(item)).toList();
+  }
+
+  Future<AdditionalSR> createAdditionalSR(String panelNoPp, AdditionalSR sr) async {
+    final data = await _apiRequest(
+      'POST',
+      '/panels/$panelNoPp/additional-sr',
+      body: sr.toMap(), // Gunakan toMap, karena _apiRequest sudah melakukan jsonEncode
+    );
+    if (data != null) {
+      return AdditionalSR.fromMap(data);
+    } else {
+      throw Exception('Failed to create Additional SR: No data received from server');
+    }
+  }
+
+  Future<void> updateAdditionalSR(int srId, AdditionalSR sr) async {
+    await _apiRequest(
+      'PUT',
+      '/additional-sr/$srId',
+      body: sr.toMap(), // Gunakan toMap
+    );
+  }
+
+  Future<void> deleteAdditionalSR(int srId) async {
+    await _apiRequest('DELETE', '/additional-sr/$srId');
+  }
+  }

@@ -94,7 +94,7 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
-        alignment: Alignment.center,
+        alignment: Alignment.centerLeft,
         children: [
           // Lapisan 1: Video background, akan tertutup warna putih di mobile
           const VideoBackground(),
@@ -117,30 +117,32 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
   
   // [PERUBAHAN] Layout Web diubah agar sama persis dengan LoginPage
   Widget _buildWebAppLayout() {
-    return Center(
-      child: Container(
-        width: 400,
-        padding: const EdgeInsets.all(32.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              spreadRadius: 5,
-            )
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildChangePasswordForm(),
-            const SizedBox(height: 32),
-            _buildActionButtons(),
-          ],
-        ),
+    return Container(
+      constraints: BoxConstraints(
+        minHeight: MediaQuery.of(context).size.height, 
+      ),
+      alignment: Alignment.centerLeft,
+      width: 400,
+      padding: const EdgeInsets.all(32.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            spreadRadius: 5,
+          )
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildChangePasswordForm(),
+          const SizedBox(height: 32),
+          _buildActionButtons(),
+        ],
       ),
     );
   }
@@ -227,7 +229,7 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
               minimumSize: const Size(0, 52),
               side: const BorderSide(color: AppColors.schneiderGreen),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
             onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
@@ -247,12 +249,13 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
         Expanded(
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
+              shadowColor: Colors.transparent,
               minimumSize: const Size(double.infinity, 52),
               backgroundColor: AppColors.schneiderGreen,
               foregroundColor: Colors.white,
               disabledBackgroundColor: AppColors.schneiderGreen.withOpacity(0.7),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
             onPressed: _isLoading ? null : _loginAndChangePassword,
@@ -296,7 +299,14 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
             _usernameController.text = fieldTextEditingController.text;
           });
         }
+        
         return TextField(
+          style: const TextStyle(
+            fontFamily: 'Lexend',
+            fontWeight: FontWeight.w300,
+            fontSize: 14,
+            color: Colors.black, // warna teks yg diketik
+          ),
           controller: fieldTextEditingController,
           focusNode: fieldFocusNode,
           decoration: _buildInputDecoration('Username'),
@@ -349,7 +359,14 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
   }
 
   Widget _buildCurrentPasswordField() {
+   
     return TextField(
+      style: const TextStyle(
+        fontFamily: 'Lexend',
+        fontWeight: FontWeight.w300,
+        fontSize: 14,
+        color: Colors.black, // warna teks yg diketik
+      ),
       controller: _passwordController,
       obscureText: !_isPasswordVisible,
       decoration: _buildInputDecoration(
@@ -368,6 +385,12 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
 
   Widget _buildNewPasswordField() {
     return TextField(
+      style: const TextStyle(
+        fontFamily: 'Lexend',
+        fontWeight: FontWeight.w300,
+        fontSize: 14,
+        color: Colors.black, // warna teks yg diketik
+      ),
       controller: _newPasswordController,
       obscureText: !_isNewPasswordVisible,
       decoration: _buildInputDecoration(

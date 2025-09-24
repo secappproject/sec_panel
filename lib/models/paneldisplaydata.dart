@@ -17,6 +17,7 @@ class PanelDisplayData {
   final String corepartVendorNames;
   final List<String> corepartVendorIds;
   final int issueCount;
+  final int additionalSr;
 
   PanelDisplayData({
     required this.panel,
@@ -31,7 +32,8 @@ class PanelDisplayData {
     required this.paletVendorIds,
     required this.corepartVendorNames,
     required this.corepartVendorIds,
-    required this.issueCount
+    required this.issueCount,
+    required this.additionalSr
   });
 
   factory PanelDisplayData.fromJson(Map<String, dynamic> json) {
@@ -73,6 +75,7 @@ class PanelDisplayData {
       corepartVendorNames: json['corepart_vendor_names'] as String? ?? '',
       corepartVendorIds: parseIdList(json['corepart_vendor_ids']),
       issueCount: json['issue_count'] as int? ?? 0,
+      additionalSr: json['additional_sr'] as int? ?? 0,
     );
   }
 }
