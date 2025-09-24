@@ -104,7 +104,7 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Additional SR Package',
+                          'Additional SR',
                           style: TextStyle(
                               fontSize: 20, fontWeight: FontWeight.w500),
                         ),
@@ -189,7 +189,7 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                       Text(
                         sr.item,
                         style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w500),
+                            fontSize: 16, fontWeight: FontWeight.w400),
                       ),
                       const SizedBox(height: 8),
                       // Qty
@@ -283,7 +283,7 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                                     fontWeight: FontWeight.w400,
                                   )
                                 ),
-                                Image.asset("assets/images/done-green.png"),
+                                Image.asset("assets/images/done-green.png",height: 12,),
                               ],
                             )
                           ]
@@ -512,13 +512,13 @@ class _AddEditSRDialog extends StatefulWidget {
   @override
   State<_AddEditSRDialog> createState() => _AddEditSRDialogState();
 }
-
 class _AddEditSRDialogState extends State<_AddEditSRDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _poController;
   late TextEditingController _itemController;
   late TextEditingController _qtyController;
   late TextEditingController _remarksController;
+  late TextEditingController _receivedDateController; // Add this line
   late String _status;
   bool _usePanelPoAsPo = false;
 
@@ -536,6 +536,13 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
         TextEditingController(text: widget.sr?.quantity.toString() ?? '');
     _remarksController = TextEditingController(text: widget.sr?.remarks ?? '');
     _status = widget.sr?.status ?? 'open';
+
+    // Initialize the new date controller
+    _receivedDateController = TextEditingController();
+    if (widget.sr?.receivedDate != null) {
+      _receivedDateController.text =
+          DateFormat('d MMM yyyy, HH:mm', 'id_ID').format(widget.sr!.receivedDate!);
+    }
   }
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
@@ -549,15 +556,26 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
         poNumber = _poController.text.trim();
       }
 
+      // [NEW] Logic to set received date when status is 'close'
+      DateTime? receivedDate;
+      if (_status.toLowerCase() == 'close') {
+        // If the status is being set to 'close' and there's no previous received date,
+        // set it to the current time.
+        receivedDate = widget.sr?.receivedDate ?? DateTime.now().toUtc();
+      } else {
+        // If status is 'open', clear the received date.
+        receivedDate = null;
+      }
+
       final srData = AdditionalSR(
         id: widget.sr?.id,
-        poNumber: poNumber,  
+        poNumber: poNumber,
         panelNoPp: widget.panelNoPp,
         item: _itemController.text,
         quantity: int.tryParse(_qtyController.text) ?? 0,
         remarks: _remarksController.text,
         status: _status,
-        receivedDate: widget.sr?.receivedDate, // [PENTING] Kirim tanggal yang ada agar tidak hilang
+        receivedDate: receivedDate, // Use the new variable here
       );
       try {
         if (widget.sr == null) {
@@ -668,6 +686,15 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
                   onTap: (val) {
                     if (val != null) setState(() => _status = val);
                   }),
+              if (_status == 'close') ...[
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: _receivedDateController,
+                  label: 'Received Date',
+                  isEnabled: false, // Make it non-editable
+                ),
+              ],
+
               const SizedBox(height: 32),
               _buildActionButtons(),
             ],
@@ -704,7 +731,7 @@ Widget _buildTextField({
       validator: validator,
       decoration: InputDecoration(
         hintText: isEnabled ? 'Masukkan $label' : null,
-        helperText: !isEnabled ? 'Menggunakan No. Po Panel' : null,
+        // helperText: !isEnabled ? 'Menggunakan No. Po Panel' : null,
         helperStyle: const TextStyle(
           fontSize: 11,
           color: AppColors.gray,
