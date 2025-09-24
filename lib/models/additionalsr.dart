@@ -1,4 +1,4 @@
-// lib/models/additional_sr.dart
+// lib/models/additionalsr.dart
 
 import 'dart:convert';
 
@@ -11,6 +11,7 @@ class AdditionalSR {
   final String status;
   final String remarks;
   final DateTime? createdAt;
+  final DateTime? receivedDate; // [BARU] Tambahkan field ini
 
   AdditionalSR({
     this.id,
@@ -21,6 +22,7 @@ class AdditionalSR {
     required this.status,
     required this.remarks,
     this.createdAt,
+    this.receivedDate, // [BARU] Tambahkan di constructor
   });
 
   Map<String, dynamic> toMap() {
@@ -33,6 +35,7 @@ class AdditionalSR {
       'status': status,
       'remarks': remarks,
       'created_at': createdAt?.toIso8601String(),
+      'received_date': receivedDate?.toIso8601String(), // [BARU] Tambahkan ke map
     };
   }
 
@@ -46,6 +49,8 @@ class AdditionalSR {
       status: map['status'] ?? 'open',
       remarks: map['remarks'] ?? '',
       createdAt: map['created_at'] != null ? DateTime.parse(map['created_at']) : null,
+      // [BARU] Parsing dari map
+      receivedDate: map['received_date'] != null ? DateTime.parse(map['received_date']) : null,
     );
   }
 

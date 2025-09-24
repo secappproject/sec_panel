@@ -1313,19 +1313,20 @@ Future<Company?> getCompanyByUsername(String username) async {
   }
 
   Future<List<String>> getEmailRecommendations({required String panelNoPp}) async {
-  // Hanya panggil API jika panelNoPp tidak kosong
-  if (panelNoPp.isEmpty) {
-    return [];
-  }
+    if (panelNoPp.isEmpty) {
+      return [];
+    }
 
-  final endpoint = '/issues/email-recommendations?panel_no_pp=${Uri.encodeComponent(panelNoPp)}';
+    final endpoint = '/issues/email-recommendations?panel_no_pp=${Uri.encodeComponent(panelNoPp)}';
 
-  final List<dynamic>? data = await _apiRequest('GET', endpoint);
+    final List<dynamic>? data = await _apiRequest('GET', endpoint);
 
-  if (data == null) return [];
-  return List<String>.from(data);
-}  Future<List<AdditionalSR>> getAdditionalSRs(String panelNoPp) async {
-    final List<dynamic>? data = await _apiRequest('GET', '/panels/$panelNoPp/additional-sr');
+    if (data == null) return [];
+    return List<String>.from(data);
+  }  
+
+  Future<List<AdditionalSR>> getAdditionalSRs(String panelNoPp) async {
+    final List<dynamic>? data = await _apiRequest('GET', '/panel/$panelNoPp/additional-sr');
     if (data == null) {
       return [];
     }
@@ -1335,7 +1336,7 @@ Future<Company?> getCompanyByUsername(String username) async {
   Future<AdditionalSR> createAdditionalSR(String panelNoPp, AdditionalSR sr) async {
     final data = await _apiRequest(
       'POST',
-      '/panels/$panelNoPp/additional-sr',
+      '/panel/$panelNoPp/additional-sr',
       body: sr.toMap(), // Gunakan toMap, karena _apiRequest sudah melakukan jsonEncode
     );
     if (data != null) {

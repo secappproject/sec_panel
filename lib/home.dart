@@ -1291,14 +1291,14 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             crossAxisCount: crossAxisCount,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-            mainAxisExtent: 460,
+            mainAxisExtent: 444,
           ),
           itemCount: panelsToDisplay.length,
           itemBuilder: (context, index) {
             final data = panelsToDisplay[index];
             final panel = data.panel;
             return PanelProgressCard(
-              additionalSrCount: data.additionalSr ?? 0,
+              additionalSrCount: data.additionalSrCount ?? 0,
               issueCount: data.issueCount ?? 0,
               currentUserRole: widget.currentCompany.role,
               targetDelivery: panel.targetDelivery,
@@ -1369,7 +1369,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           final data = panelsToDisplay[index];
           final panel = data.panel;
           return PanelProgressCard(
-            additionalSrCount: data.additionalSr ?? 0,
+            additionalSrCount: data.additionalSrCount ?? 0,
             issueCount: data.issueCount ?? 0,
             currentUserRole: widget.currentCompany.role,
             targetDelivery: panel.targetDelivery,

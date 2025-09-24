@@ -213,7 +213,7 @@ class PanelProgressCard extends StatelessWidget {
   String _getComponentStatusImage(String status) {
     final lower = status.toLowerCase();
     if (lower.contains('open')) return 'assets/images/no-status-gray.png';
-    if (lower.contains('done')) {
+    if (lower.contains('done') || lower.contains('close')) {
       return 'assets/images/done-green.png';
     }
     if (lower.contains('on progress')) {
@@ -713,62 +713,73 @@ class PanelProgressCard extends StatelessWidget {
       ),
     );
   }
-
-   Widget _buildAdditionalSRButton(BuildContext context) {
-    if (currentUserRole == AppRole.viewer) return const SizedBox.shrink();
-    return InkWell(
-      onTap: () {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) => AdditionalSrBottomSheet(
-            panelNoPp: ppNumber,
-            panelTitle: panelTitle,
-          ),
-        );
-      },
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        alignment: Alignment.center,
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          children: [
+Widget _buildAdditionalSRButton(BuildContext context) {
+  if (currentUserRole == AppRole.viewer) return const SizedBox.shrink();
+  return InkWell(
+    onTap: () {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => AdditionalSrBottomSheet(
+          panelNoPp: ppNumber,
+          poNumber: panelTitle,
+          panelTitle: panelTitle,
+        ),
+      );
+    },
+    borderRadius: BorderRadius.circular(8),
+    child: Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        children: [
+          if (additionalSrCount == 0) ...[
+            Image.asset('assets/images/package.png', height: 20, color: AppColors.gray),
+          ],
+          if (additionalSrCount != 0) ...[
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Image.asset('assets/images/package.png', height: 20, color: AppColors.gray), // Ganti dengan ikon yang sesuai
-                if (additionalSrCount > 0)
-                  Positioned(
-                    right: -5,
-                    top: -8,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.blue, // Warna badge bisa disesuaikan
-                        borderRadius: BorderRadius.circular(12),
+                Image.asset(
+                  'assets/images/package.png',
+                  height: 20,
+                  color: AppColors.gray
+                ),
+                Positioned(
+                  right: -3, // posisi ke kanan (seperti issue)
+                  top: -6,   // posisi ke atas (seperti issue)
+                  child: Container(
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.red, 
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 15,
+                      minHeight: 15,
+                    ),
+                    child: Text(
+                      additionalSrCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w500,
                       ),
-                      constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
-                      child: Text(
-                        additionalSrCount.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
+                ),
               ],
             ),
-            SizedBox(width: 8,),
-            Text("SR", style: TextStyle(fontSize: 11, color: AppColors.gray, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
           ],
-        ),
+          SizedBox(width: 8,),
+          Text("SR", style: TextStyle(fontSize: 11, color: AppColors.gray, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildIssueButton(BuildContext context) {
     if (currentUserRole == AppRole.viewer) return const SizedBox.shrink();
