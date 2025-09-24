@@ -617,7 +617,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 }
-
 class VideoBackground extends StatefulWidget {
   const VideoBackground({super.key});
 
@@ -626,10 +625,10 @@ class VideoBackground extends StatefulWidget {
 }
 
 class _VideoBackgroundState extends State<VideoBackground> {
-  late VideoPlayerController _controller;
   Timer? _textAnimationTimer;
   int _currentTextIndex = 0;
   double _textOpacity = 0.0;
+
   final List<String> _sloganTexts = [
     'Trisutorpro',
     'Lacak panel yang perlu diselesaikan segera',
@@ -640,31 +639,17 @@ class _VideoBackgroundState extends State<VideoBackground> {
   @override
   void initState() {
     super.initState();
-    _controller =
-        VideoPlayerController.asset('assets/videos/factory-background.mp4')
-          ..initialize().then((_) {
-            // PERBAIKAN DI SINI
-            _controller.play();
-            _controller.setVolume(0.0);
-            _controller.setLooping(true); // <--- Cukup tambahkan ini
-            setState(() {});
-            _startTextAnimation();
-          });
+    _startTextAnimation();
   }
 
   void _startTextAnimation() {
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() {
-          _textOpacity = 1.0;
-        });
-      }
+      if (mounted) setState(() => _textOpacity = 1.0);
     });
+
     _textAnimationTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) {
-        setState(() {
-          _textOpacity = 0.0;
-        });
+        setState(() => _textOpacity = 0.0);
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
             setState(() {
@@ -677,33 +662,21 @@ class _VideoBackgroundState extends State<VideoBackground> {
     });
   }
 
-  // Method _checkVideoPosition() sudah tidak diperlukan lagi dan bisa dihapus
-
   @override
   void dispose() {
     _textAnimationTimer?.cancel();
-    // removeListener() juga sudah tidak perlu
-    _controller.dispose();
     super.dispose();
   }
 
-  // Sisa kode (build method) tidak perlu diubah
   @override
   Widget build(BuildContext context) {
-    if (!_controller.value.isInitialized) {
-      return Container(color: Colors.grey.shade200);
-    }
     return Stack(
       fit: StackFit.expand,
       children: [
-        FittedBox(
+        // 🎥 GIF / WebP langsung dipakai sebagai image
+        Image.asset(
+          "assets/videos/factory-background.gif", // atau factory-background.webp
           fit: BoxFit.cover,
-          alignment: Alignment.centerRight,
-          child: SizedBox(
-            width: _controller.value.size.width,
-            height: _controller.value.size.height,
-            child: VideoPlayer(_controller),
-          ),
         ),
         Container(
           color: AppColors.schneiderGreen.withOpacity(0.3),

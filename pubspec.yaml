@@ -126,7 +126,6 @@ flutter:
     - assets/images/factory-background.png
     - assets/videos/
     - assets/videos/factory-background.mp4
-    - assets/videos/factory-background.aac
 
   # To add assets to your application, add an assets section, like this:
   # assets:
