@@ -643,9 +643,10 @@ class _VideoBackgroundState extends State<VideoBackground> {
     _controller =
         VideoPlayerController.asset('assets/videos/factory-background.mp4')
           ..initialize().then((_) {
+            // PERBAIKAN DI SINI
             _controller.play();
             _controller.setVolume(0.0);
-            _controller.addListener(_checkVideoPosition);
+            _controller.setLooping(true); // <--- Cukup tambahkan ini
             setState(() {});
             _startTextAnimation();
           });
@@ -676,19 +677,17 @@ class _VideoBackgroundState extends State<VideoBackground> {
     });
   }
 
-  void _checkVideoPosition() {
-    if (_controller.value.position >= const Duration(seconds: 30)) {
-      _controller.seekTo(Duration.zero);
-    }
-  }
+  // Method _checkVideoPosition() sudah tidak diperlukan lagi dan bisa dihapus
 
   @override
   void dispose() {
     _textAnimationTimer?.cancel();
-    _controller.removeListener(_checkVideoPosition);
+    // removeListener() juga sudah tidak perlu
     _controller.dispose();
+    super.dispose();
   }
 
+  // Sisa kode (build method) tidak perlu diubah
   @override
   Widget build(BuildContext context) {
     if (!_controller.value.isInitialized) {
