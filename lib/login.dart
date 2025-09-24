@@ -1,6 +1,7 @@
 // lib/login_page.dart
 
 import 'dart:async';
+
 import 'package:secpanel/login_change_password.dart';
 import 'package:secpanel/login_custom_page_route.dart';
 import 'package:video_player/video_player.dart';
@@ -12,7 +13,6 @@ import 'package:secpanel/models/company.dart';
 import 'package:secpanel/theme/colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
-
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -32,6 +32,13 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
+    
+    // [SOLUSI FINAL] Paksa controller untuk kosong setiap kali halaman login dibuat.
+    // Ini untuk mencegah browser/sistem operasi mengisi field secara otomatis (autofill)
+    // setelah proses logout, yang menjadi akar masalah Anda.
+    _usernameController.clear();
+    _passwordController.clear();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleStartupChecks();
     });
@@ -77,11 +84,12 @@ class _LoginPageState extends State<LoginPage> {
         username,
         password,
       );
-
+      
       if (mounted) {
+        // [PERBAIKAN LOGIKA] Kondisi HANYA bergantung pada hasil login dari database
         if (company != null) {
-          _showSuccessSnackBar('Login berhasil! Mengalihkan...');
           final prefs = await SharedPreferences.getInstance();
+          _showSuccessSnackBar('Login berhasil! Mengalihkan...');
           await prefs.setString('loggedInUsername', username);
           await prefs.setString('companyId', company.id);
           await prefs.setString('companyRole', company.role.name);
@@ -261,7 +269,6 @@ class _LoginPageState extends State<LoginPage> {
           ),
           const SizedBox(height: 24),
           TextButton(
-            // [PERUBAHAN] Menggunakan route kustom untuk transisi
             onPressed: areButtonsDisabled
                 ? null
                 : () => Navigator.of(context).push(
@@ -309,7 +316,6 @@ class _LoginPageState extends State<LoginPage> {
                 borderRadius: BorderRadius.circular(6),
               ),
             ),
-            // [PERUBAHAN] Menggunakan route kustom untuk transisi
             onPressed: areButtonsDisabled
                 ? null
                 : () => Navigator.of(context).push(
@@ -364,6 +370,8 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  // ... Sisa kode lainnya (build skeletons, fields, snackbars, dll) tetap sama ...
+  // ... (Tidak perlu saya sertakan lagi karena tidak ada perubahan) ...
   Widget _buildWebAppSkeletonLayout() {
     return Row(
       children: [
@@ -610,7 +618,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-// [WIDGET VIDEO BACKGROUND] - Disederhanakan dan lebih stabil
 class VideoBackground extends StatefulWidget {
   const VideoBackground({super.key});
 
@@ -620,11 +627,9 @@ class VideoBackground extends StatefulWidget {
 
 class _VideoBackgroundState extends State<VideoBackground> {
   late VideoPlayerController _controller;
-
   Timer? _textAnimationTimer;
   int _currentTextIndex = 0;
   double _textOpacity = 0.0;
-
   final List<String> _sloganTexts = [
     'Trisutorpro',
     'Lacak panel yang perlu diselesaikan segera',
@@ -654,13 +659,11 @@ class _VideoBackgroundState extends State<VideoBackground> {
         });
       }
     });
-
     _textAnimationTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) {
         setState(() {
           _textOpacity = 0.0;
         });
-
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
             setState(() {
@@ -691,7 +694,6 @@ class _VideoBackgroundState extends State<VideoBackground> {
     if (!_controller.value.isInitialized) {
       return Container(color: Colors.grey.shade200);
     }
-
     return Stack(
       fit: StackFit.expand,
       children: [

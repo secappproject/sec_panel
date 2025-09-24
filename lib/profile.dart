@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:secpanel/login.dart';
 import 'package:secpanel/models/company.dart';
 import 'package:secpanel/models/companyaccount.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -125,33 +126,44 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  Future<void> _logout() async {
-    final bool? confirm = await showModalBottomSheet<bool>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => const _LogoutConfirmationSheet(),
-    );
+Future<void> _logout() async {
+  final bool? confirm = await showModalBottomSheet<bool>(
+    context: context,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (ctx) => const _LogoutConfirmationSheet(),
+  );
 
-    if (confirm == true) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
+  // 1. Guard clause untuk memastikan widget masih ada setelah bottom sheet ditutup
+  if (confirm != true || !mounted) return;
 
-      if (mounted) {
-        _showSuccessSnackBar("Anda telah berhasil keluar.");
-        await Future.delayed(const Duration(milliseconds: 800));
-        if (mounted) {
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/login',
-            (route) => false,
-          );
-        }
-      }
-    }
-  }
+  // 2. Simpan Navigator dan ScaffoldMessenger SEBELUM operasi async
+  final navigator = Navigator.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+
+  // 3. Lakukan proses logout (clear data)
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
+
+  // 4. Tampilkan pesan yang BENAR menggunakan messenger yang sudah disimpan
+  messenger.showSnackBar(
+    const SnackBar(
+      content: Text("Anda telah berhasil keluar."),
+      backgroundColor: Colors.green, // Warna hijau untuk sukses logout
+      behavior: SnackBarBehavior.floating,
+    ),
+  );
+
+  // Beri jeda singkat agar pengguna bisa melihat pesan
+  await Future.delayed(const Duration(milliseconds: 800));
+
+  // 5. Lakukan navigasi menggunakan navigator yang sudah disimpan
+  navigator.push(
+    MaterialPageRoute(builder: (context) => const LoginPage()),
+  );
+}
 
   void _showSuccessSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
