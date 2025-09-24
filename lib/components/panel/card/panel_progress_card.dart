@@ -296,7 +296,7 @@ class PanelProgressCard extends StatelessWidget {
     //     ? 'On Progress'
     //     : statusBusbarMcc;
     final String displayStatus = statusBusbar.isEmpty
-        ? 'On Progress'
+        ? 'Progress'
         : statusBusbar;
     final String componentDisplayStatus = statusComponent.isEmpty
         ? 'Open'
@@ -438,190 +438,36 @@ class PanelProgressCard extends StatelessWidget {
               ),
             ),
             Container(
+              padding: const EdgeInsets.only(top: 12, right: 12, left: 12),
+              decoration: const BoxDecoration(
+                border: Border(
+                  top: BorderSide(width: 1, color: AppColors.grayLight),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(2),
+                    decoration: BoxDecoration(border: BoxBorder.all(width: 1, color: AppColors.grayLight), borderRadius: BorderRadius.all(Radius.circular(12))),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildAdditionalSRButton(context),
+                        SizedBox(width: 8,),
+                        _buildIssueButton(context),
+                        SizedBox(width: 8,),
+                        _buildEditButton(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      border: Border.all(width: 1, color: AppColors.grayLight),
-                      borderRadius: const BorderRadius.all(Radius.circular(12)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Text(
-                              "Panel",
-                              style: TextStyle(
-                                color: AppColors.gray,
-                                fontWeight: FontWeight.w300,
-                                fontSize: 11,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.grayLight,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                panelVendorName.isEmpty
-                                    ? 'No Vendor'
-                                    : panelVendorName,
-                                style: const TextStyle(
-                                  color: AppColors.black,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                            if (hasPanelRemarks) ...[
-                              const SizedBox(width: 4),
-                              InkWell(
-                                onTap: () => _showRemarksBottomSheet(
-                                  context,
-                                  title: 'Panel Remarks',
-                                  remarksMap: {
-                                    panelVendorName.isNotEmpty
-                                            ? panelVendorName
-                                            : 'Panel':
-                                        panelRemarks,
-                                  },
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: AppColors.grayLight,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Image.asset(
-                                    'assets/images/remarks.png',
-                                    height: 16,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        // InkWell(
-                        //   onTap: () {
-                        //     // The actual navigation logic
-                        //     Navigator.push(
-                        //       context,
-                        //       MaterialPageRoute(
-                        //         builder: (context) => PanelIssuesScreen(
-                        //           panelNoPp: ppNumber,
-                        //           panelNoWBS: wbsNumber,
-                        //           panelNoPanel: panelTitle,
-                        //           panelVendor: panelVendorName,
-                        //           busbarVendor: busbarVendorNames,
-                        //         ),
-                        //       ),
-                        //     );
-                        //   },
-                        //   borderRadius: BorderRadius.circular(16),
-                        //   child: Container(
-                        //     padding: const EdgeInsets.only(
-                        //       top: 4,
-                        //       bottom: 4,
-                        //       left: 8,
-                        //       right: 8,
-                        //     ),
-                        //     decoration: BoxDecoration(
-                        //       borderRadius: BorderRadius.circular(16),
-                        //       border: Border.all(
-                        //         color: AppColors.grayLight,
-                        //         width: 1,
-                        //       ),
-                        //     ),
-                        //     child: Text(
-                        //       "Issues",
-                        //       style: TextStyle(fontSize: 12),
-                        //     ),
-                        //   ),
-                        // ),
-                        Row(
-                          children: [
-                            const Text(
-                              "Busbar",
-                              style: TextStyle(
-                                color: AppColors.gray,
-                                fontWeight: FontWeight.w300,
-                                fontSize: 11,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Container(
-                              constraints: BoxConstraints(
-                                maxWidth:
-                                    MediaQuery.of(context).size.width * 0.3,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.grayLight,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                busbarVendorNames.isEmpty
-                                    ? 'No Vendor'
-                                    : busbarVendorNames,
-                                style: const TextStyle(
-                                  color: AppColors.black,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 12,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (hasBusbarRemarks) ...[
-                              const SizedBox(width: 4),
-                              InkWell(
-                                onTap: () => _showRemarksBottomSheet(
-                                  context,
-                                  title: 'Busbar Remarks',
-                                  remarksMap: {
-                                    for (var e in busbarRemarks)
-                                      e.vendorName: e.remark,
-                                  },
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: AppColors.grayLight,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Image.asset(
-                                    'assets/images/remarks.png',
-                                    height: 16,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // ▼▼▼ [PERBAIKAN] Judul dan chip status digabung dalam satu Row ▼▼▼
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -646,29 +492,26 @@ class PanelProgressCard extends StatelessWidget {
                       Expanded(
                         child: _buildStatusColumn(
                           "Busbar",
-                          displayStatus,
+                          displayStatus == "On Progress" ? "Progress" : displayStatus,
                           _getBusbarStatusImage(statusBusbar),
                         ),
                       ),
+                      SizedBox(width: 4,),
                       Expanded(
                         child: _buildStatusColumn(
-                          "Component",
-                          componentDisplayStatus,
+                          "Comp.",
+                          componentDisplayStatus == "On Progress" ? "Progress" : componentDisplayStatus,
                           _getComponentStatusImage(statusComponent),
                         ),
                       ),
-                      SizedBox(
-                        width: 64,
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: _buildEditButton(),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
+                      // SizedBox(
+                      //   width: 64,
+                      //   child: Align(
+                      //     alignment: Alignment.centerRight,
+                      //     child: _buildEditButton(),
+                      //   ),
+                      // ),
+                      SizedBox(width: 4,),
                       Expanded(
                         child: _buildStatusColumn(
                           "Palet",
@@ -676,27 +519,48 @@ class PanelProgressCard extends StatelessWidget {
                           _getPaletStatusImage(statusPalet),
                         ),
                       ),
-                      Expanded(
+                      SizedBox(width: 4,),
+                      Container(
+                        width: 60,
                         child: _buildStatusColumn(
                           "Corepart",
                           corepartDisplayStatus,
                           _getCorepartStatusImage(statusCorepart),
                         ),
                       ),
-                      SizedBox(
-                        width: 64,
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: _buildIssueButton(context),
-                        ),
-                      ),
                     ],
                   ),
+                  // Row(
+                  //   children: [
+                  //     Expanded(
+                  //       child: _buildStatusColumn(
+                  //         "Palet",
+                  //         paletDisplayStatus,
+                  //         _getPaletStatusImage(statusPalet),
+                  //       ),
+                  //     ),
+                  //     Expanded(
+                  //       child: _buildStatusColumn(
+                  //         "Corepart",
+                  //         corepartDisplayStatus,
+                  //         _getCorepartStatusImage(statusCorepart),
+                  //       ),
+                  //     ),
+                  //     // SizedBox(
+                  //     //   width: 64,
+                  //     //   child: Align(
+                  //     //     alignment: Alignment.centerRight,
+                  //     //     child: _buildIssueButton(context),
+                  //     //   ),
+                  //     // ),
+                  //   ],
+                  // ),
                 ],
               ),
             ),
+            // Wrap your widgets in a Column for vertical arrangement
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               decoration: const BoxDecoration(
                 border: Border(
                   top: BorderSide(width: 1, color: AppColors.grayLight),
@@ -704,16 +568,92 @@ class PanelProgressCard extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _buildInfoRow("Tipe Panel", displayPanelType),
-                  const SizedBox(height: 8),
-                  _buildInfoRow("No. PP", displayPpNumber),
-                  const SizedBox(height: 8),
-                  _buildInfoRow("No. WBS", displayWbsNumber),
-                  const SizedBox(height: 8),
-                  _buildInfoRow("Project", displayProject),
+                  // 1. A Row for the Vendor and Busbar info
+                  Container(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Vendor",
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w300, color: AppColors.gray),
+                        ),
+                        Row(
+                          children: [
+                            const Text(
+                              "Panel",
+                              style: TextStyle(
+                                color: AppColors.gray,
+                                fontWeight: FontWeight.w300,
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.grayLight,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                panelVendorName.isEmpty ? 'No Vendor' : panelVendorName,
+                                style: const TextStyle(
+                                  color: AppColors.black,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            const Text(
+                              "Busbar",
+                              style: TextStyle(
+                                color: AppColors.gray,
+                                fontWeight: FontWeight.w300,
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            // Use Flexible to prevent long text from causing an overflow
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.grayLight,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                busbarVendorNames.isEmpty ? 'No Vendor' : busbarVendorNames,
+                                style: const TextStyle(
+                                  color: AppColors.black,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 11,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Add some space between the row above and the column below
+                  const SizedBox(height: 12),
+              
+                  // 2. A Column for the rest of the panel details
+                  Column(
+                    children: [
+                      _buildInfoRow("Tipe Panel", displayPanelType),
+                      const SizedBox(height: 8),
+                      _buildInfoRow("No. PP", displayPpNumber),
+                      const SizedBox(height: 8),
+                      _buildInfoRow("No. WBS", displayWbsNumber),
+                      const SizedBox(height: 8),
+                      _buildInfoRow("Project", displayProject),
+                    ],
+                  ),
                 ],
               ),
-            ),
+            )
           ],
         ),
       ),
@@ -725,6 +665,8 @@ class PanelProgressCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
           title,
           style: const TextStyle(
             color: AppColors.gray,
@@ -759,17 +701,13 @@ class PanelProgressCard extends StatelessWidget {
       child: Container(
         alignment: Alignment.center,
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.grayLight, width: 1),
-        ),
-        child: Row(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Image.asset('assets/images/edit-green.png', height: 20),
-            SizedBox(width: 4,),
-            // Text("Edit", style: TextStyle(color: AppColors.black, fontSize: 10),)
+            Image.asset('assets/images/edit-green.png', height: 20, color: AppColors.gray,),
+            SizedBox(width: 8,),
+            Text("Edit", style: TextStyle(fontSize: 11, color: AppColors.gray, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
           ],
         ),
       ),
@@ -792,39 +730,40 @@ class PanelProgressCard extends StatelessWidget {
       },
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        width: 64,
         alignment: Alignment.center,
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.grayLight, width: 1),
-        ),
-        child: Stack(
-          clipBehavior: Clip.none,
+        child: Column(
           children: [
-            Image.asset('assets/images/package.png', height: 20, color: AppColors.gray), // Ganti dengan ikon yang sesuai
-            if (additionalSrCount > 0)
-              Positioned(
-                right: -5,
-                top: -8,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: Colors.blue, // Warna badge bisa disesuaikan
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
-                  child: Text(
-                    additionalSrCount.toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w500,
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Image.asset('assets/images/package.png', height: 20, color: AppColors.gray), // Ganti dengan ikon yang sesuai
+                if (additionalSrCount > 0)
+                  Positioned(
+                    right: -5,
+                    top: -8,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.blue, // Warna badge bisa disesuaikan
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
+                      child: Text(
+                        additionalSrCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                ),
-              ),
+              ],
+            ),
+            SizedBox(width: 8,),
+            Text("SR", style: TextStyle(fontSize: 11, color: AppColors.gray, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
           ],
         ),
       ),
@@ -852,11 +791,7 @@ class PanelProgressCard extends StatelessWidget {
       child: Container(
         alignment: Alignment.center,
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.grayLight, width: 1),
-        ),
-        child: Row(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -898,8 +833,8 @@ class PanelProgressCard extends StatelessWidget {
                 ],
               ),
             ],
-            SizedBox(width: 4,),
-            // Text("Issue", style: TextStyle(color: AppColors.black, fontSize: 10),)
+            SizedBox(width: 8,),
+            Text("Issue", style: TextStyle(fontSize: 11, color: AppColors.gray, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
           ],
         ),
       ),
@@ -923,7 +858,7 @@ class PanelProgressCard extends StatelessWidget {
             textAlign: TextAlign.end,
             style: const TextStyle(
               color: AppColors.gray,
-              fontWeight: FontWeight.w400,
+              fontWeight: FontWeight.w300,
               fontSize: 12,
             ),
             overflow: TextOverflow.ellipsis,

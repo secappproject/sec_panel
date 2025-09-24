@@ -1291,7 +1291,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             crossAxisCount: crossAxisCount,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-            mainAxisExtent: 440,
+            mainAxisExtent: 460,
           ),
           itemCount: panelsToDisplay.length,
           itemBuilder: (context, index) {
