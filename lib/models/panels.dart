@@ -25,6 +25,8 @@ class Panel {
   String? remarks;
   DateTime? closeDateBusbarPcc;
   DateTime? closeDateBusbarMcc;
+  String? statusPenyelesaian;
+  String? productionSlot;
 
   Panel({
     required this.noPp,
@@ -49,6 +51,8 @@ class Panel {
     this.remarks,
     this.closeDateBusbarPcc,
     this.closeDateBusbarMcc,
+    this.statusPenyelesaian,
+    this.productionSlot,
   });
 
   Map<String, dynamic> toMap() {
@@ -75,6 +79,8 @@ class Panel {
       'remarks': remarks,
       'close_date_busbar_pcc': closeDateBusbarPcc?.toUtc().toIso8601String(),
       'close_date_busbar_mcc': closeDateBusbarMcc?.toUtc().toIso8601String(),
+      'status_penyelesaian': statusPenyelesaian,
+      'production_slot': productionSlot,
     };
   }
 
@@ -102,6 +108,8 @@ class Panel {
       'remarks': remarks,
       'close_date_busbar_pcc': closeDateBusbarPcc?.toUtc().toIso8601String(),
       'close_date_busbar_mcc': closeDateBusbarMcc?.toUtc().toIso8601String(),
+      'status_penyelesaian': statusPenyelesaian,
+      'production_slot': productionSlot,
     };
   }
 
@@ -141,6 +149,8 @@ class Panel {
       remarks: map['remarks'],
       closeDateBusbarPcc: parseDate(map['close_date_busbar_pcc']),
       closeDateBusbarMcc: parseDate(map['close_date_busbar_mcc']),
+      statusPenyelesaian: map['status_penyelesaian'],
+      productionSlot: map['production_slot'],
     );
   }
 }

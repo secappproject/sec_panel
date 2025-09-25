@@ -19,6 +19,7 @@ import 'package:secpanel/models/issue.dart';
 import 'package:secpanel/models/palet.dart';
 import 'package:secpanel/models/paneldisplaydata.dart';
 import 'package:secpanel/models/panels.dart';
+import 'package:secpanel/models/productionslot.dart';
 
 class TemplateFile {
   final List<int> bytes;
@@ -1357,4 +1358,53 @@ Future<Company?> getCompanyByUsername(String username) async {
   Future<void> deleteAdditionalSR(int srId) async {
     await _apiRequest('DELETE', '/additional-sr/$srId');
   }
+
+  /// Mengambil semua slot produksi beserta statusnya.
+  Future<List<ProductionSlot>> getProductionSlots() async {
+    final List<dynamic>? data = await _apiRequest('GET', '/production-slots');
+    if (data == null) {
+      return [];
+    }
+    return data.map((json) => ProductionSlot.fromJson(json)).toList();
   }
+
+  /// Mengirim aksi transfer atau rollback untuk sebuah panel.
+  /// Aksi yang valid: "to_production", "to_fat", "to_done", "rollback".
+ 
+  Future<PanelDisplayData> transferPanelAction({
+    required String panelNoPp,
+    required String action,
+    String? slot,
+  }) async {
+    // === PERBAIKAN DI SINI ===
+    final url = Uri.parse('$_baseUrl/panels/$panelNoPp/transfer'); 
+    // =========================
+    
+    final Map<String, dynamic> body = {
+      'action': action,
+    };
+    if (slot != null) {
+      body['slot'] = slot;
+    }
+
+    // Panggil helper _apiRequest yang sudah Anda buat
+    // Ini lebih konsisten dengan sisa kode Anda
+    try {
+      final responseData = await _apiRequest(
+        'POST',
+        url.toString().substring(_baseUrl.length), // Dapatkan endpoint relatif
+        body: body,
+      );
+
+      if (responseData != null) {
+        final updatedPanel = PanelDisplayData.fromJson(responseData);
+        return updatedPanel;
+      } else {
+        throw Exception('Failed to transfer panel: No data received from server');
+      }
+    } catch (e) {
+        // Lemparkan kembali error dari _apiRequest agar UI bisa menampilkannya
+        rethrow;
+    }
+  }
+}

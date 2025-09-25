@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:secpanel/components/panel/add/add_panel_bottom_sheet.dart';
+import 'package:secpanel/components/panel/transfer/transfer_panel_bottom_sheet.dart';
 import 'package:secpanel/models/company.dart';
 import 'package:secpanel/models/paneldisplaydata.dart';
 import 'package:secpanel/models/panels.dart';
@@ -346,6 +347,32 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+    void _openTransferPanelBottomSheet(PanelDisplayData panelData) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => TransferPanelBottomSheet(
+          panelData: panelData,
+          onSuccess: (updatedPanelData) {
+            Navigator.of(context).pop();
+
+            // === PERBAIKAN ADA DI BARIS-BARIS BERIKUT ===
+            // 1. Gunakan `_allPanelsData` sebagai list yang benar
+            final index = _allPanelsData.indexWhere((p) => p.panel.noPp == updatedPanelData.panel.noPp);
+            
+            if (index != -1) {
+              setState(() {
+                // 2. Perbarui item di dalam `_allPanelsData`
+                _allPanelsData[index] = updatedPanelData;
+              });
+            } else {
+              loadInitialData();
+            }
+          },
+        ),
+      );
+    }
   void _openEditPanelBottomSheet(PanelDisplayData dataToEdit) {
     showModalBottomSheet(
       context: context,
@@ -1211,13 +1238,13 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(
-                              width: 320,
-                              child: SingleChildScrollView(
-                                child: _buildProductionSummaryCard(),
-                              ),
-                            ),
-                            const SizedBox(width: 20),
+                            // SizedBox(
+                            //   width: 320,
+                            //   child: SingleChildScrollView(
+                            //     child: _buildProductionSummaryCard(),
+                            //   ),
+                            // ),
+                            // const SizedBox(width: 20),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1237,12 +1264,12 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       return CustomScrollView(
                         slivers: [
                           // Card di atas
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                              child: _buildProductionSummaryCard(),
-                            ),
-                          ),
+                          // SliverToBoxAdapter(
+                          //   child: Padding(
+                          //     padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                          //     child: _buildProductionSummaryCard(),
+                          //   ),
+                          // ),
                           // TabBar yang menempel
                           SliverPersistentHeader(
                             delegate: _SliverAppBarDelegate(tabBarWidget),
@@ -1324,6 +1351,9 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   _openEditStatusBottomSheet(data);
                 }
               },
+              onTransfer: (){
+                _openTransferPanelBottomSheet(data);
+              },
               panelVendorName: data.panelVendorName,
               busbarVendorNames: data.busbarVendorNames,
               componentVendorName: data.componentVendorNames,
@@ -1394,6 +1424,9 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               } else if (role == AppRole.k5 || role == AppRole.warehouse) {
                 _openEditStatusBottomSheet(data);
               }
+            },
+            onTransfer: () {
+              _openTransferPanelBottomSheet(data);
             },
             panelVendorName: data.panelVendorName,
             busbarVendorNames: data.busbarVendorNames,

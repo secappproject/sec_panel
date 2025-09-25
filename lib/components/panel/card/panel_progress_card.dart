@@ -47,6 +47,7 @@ class PanelProgressCard extends StatelessWidget {
   final String wbsNumber;
   final String project;
   final VoidCallback onEdit;
+  final VoidCallback onTransfer;
   final String panelVendorName;
   final String busbarVendorNames;
   final String componentVendorName;
@@ -77,6 +78,7 @@ class PanelProgressCard extends StatelessWidget {
     required this.wbsNumber,
     required this.project,
     required this.onEdit,
+    required this.onTransfer,
     required this.panelVendorName,
     required this.busbarVendorNames,
     required this.componentVendorName,
@@ -438,32 +440,6 @@ class PanelProgressCard extends StatelessWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.only(top: 12, right: 12, left: 12),
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(width: 1, color: AppColors.grayLight),
-                ),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(2),
-                    decoration: BoxDecoration(border: BoxBorder.all(width: 1, color: AppColors.grayLight), borderRadius: BorderRadius.all(Radius.circular(12))),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildAdditionalSRButton(context),
-                        SizedBox(width: 8,),
-                        _buildIssueButton(context),
-                        SizedBox(width: 8,),
-                        _buildEditButton(),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -492,7 +468,11 @@ class PanelProgressCard extends StatelessWidget {
                       Expanded(
                         child: _buildStatusColumn(
                           "Busbar",
-                          displayStatus == "On Progress" ? "Progress" : displayStatus,
+                          (displayStatus == "100% Siap Kirim")
+                          ? "Ready" : 
+                          (displayStatus == "On Progress")
+                          ? "Progress" : 
+                          displayStatus,
                           _getBusbarStatusImage(statusBusbar),
                         ),
                       ),
@@ -555,6 +535,35 @@ class PanelProgressCard extends StatelessWidget {
                   //     // ),
                   //   ],
                   // ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.only(top: 12, right: 12, left: 12, bottom: 12),
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(width: 1, color: AppColors.grayLight),
+                  top: BorderSide(width: 1, color: AppColors.grayLight),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(2),
+                    decoration: BoxDecoration(border: BoxBorder.all(width: 1, color: AppColors.grayLight), borderRadius: BorderRadius.all(Radius.circular(12))),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildAdditionalSRButton(context),
+                        SizedBox(width: 8,),
+                        _buildIssueButton(context),
+                        SizedBox(width: 8,),
+                        _buildCycleButton(),
+                        SizedBox(width: 8,),
+                        _buildEditButton(),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -693,6 +702,26 @@ class PanelProgressCard extends StatelessWidget {
     );
   }
 
+  Widget _buildCycleButton() {
+    if (currentUserRole == AppRole.viewer) return const SizedBox.shrink();
+    return InkWell(
+      onTap: onTransfer,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Image.asset('assets/images/cycle.png', height: 20, color: AppColors.schneiderGreen,),
+            SizedBox(width: 8,),
+            Text("Transfer", style: TextStyle(fontSize: 11, color: AppColors.black, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
+          ],
+        ),
+      ),
+    );
+  }
   Widget _buildEditButton() {
     if (currentUserRole == AppRole.viewer) return const SizedBox.shrink();
     return InkWell(
@@ -705,9 +734,9 @@ class PanelProgressCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Image.asset('assets/images/edit-green.png', height: 20, color: AppColors.gray,),
+            Image.asset('assets/images/edit-green.png', height: 20, color: AppColors.schneiderGreen,),
             SizedBox(width: 8,),
-            Text("Edit", style: TextStyle(fontSize: 11, color: AppColors.gray, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
+            Text("Edit", style: TextStyle(fontSize: 11, color: AppColors.black, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
           ],
         ),
       ),
@@ -735,7 +764,7 @@ Widget _buildAdditionalSRButton(BuildContext context) {
       child: Column(
         children: [
           if (additionalSrCount == 0) ...[
-            Image.asset('assets/images/package.png', height: 20, color: AppColors.gray),
+            Image.asset('assets/images/package.png', height: 20, color: AppColors.schneiderGreen),
           ],
           if (additionalSrCount != 0) ...[
             Stack(
@@ -744,7 +773,7 @@ Widget _buildAdditionalSRButton(BuildContext context) {
                 Image.asset(
                   'assets/images/package.png',
                   height: 20,
-                  color: AppColors.gray
+                  color: AppColors.schneiderGreen
                 ),
                 Positioned(
                   right: -3, // posisi ke kanan (seperti issue)
@@ -774,7 +803,7 @@ Widget _buildAdditionalSRButton(BuildContext context) {
             ),
           ],
           SizedBox(width: 8,),
-          Text("SR", style: TextStyle(fontSize: 11, color: AppColors.gray, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
+          Text("SR", style: TextStyle(fontSize: 11, color: AppColors.black, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
         ],
       ),
     ),
@@ -807,7 +836,8 @@ Widget _buildAdditionalSRButton(BuildContext context) {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (issueCount == 0)...[
-            Image.asset('assets/images/issue-no.png', height: 20),
+            Image.asset('assets/images/issue-no.png', height: 20,
+                    color: AppColors.schneiderGreen,),
             ],
             if (issueCount != 0) ...[
               Stack(
@@ -816,6 +846,7 @@ Widget _buildAdditionalSRButton(BuildContext context) {
                   Image.asset(
                     'assets/images/issue-no.png',
                     height: 20,
+                    color: AppColors.schneiderGreen,
                   ),
                   Positioned(
                     right: -3, // posisi ke kanan
@@ -845,7 +876,7 @@ Widget _buildAdditionalSRButton(BuildContext context) {
               ),
             ],
             SizedBox(width: 8,),
-            Text("Issue", style: TextStyle(fontSize: 11, color: AppColors.gray, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
+            Text("Issue", style: TextStyle(fontSize: 11, color: AppColors.black, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
           ],
         ),
       ),
