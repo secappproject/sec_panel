@@ -1359,6 +1359,15 @@ Future<Company?> getCompanyByUsername(String username) async {
     await _apiRequest('DELETE', '/additional-sr/$srId');
   }
 
+  Future<List<String>> getSuppliers() async {
+    final List<dynamic>? data = await _apiRequest('GET', '/suppliers');
+    if (data == null) {
+      return [];
+    }
+    // Konversi dari List<dynamic> ke List<String>
+    return List<String>.from(data);
+  }
+  
   /// Mengambil semua slot produksi beserta statusnya.
   Future<List<ProductionSlot>> getProductionSlots() async {
     final List<dynamic>? data = await _apiRequest('GET', '/production-slots');

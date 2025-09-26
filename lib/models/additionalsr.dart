@@ -8,6 +8,7 @@ class AdditionalSR {
   final String poNumber;
   final String item;
   final int quantity;
+  final String? supplier;
   final String status;
   final String remarks;
   final DateTime? createdAt;
@@ -19,6 +20,7 @@ class AdditionalSR {
     required this.poNumber,
     required this.item,
     required this.quantity,
+    this.supplier,
     required this.status,
     required this.remarks,
     this.createdAt,
@@ -32,6 +34,7 @@ class AdditionalSR {
       'po_number': poNumber,
       'item': item,
       'quantity': quantity,
+      'supplier': supplier,
       'status': status,
       'remarks': remarks,
       'created_at': createdAt?.toIso8601String(),
@@ -46,10 +49,10 @@ class AdditionalSR {
       poNumber: map['po_number'] ?? '',
       item: map['item'] ?? '',
       quantity: map['quantity']?.toInt() ?? 0,
+      supplier: map['supplier'], 
       status: map['status'] ?? 'open',
       remarks: map['remarks'] ?? '',
       createdAt: map['created_at'] != null ? DateTime.parse(map['created_at']) : null,
-      // [BARU] Parsing dari map
       receivedDate: map['received_date'] != null ? DateTime.parse(map['received_date']) : null,
     );
   }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/models/additionalsr.dart';
+import 'package:secpanel/models/approles.dart'; // Import AppRole
+import 'package:secpanel/models/company.dart';
 import 'package:secpanel/theme/colors.dart';
 
 class AdditionalSrBottomSheet extends StatefulWidget {
@@ -32,27 +34,27 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
   }
 
   Future<void> _fetchSRs() async {
-    setState(() => _isLoading = true);
-    try {
-      final srs =
-          await DatabaseHelper.instance.getAdditionalSRs(widget.poNumber);
-      if (mounted) {
-        setState(() {
-          _srs = srs;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error: ${e.toString()}'),
-              backgroundColor: AppColors.red),
-        );
-        setState(() => _isLoading = false);
-      }
+  setState(() => _isLoading = true);
+  try {
+    final srs =
+        await DatabaseHelper.instance.getAdditionalSRs(widget.panelNoPp);
+    if (mounted) {
+      setState(() {
+        _srs = srs;
+        _isLoading = false;
+      });
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: AppColors.red),
+      );
+      setState(() => _isLoading = false);
     }
   }
+}
 
   void _showEditSRDialog({AdditionalSR? sr}) {
     showModalBottomSheet(
@@ -165,7 +167,6 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
   }
 
   Widget _buildSRListItemCard(AdditionalSR sr) {
-    final bool isClosed = sr.status == 'close';
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -193,57 +194,11 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                       ),
                       const SizedBox(height: 8),
                       // Qty
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Qty',
-                            style: TextStyle(
-                              color: AppColors.gray,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w300,
-                            )
-                          ),
-                          Text(
-                            sr.quantity.toString(),
-                            style: const TextStyle(
-                              color: AppColors.black,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8,),
+                      _buildInfoColumn('Qty', sr.quantity.toString()),
+                      const SizedBox(height: 8),
                       // PO
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'No. PO',
-                            style: TextStyle(
-                              color: AppColors.gray,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w300,
-                            )
-                          ),
-                          Text(
-                            sr.poNumber.toString(),
-                            style: const TextStyle(
-                              color: AppColors.black,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8,),
+                      _buildInfoColumn('No. PO', sr.poNumber.toString()),
+                      const SizedBox(height: 8),
                       // Status
                       Column(
                         mainAxisAlignment: MainAxisAlignment.start,
@@ -257,7 +212,7 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                               fontWeight: FontWeight.w300,
                             )
                           ),
-                          if (sr.status == "Open" || sr.status == "open")...[
+                          if (sr.status.toLowerCase() == "open")...[
                             Row(
                               children: [
                                 const Text(
@@ -272,7 +227,7 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                               ],
                             )
                           ],
-                          if (sr.status == "Close" || sr.status == "close")...[
+                          if (sr.status.toLowerCase() == "close")...[
                             Row(
                               children: [
                                 const Text(
@@ -289,60 +244,23 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                           ]
                         ],
                       ),
+                      
+                      // Supplier
+                      if (sr.supplier != null && sr.supplier!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        _buildInfoColumn('Supplier', sr.supplier!),
+                      ],
 
-                      const SizedBox(height: 8,),
+                      const SizedBox(height: 8),
                       // Remarks
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Remarks (No. DO)',
-                            style: TextStyle(
-                              color: AppColors.gray,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w300,
-                            )
-                          ),
-                          Text(
-                            sr.remarks.toString(),
-                            style: const TextStyle(
-                              color: AppColors.black,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                          ),
-                        ],
-                      ),
+                      _buildInfoColumn('Remarks (No. DO)', sr.remarks.toString()),
 
-                      // [BARU] Tampilkan Received Date jika status close
+                      // Tampilkan Received Date jika status close
                       if (sr.status.toLowerCase() == 'close' && sr.receivedDate != null) ...[
                         const SizedBox(height: 8),
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Received Date',
-                              style: TextStyle(
-                                color: AppColors.gray,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w300,
-                              ),
-                            ),
-                            Text(
-                              DateFormat('d MMM yyyy, HH:mm', 'id_ID').format(sr.receivedDate!),
-                              style: const TextStyle(
-                                color: AppColors.black,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w400,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 2,
-                            ),
-                          ],
+                        _buildInfoColumn(
+                          'Received Date',
+                          DateFormat('d MMM yyyy, HH:mm', 'id_ID').format(sr.receivedDate!),
                         ),
                       ],
                     ],
@@ -481,25 +399,35 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
     );
   }
 
-
-  // [BARU] Widget helper untuk teks info yang ringkas
-  Widget _buildInfoText(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4.0),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 12,
-          color: AppColors.gray,
-          fontWeight: FontWeight.w300,
+  Widget _buildInfoColumn(String label, String value) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.gray,
+            fontSize: 11,
+            fontWeight: FontWeight.w300,
+          ),
         ),
-        overflow: TextOverflow.ellipsis,
-      ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: AppColors.black,
+            fontSize: 11,
+            fontWeight: FontWeight.w400,
+          ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 2,
+        ),
+      ],
     );
   }
 }
 
-// Dialog Form untuk Tambah/Edit (tidak ada perubahan di sini)
+// Dialog Form untuk Tambah/Edit
 class _AddEditSRDialog extends StatefulWidget {
   final String panelNoPp;
   final String poNumber;
@@ -512,80 +440,140 @@ class _AddEditSRDialog extends StatefulWidget {
   @override
   State<_AddEditSRDialog> createState() => _AddEditSRDialogState();
 }
+
 class _AddEditSRDialogState extends State<_AddEditSRDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _poController;
   late TextEditingController _itemController;
   late TextEditingController _qtyController;
+  late TextEditingController _supplierController;
   late TextEditingController _remarksController;
-  late TextEditingController _receivedDateController; // Add this line
+  late TextEditingController _receivedDateController;
   late String _status;
-  bool _usePanelPoAsPo = false;
+
+  List<Company> _supplierCompanies = [];
+  bool _isLoadingCompanies = true;
+
+  String? _selectedSupplier;
+  bool _showManualSupplierInput = false;
 
   @override
   void initState() {
     super.initState();
-    final srPoNumber = widget.sr?.poNumber;
-      _poController = TextEditingController(
-        text: (srPoNumber == null || srPoNumber.isEmpty || srPoNumber.startsWith("TEMP_"))
-            ? ''
-            : srPoNumber,
-      );
-    _itemController = TextEditingController(text: widget.sr?.item ?? '');
-    _qtyController =
-        TextEditingController(text: widget.sr?.quantity.toString() ?? '');
-    _remarksController = TextEditingController(text: widget.sr?.remarks ?? '');
-    _status = widget.sr?.status ?? 'open';
-
-    // Initialize the new date controller
+    final sr = widget.sr;
+    _poController = TextEditingController(text: sr?.poNumber ?? '');
+    _itemController = TextEditingController(text: sr?.item ?? '');
+    _qtyController = TextEditingController(text: sr?.quantity.toString() ?? '');
+    _remarksController = TextEditingController(text: sr?.remarks ?? '');
+    _status = sr?.status ?? 'open';
     _receivedDateController = TextEditingController();
-    if (widget.sr?.receivedDate != null) {
+    if (sr?.receivedDate != null) {
       _receivedDateController.text =
-          DateFormat('d MMM yyyy, HH:mm', 'id_ID').format(widget.sr!.receivedDate!);
+          DateFormat('d MMM yyyy, HH:mm', 'id_ID').format(sr!.receivedDate!);
+    }
+    
+    _supplierController = TextEditingController();
+    
+    _fetchSupplierCompanies().then((_) {
+      if (sr?.supplier != null && sr!.supplier!.isNotEmpty) {
+        if (_supplierCompanies.any((c) => c.name == sr.supplier)) {
+          _selectedSupplier = sr.supplier;
+          _showManualSupplierInput = false;
+        } else {
+          _selectedSupplier = 'Lainnya...';
+          _showManualSupplierInput = true;
+          _supplierController.text = sr.supplier!;
+        }
+        if (mounted) setState(() {});
+      }
+    });
+  }
+  
+  Future<void> _fetchSupplierCompanies() async {
+    if(mounted) setState(() => _isLoadingCompanies = true);
+    try {
+      final results = await Future.wait([
+        DatabaseHelper.instance.getK3Vendors(),
+        DatabaseHelper.instance.getK5Vendors(),
+      ]);
+      final k3Vendors = results[0];
+      final k5Vendors = results[1];
+
+      final allVendors = [...k3Vendors, ...k5Vendors];
+      
+      final uniqueVendorsMap = {for (var v in allVendors) v.name: v};
+      final uniqueVendors = uniqueVendorsMap.values.toList()
+        ..sort((a, b) => a.name.compareTo(b.name));
+
+      if (mounted) {
+        setState(() {
+          _supplierCompanies = uniqueVendors;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching K3/K5 vendors: $e");
+    } finally {
+      if(mounted) setState(() => _isLoadingCompanies = false);
     }
   }
+
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
-      String poNumber;
-
-      if (_usePanelPoAsPo) {
-        // user pilih samakan dengan panel → pakai no PP
-        poNumber = widget.poNumber;
-      } else {
-        // user manual isi → wajib validator
-        poNumber = _poController.text.trim();
+      if (_selectedSupplier == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Silakan pilih atau isi supplier.'),
+            backgroundColor: AppColors.red,
+          ),
+        );
+        return;
       }
-
-      // [NEW] Logic to set received date when status is 'close'
+      
       DateTime? receivedDate;
       if (_status.toLowerCase() == 'close') {
-        // If the status is being set to 'close' and there's no previous received date,
-        // set it to the current time.
         receivedDate = widget.sr?.receivedDate ?? DateTime.now().toUtc();
       } else {
-        // If status is 'open', clear the received date.
         receivedDate = null;
+      }
+
+      String finalSupplier;
+      if (_selectedSupplier == 'Lainnya...') {
+        finalSupplier = _supplierController.text.trim();
+      } else {
+        finalSupplier = _selectedSupplier ?? '';
+      }
+
+      if (finalSupplier.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Supplier tidak boleh kosong.'),
+            backgroundColor: AppColors.red,
+          ),
+        );
+        return;
       }
 
       final srData = AdditionalSR(
         id: widget.sr?.id,
-        poNumber: poNumber,
+        poNumber: _poController.text.trim(),
         panelNoPp: widget.panelNoPp,
-        item: _itemController.text,
+        item: _itemController.text.trim(),
         quantity: int.tryParse(_qtyController.text) ?? 0,
-        remarks: _remarksController.text,
+        supplier: finalSupplier,
+        remarks: _remarksController.text.trim(),
         status: _status,
-        receivedDate: receivedDate, // Use the new variable here
+        receivedDate: receivedDate,
       );
       try {
         if (widget.sr == null) {
-          await DatabaseHelper.instance
-              .createAdditionalSR(widget.poNumber, srData);
-        } else {
-          await DatabaseHelper.instance.updateAdditionalSR(srData.id!, srData);
+            await DatabaseHelper.instance
+                .createAdditionalSR(widget.panelNoPp, srData);
+          } else {
+            await DatabaseHelper.instance.updateAdditionalSR(srData.id!, srData);
+          }
+          widget.onSave();
         }
-        widget.onSave();
-      } catch (e) {
+        catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -596,7 +584,6 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -644,32 +631,11 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
                 validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
               ),
               const SizedBox(height: 16),
-              // SwitchListTile(
-              //   title: const Text(
-              //     'No. PO sama dengan No. Po Panel',
-              //     style: TextStyle(fontSize: 12),
-              //   ),
-              //   value: _usePanelPoAsPo,
-              //   onChanged: (bool value) {
-              //     setState(() {
-              //       _usePanelPoAsPo = value;
-              //       if (_usePanelPoAsPo) {
-              //         _poController.text = widget.poNumber;  
-              //       } else {
-              //         _poController.text = widget.sr?.poNumber ?? '';
-              //       }
-              //     });
-              //   },
-              //   dense: true,
-              //   contentPadding: EdgeInsets.zero,
-              //   activeColor: AppColors.schneiderGreen,
-              // ),
-
-              const SizedBox(height: 8),
+              _buildSupplierField(),
+              const SizedBox(height: 16),
               _buildTextField(
                 controller: _poController,
                 label: 'No. PO',
-                isEnabled: !_usePanelPoAsPo,
                 validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
               ),
               const SizedBox(height: 16),
@@ -691,10 +657,9 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
                 _buildTextField(
                   controller: _receivedDateController,
                   label: 'Received Date',
-                  isEnabled: false, // Make it non-editable
+                  isEnabled: false,
                 ),
               ],
-
               const SizedBox(height: 32),
               _buildActionButtons(),
             ],
@@ -703,61 +668,197 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
       ),
     );
   }
-Widget _buildTextField({
-  required TextEditingController controller,
-  required String label,
-  TextInputType? keyboardType,
-  String? Function(String?)? validator,
-  bool isEnabled = true,
-}) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        label,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          color: isEnabled ? AppColors.black : AppColors.gray,
-        ),
-      ),
-      const SizedBox(height: 8),
-      TextFormField(
-      controller: controller,
-      enabled: isEnabled,
-      cursorColor: AppColors.schneiderGreen,
-      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
-      keyboardType: keyboardType,
-      validator: validator,
-      decoration: InputDecoration(
-        hintText: isEnabled ? 'Masukkan $label' : null,
-        // helperText: !isEnabled ? 'Menggunakan No. Po Panel' : null,
-        helperStyle: const TextStyle(
-          fontSize: 11,
-          color: AppColors.gray,
-          fontWeight: FontWeight.w300,
-        ),
-        filled: !isEnabled,
-        fillColor: Colors.grey.shade100,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.grayLight),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.grayLight),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.schneiderGreen),
-        ),
-      ),
-    ),
 
-    ],
-  );
-}
+  Widget _buildSupplierField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Supplier",
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: AppColors.black,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _isLoadingCompanies
+            ? const Center(child: CircularProgressIndicator(color: AppColors.schneiderGreen,))
+            : Wrap(
+                spacing: 8,
+                runSpacing: 12,
+                children: [
+                  ..._supplierCompanies.map((company) {
+                    return _buildSupplierOptionButton(
+                      company: company,
+                      selected: _selectedSupplier == company.name,
+                      onTap: () {
+                        setState(() {
+                          _selectedSupplier = company.name;
+                          _showManualSupplierInput = false;
+                          _supplierController.clear();
+                        });
+                      },
+                    );
+                  }),
+                  _buildOtherButton(
+                    selected: _selectedSupplier == 'Lainnya...',
+                    onTap: () {
+                      setState(() {
+                        _selectedSupplier = 'Lainnya...';
+                        _showManualSupplierInput = true;
+                      });
+                    },
+                  ),
+                ],
+              ),
+        if (_showManualSupplierInput) ...[
+          const SizedBox(height: 16),
+          _buildTextField(
+            controller: _supplierController,
+            label: "Nama Supplier Lainnya",
+            validator: (v) {
+              if (_showManualSupplierInput && (v == null || v.isEmpty)) {
+                return 'Nama supplier wajib diisi';
+              }
+              return null;
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSupplierOptionButton({
+    required Company company,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final Color borderColor = selected
+        ? AppColors.schneiderGreen
+        : AppColors.grayLight;
+    final Color color = selected
+        ? AppColors.schneiderGreen.withOpacity(0.08)
+        : Colors.white;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: color,
+          border: Border.all(color: borderColor),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              company.name,
+              style: const TextStyle(
+                fontWeight: FontWeight.w400,
+                fontSize: 12,
+                color: AppColors.black,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Chip(
+              label: Text(
+                company.role.name.toUpperCase(),
+                style: const TextStyle(fontSize: 10, color: AppColors.gray),
+              ),
+              backgroundColor: AppColors.grayLight,
+              padding: EdgeInsets.zero,
+              labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+              visualDensity: VisualDensity.compact,
+              side: BorderSide.none,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOtherButton({required bool selected, required VoidCallback onTap}) {
+    final Color borderColor = selected ? AppColors.schneiderGreen : AppColors.grayLight;
+    final Color color = selected ? AppColors.schneiderGreen.withOpacity(0.08) : Colors.white;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: color,
+          border: Border.all(color: borderColor),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Text(
+          "Lainnya...",
+          style: TextStyle(
+            fontWeight: FontWeight.w400,
+            fontSize: 12,
+            color: AppColors.gray,
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    bool isEnabled = true,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: isEnabled ? AppColors.black : AppColors.gray,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          enabled: isEnabled,
+          cursorColor: AppColors.schneiderGreen,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
+          keyboardType: keyboardType,
+          validator: validator,
+          decoration: InputDecoration(
+            hintText: isEnabled ? 'Masukkan $label' : null,
+            helperStyle: const TextStyle(
+              fontSize: 11,
+              color: AppColors.gray,
+              fontWeight: FontWeight.w300,
+            ),
+            filled: !isEnabled,
+            fillColor: Colors.grey.shade100,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.grayLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.grayLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.schneiderGreen),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildSelectorSection({
     required String label,
