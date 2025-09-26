@@ -32,6 +32,7 @@ enum DateFilterType { notSet, set, any }
 
 // [BARU] Enum untuk filter isu
 enum IssueFilter { any, withIssues, withoutIssues }
+enum SrFilter { any, withSr, withoutSr }
 
 class PanelFilterBottomSheet extends StatefulWidget {
   final List<String> selectedStatuses;
@@ -50,7 +51,10 @@ class PanelFilterBottomSheet extends StatefulWidget {
   final List<String> selectedPaletVendors;
   final List<String> selectedCorepartVendors;
   final List<String> selectedPanelTypes;
-  final IssueFilter selectedIssueStatus; // [BARU]
+  final IssueFilter selectedIssueStatus; 
+
+  final SrFilter selectedSrStatus;
+  final Function(SrFilter) onSrStatusChanged;
 
   final DateTimeRange? startDateRange;
   final DateTimeRange? deliveryDateRange;
@@ -126,6 +130,8 @@ class PanelFilterBottomSheet extends StatefulWidget {
     required this.onPanelTypesChanged,
     required this.selectedIssueStatus, // [BARU]
     required this.onIssueStatusChanged, // [BARU]
+    required this.selectedSrStatus,
+    required this.onSrStatusChanged,
     required this.startDateRange,
     required this.deliveryDateRange,
     required this.closedDateRange,
@@ -181,6 +187,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
   late DateFilterType _startDateStatus;
   late DateFilterType _deliveryDateStatus;
   late DateFilterType _closedDateStatus;
+  late SrFilter _selectedSrStatus; 
 
   final List<String> busbarStatusOptions = [
     "Open",
@@ -231,6 +238,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
         _busbarClosedDateRange = widget.mccClosedDateRange;
       }
     }
+    _selectedSrStatus = widget.selectedSrStatus;
+
     _busbarClosedDateStatus =
         widget.pccClosedDateStatus == DateFilterType.notSet ||
                 widget.mccClosedDateStatus == DateFilterType.notSet
@@ -266,6 +275,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
     widget.onStartDateStatusChanged(_startDateStatus);
     widget.onDeliveryDateStatusChanged(_deliveryDateStatus);
     widget.onClosedDateStatusChanged(_closedDateStatus);
+    widget.onSrStatusChanged(_selectedSrStatus); 
 
     Navigator.pop(context);
   }
@@ -644,8 +654,27 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                         ),
                       ),
                     ],
-                  ),
+                  ),const SizedBox(height: 24),
+                    const Text("Status SR", style: TextStyle(fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      children: [
+                        _buildOptionButton(
+                          label: "Ada SR",
+                          selected: _selectedSrStatus == SrFilter.withSr,
+                          onTap: () => setState(() => _selectedSrStatus =
+                              _selectedSrStatus == SrFilter.withSr ? SrFilter.any : SrFilter.withSr),
+                        ),
+                        _buildOptionButton(
+                          label: "Tidak Ada SR",
+                          selected: _selectedSrStatus == SrFilter.withoutSr,
+                          onTap: () => setState(() => _selectedSrStatus =
+                              _selectedSrStatus == SrFilter.withoutSr ? SrFilter.any : SrFilter.withoutSr),
+                        ),
+                      ],
+                    ),
                   const SizedBox(height: 24),
+                  
                   // --- Widget lainnya tetap sama ---
                   const Text(
                     "Status Panel (% Progres)",

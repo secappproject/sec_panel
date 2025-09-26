@@ -113,6 +113,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<String> selectedCorepart = [];
   List<String> selectedPanelTypes = [];
   IssueFilter selectedIssueStatus = IssueFilter.any;
+  SrFilter selectedSrStatus = SrFilter.any;
   DateTimeRange? startDateRange;
   DateTimeRange? deliveryDateRange;
   DateTimeRange? closedDateRange;
@@ -240,6 +241,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) => PanelFilterBottomSheet(
+        selectedSrStatus: selectedSrStatus,
         selectedIssueStatus: selectedIssueStatus,
         selectedStatuses: selectedStatuses,
         selectedComponents: selectedComponents,
@@ -286,6 +288,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             setState(() => selectedComponentVendors = value),
         onPaletVendorsChanged: (value) =>
             setState(() => selectedPaletVendors = value),
+        onSrStatusChanged: (value) =>
+            setState(() => selectedSrStatus = value),
         onIssueStatusChanged: (value) =>
             setState(() => selectedIssueStatus = value),
         onCorepartVendorsChanged: (value) =>
@@ -329,6 +333,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             selectedComponents = [];
             selectedPalet = [];
             selectedIssueStatus = IssueFilter.any;
+            selectedSrStatus = SrFilter.any;
             selectedCorepart = [];
             selectedPanelTypes = [];
             startDateRange = null;
@@ -628,6 +633,19 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           matchIssueStatus = true;
           break;
       }
+      final bool matchSrStatus;
+      switch (selectedSrStatus) {
+        case SrFilter.withSr:
+          matchSrStatus = data.additionalSrCount > 0;
+          break;
+        case SrFilter.withoutSr:
+          matchSrStatus = data.additionalSrCount == 0;
+          break;
+        case SrFilter.any:
+        default:
+          matchSrStatus = true;
+          break;
+      }
 
       final panelStatus = _getPanelFilterStatus(panel);
       final bool matchStatusAndArchive;
@@ -642,6 +660,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       return matchSearch &&
           matchPanelType &&
           matchIssueStatus &&
+          matchSrStatus &&
           matchPanelVendor &&
           matchBusbarVendor &&
           matchComponentVendor &&
