@@ -137,12 +137,12 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
               _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _srs.isEmpty
-                      ? const Center(
+                      ?  Center(
                           child: Padding(
                             padding: EdgeInsets.symmetric(vertical: 48.0),
                             child: Text(
                               'Belum ada Additional SR.',
-                              style: TextStyle(color: AppColors.gray),
+                              style: TextStyle(color: AppColors.gray, fontWeight: FontWeight.w300),
                             ),
                           ),
                         )
