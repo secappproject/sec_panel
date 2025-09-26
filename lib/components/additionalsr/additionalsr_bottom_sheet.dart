@@ -263,6 +263,13 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                           DateFormat('d MMM yyyy, HH:mm', 'id_ID').format(sr.receivedDate!),
                         ),
                       ],
+                      if (sr.status.toLowerCase() != 'close' && sr.receivedDate == null) ...[
+                        const SizedBox(height: 8),
+                        _buildInfoColumn(
+                          'Received Date',
+                          "Belum Diterima",
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -646,20 +653,54 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
               ),
               const SizedBox(height: 16),
               _buildSelectorSection(
-                  label: "Status",
-                  options: const {'open': 'Open', 'close': 'Close'},
-                  selectedValue: _status,
-                  onTap: (val) {
-                    if (val != null) setState(() => _status = val);
-                  }),
+                label: "Status",
+                options: const {'open': 'Open', 'close': 'Close'},
+                selectedValue: _status,
+                onTap: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _status = val;
+                      if (_status == 'close') {
+                        // isi tanggal sekarang
+                        final now = DateTime.now();
+                        _receivedDateController.text =
+                            DateFormat('d MMM yyyy, HH:mm', 'id_ID').format(now);
+                      } else {
+                        // kosongin lagi kalau bukan close
+                        _receivedDateController.clear();
+                      }
+                    });
+                  }
+                },
+              ),
               if (_status == 'close') ...[
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: _receivedDateController,
-                  label: 'Received Date',
-                  isEnabled: false,
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: _receivedDateController,
+                label: 'Received Date',
+                isEnabled: false,
+              ),
+            ] else ...[
+              const SizedBox(height: 16),
+              const Text(
+                'Received Date',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Lexend',
+                  color: Colors.black,
                 ),
-              ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Diperoleh saat diterima (close)',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w300,
+                  fontFamily: 'Lexend',
+                  color: AppColors.gray,
+                ),
+              ),
+            ],
               const SizedBox(height: 32),
               _buildActionButtons(),
             ],
