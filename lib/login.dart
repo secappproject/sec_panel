@@ -78,64 +78,66 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> _login() async {
-    if (_isLoading || _isPageLoading) return;
-    setState(() => _isLoading = true);
+  
+// Ganti seluruh fungsi _login() Anda dengan ini
+Future<void> _login() async {
+  if (_isLoading || _isPageLoading) return;
+  setState(() => _isLoading = true);
 
-    try {
-      await Future.delayed(const Duration(seconds: 1));
-      final username = _usernameController.text.trim();
-      final password = _passwordController.text.trim();
+  try {
+    // Menghapus delay yang tidak perlu agar lebih cepat
+    // await Future.delayed(const Duration(seconds: 1)); 
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
 
-      if (username.isEmpty || password.isEmpty) {
-        _showErrorSnackBar('Username dan password tidak boleh kosong.');
-        setState(() => _isLoading = false);
-        return;
-      }
+    if (username.isEmpty || password.isEmpty) {
+      _showErrorSnackBar('Username dan password tidak boleh kosong.');
+      setState(() => _isLoading = false);
+      return;
+    }
 
-      final Company? company = await DatabaseHelper.instance.login(
-        username,
-        password,
-      );
+    final Company? company = await DatabaseHelper.instance.login(
+      username,
+      password,
+    );
 
-      if (mounted) {
-        if (company != null) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('loggedInUsername', username);
-          await prefs.setString('companyId', company.id);
-          await prefs.setString('companyRole', company.role.name);
-          
-          // ▼▼▼ PENAMBAHAN LOGIKA PUSH NOTIFICATION DI SINI ▼▼▼
-          try {
-            String? token = await FirebaseMessaging.instance.getToken();
-            if (token != null) {
-              await DatabaseHelper.instance.registerDeviceToken(
-                username: username,
-                token: token,
-              );
-            }
-          } catch (e) {
-            // Abaikan error jika token gagal didapat/dikirim agar tidak
-            // mengganggu proses login utama. Cukup print di console.
-            print('Error saat mendaftarkan token perangkat: $e');
+    if (mounted) {
+      if (company != null) {
+        // 1. Simpan semua data sesi terlebih dahulu
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('loggedInUsername', username);
+        await prefs.setString('companyId', company.id);
+        await prefs.setString('companyRole', company.role.name);
+        
+        // 2. Dapatkan token dan daftarkan ke server
+        try {
+          String? token = await FirebaseMessaging.instance.getToken();
+          if (token != null) {
+            await DatabaseHelper.instance.registerDeviceToken(
+              username: username,
+              token: token,
+            );
           }
-          _showSuccessSnackBar('Login berhasil! Mengalihkan...');
-          await prefs.setString('loggedInUsername', username);
-          await prefs.setString('companyId', company.id);
-          await prefs.setString('companyRole', company.role.name);
-          Navigator.pushReplacementNamed(context, '/home');
-        } else {
-          _showErrorSnackBar('Username atau password salah.');
-          setState(() => _isLoading = false);
+        } catch (e) {
+          print('Error saat mendaftarkan token perangkat: $e');
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        _showErrorSnackBar('Terjadi kesalahan: $e');
+
+        // 3. Tampilkan pesan sukses dan pindah halaman
+        _showSuccessSnackBar('Login berhasil! Mengalihkan...');
+        Navigator.pushReplacementNamed(context, '/home');
+
+      } else {
+        _showErrorSnackBar('Username atau password salah.');
         setState(() => _isLoading = false);
       }
     }
+  } catch (e) {
+    if (mounted) {
+      _showErrorSnackBar('Terjadi kesalahan: $e');
+      setState(() => _isLoading = false);
+    }
   }
+}
 
   @override
   Widget build(BuildContext context) {

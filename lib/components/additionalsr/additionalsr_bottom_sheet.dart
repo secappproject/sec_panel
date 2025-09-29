@@ -675,6 +675,12 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
               ),
               const SizedBox(height: 16),
               _buildTextField(
+                controller: _poController,
+                label: 'No. PO',
+                validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+              ),
+              const SizedBox(height: 16),
+              _buildTextField(
                 controller: _itemController,
                 label: 'Item',
                 validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
@@ -688,12 +694,6 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
               ),
               const SizedBox(height: 16),
               _buildSupplierField(),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _poController,
-                label: 'No. PO',
-                validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-              ),
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _remarksController,
@@ -732,7 +732,7 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
               ] else ...[
                 const SizedBox(height: 16),
                 const Text(
-                  'Received Date',
+                  'PO Received Date',
                   style: TextStyle(
                     fontSize: 14,
                     fontFamily: 'Lexend',
