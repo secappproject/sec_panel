@@ -34,27 +34,27 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
   }
 
   Future<void> _fetchSRs() async {
-  setState(() => _isLoading = true);
-  try {
-    final srs =
-        await DatabaseHelper.instance.getAdditionalSRs(widget.panelNoPp);
-    if (mounted) {
-      setState(() {
-        _srs = srs;
-        _isLoading = false;
-      });
-    }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: AppColors.red),
-      );
-      setState(() => _isLoading = false);
+    setState(() => _isLoading = true);
+    try {
+      final srs =
+          await DatabaseHelper.instance.getAdditionalSRs(widget.panelNoPp);
+      if (mounted) {
+        setState(() {
+          _srs = srs;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: AppColors.red),
+        );
+        setState(() => _isLoading = false);
+      }
     }
   }
-}
 
   void _showEditSRDialog({AdditionalSR? sr}) {
     showModalBottomSheet(
@@ -64,7 +64,7 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => _AddEditSRDialog(
+      builder: (context) => _AddEditSRDialog( // Pastikan _AddEditSRDialog sudah ada di file ini atau diimport
         panelNoPp: widget.panelNoPp,
         poNumber: widget.poNumber,
         sr: sr,
@@ -122,7 +122,11 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                   ElevatedButton.icon(
                     onPressed: () => _showEditSRDialog(),
                     icon: const Icon(Icons.add, size: 16),
-                    label: const Text('Tambah', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400),),
+                    label: const Text(
+                      'Tambah',
+                      style:
+                          TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+                    ),
                     style: ElevatedButton.styleFrom(
                       shadowColor: Colors.transparent,
                       backgroundColor: AppColors.schneiderGreen,
@@ -137,28 +141,46 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
               _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _srs.isEmpty
-                      ?  Center(
+                      ? Center(
                           child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 48.0),
+                            padding: const EdgeInsets.symmetric(vertical: 48.0),
                             child: Text(
                               'Belum ada Additional SR.',
-                              style: TextStyle(color: AppColors.gray, fontWeight: FontWeight.w300),
+                              style: TextStyle(
+                                  color: AppColors.gray,
+                                  fontWeight: FontWeight.w300),
                             ),
                           ),
                         )
                       : RefreshIndicator(
                           onRefresh: _fetchSRs,
-                          child: Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: _srs.map((sr) {
-                            return SizedBox(
-                              width: MediaQuery.of(context).size.width / 2 - 24, // 2 kolom
-                              child: _buildSRListItemCard(sr),
-                            );
-                          }).toList(),
-                        )
-                      ),
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              // --- LOGIKA DISESUAIKAN DI SINI ---
+                              int crossAxisCount;
+                              if (constraints.maxWidth >= 600) {
+                                crossAxisCount = 3; // Untuk non-mobile (Tablet & Desktop)
+                              } else {
+                                crossAxisCount = 2; // Untuk mobile
+                              }
+
+                              const double spacing = 12.0;
+                              final double totalSpacing = (crossAxisCount - 1) * spacing;
+                              final double itemWidth = (constraints.maxWidth - totalSpacing) / crossAxisCount;
+
+                              return Wrap(
+                                spacing: spacing,
+                                runSpacing: spacing,
+                                children: _srs.map((sr) {
+                                  return SizedBox(
+                                    width: itemWidth,
+                                    child: _buildSRListItemCard(sr),
+                                  );
+                                }).toList(),
+                              );
+                            },
+                          ),
+                        ),
             ],
           ),
         ),
@@ -168,7 +190,6 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
 
   Widget _buildSRListItemCard(AdditionalSR sr) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: const BorderRadius.all(Radius.circular(16)),
@@ -193,77 +214,72 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                             fontSize: 16, fontWeight: FontWeight.w400),
                       ),
                       const SizedBox(height: 8),
-                      // Qty
                       _buildInfoColumn('Qty', sr.quantity.toString()),
                       const SizedBox(height: 8),
-                      // PO
                       _buildInfoColumn('No. PO', sr.poNumber.toString()),
                       const SizedBox(height: 8),
-                      // Status
                       Column(
                         mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Status',
-                            style: TextStyle(
-                              color: AppColors.gray,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w300,
-                            )
-                          ),
-                          if (sr.status.toLowerCase() == "open")...[
+                          const Text('Status',
+                              style: TextStyle(
+                                color: AppColors.gray,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w300,
+                              )),
+                          if (sr.status.toLowerCase() == "open") ...[
                             Row(
                               children: [
-                                const Text(
-                                  'Open ',
-                                  style: TextStyle(
-                                    color: AppColors.black,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                  )
+                                const Text('Open ',
+                                    style: TextStyle(
+                                      color: AppColors.black,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w400,
+                                    )),
+                                Image.asset(
+                                  "assets/images/on-progress-blue.png",
+                                  height: 12,
                                 ),
-                                Image.asset("assets/images/on-progress-blue.png", height: 12,),
                               ],
                             )
                           ],
-                          if (sr.status.toLowerCase() == "close")...[
+                          if (sr.status.toLowerCase() == "close") ...[
                             Row(
                               children: [
-                                const Text(
-                                  'Close ',
-                                  style: TextStyle(
-                                    color: AppColors.black,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                  )
+                                const Text('Close ',
+                                    style: TextStyle(
+                                      color: AppColors.black,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w400,
+                                    )),
+                                Image.asset(
+                                  "assets/images/done-green.png",
+                                  height: 12,
                                 ),
-                                Image.asset("assets/images/done-green.png",height: 12,),
                               ],
                             )
                           ]
                         ],
                       ),
-                      
-                      // Supplier
                       if (sr.supplier != null && sr.supplier!.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         _buildInfoColumn('Supplier', sr.supplier!),
                       ],
-
                       const SizedBox(height: 8),
-                      // Remarks
-                      _buildInfoColumn('Remarks (No. DO)', sr.remarks.toString()),
-
-                      // Tampilkan Received Date jika status close
-                      if (sr.status.toLowerCase() == 'close' && sr.receivedDate != null) ...[
+                      _buildInfoColumn(
+                          'Remarks (No. DO)', sr.remarks.toString()),
+                      if (sr.status.toLowerCase() == 'close' &&
+                          sr.receivedDate != null) ...[
                         const SizedBox(height: 8),
                         _buildInfoColumn(
                           'Received Date',
-                          DateFormat('d MMM yyyy, HH:mm', 'id_ID').format(sr.receivedDate!),
+                          DateFormat('d MMM yyyy, HH:mm', 'id_ID')
+                              .format(sr.receivedDate!),
                         ),
                       ],
-                      if (sr.status.toLowerCase() != 'close' && sr.receivedDate == null) ...[
+                      if (sr.status.toLowerCase() != 'close' &&
+                          sr.receivedDate == null) ...[
                         const SizedBox(height: 8),
                         _buildInfoColumn(
                           'Received Date',
@@ -284,12 +300,12 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                     if (value == 'edit') {
                       _showEditSRDialog(sr: sr);
                     } else if (value == 'delete') {
-                      
                       final confirm = await showModalBottomSheet<bool>(
                         context: context,
                         backgroundColor: Colors.white,
                         shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                          borderRadius:
+                              BorderRadius.vertical(top: Radius.circular(20)),
                         ),
                         builder: (ctx) {
                           return Padding(
@@ -311,40 +327,52 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                                 const SizedBox(height: 24),
                                 const Text(
                                   "Konfirmasi Hapus",
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                                  style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 12),
                                 const Text(
                                   "Anda yakin ingin menghapus item ini?",
-                                  style: TextStyle(fontSize: 14, color: AppColors.gray),
+                                  style: TextStyle(
+                                      fontSize: 14, color: AppColors.gray),
                                 ),
                                 const SizedBox(height: 24),
                                 Row(
                                   children: [
                                     Expanded(
                                       child: OutlinedButton(
-                                        onPressed: () => Navigator.of(ctx).pop(false),
+                                        onPressed: () =>
+                                            Navigator.of(ctx).pop(false),
                                         style: OutlinedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(vertical: 14),
-                                          side: const BorderSide(color: AppColors.schneiderGreen),
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 14),
+                                          side: const BorderSide(
+                                              color: AppColors.schneiderGreen),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(6),
+                                            borderRadius:
+                                                BorderRadius.circular(6),
                                           ),
                                         ),
                                         child: const Text("Batal",
-                                            style: TextStyle(color: AppColors.schneiderGreen)),
+                                            style: TextStyle(
+                                                color:
+                                                    AppColors.schneiderGreen)),
                                       ),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: ElevatedButton(
-                                        onPressed: () => Navigator.of(ctx).pop(true),
+                                        onPressed: () =>
+                                            Navigator.of(ctx).pop(true),
                                         style: ElevatedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(vertical: 14),
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 14),
                                           backgroundColor: AppColors.red,
                                           foregroundColor: Colors.white,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(6),
+                                            borderRadius:
+                                                BorderRadius.circular(6),
                                           ),
                                         ),
                                         child: const Text("Hapus"),
@@ -377,8 +405,7 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                           const SizedBox(width: 8),
                           const Text('Edit',
                               style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400)),
+                                  fontSize: 12, fontWeight: FontWeight.w400)),
                         ],
                       ),
                     ),
@@ -386,13 +413,11 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                       value: 'delete',
                       child: Row(
                         children: [
-                          Image.asset("assets/images/trash.png",
-                              height: 20),
+                          Image.asset("assets/images/trash.png", height: 20),
                           const SizedBox(width: 8),
                           const Text('Hapus',
                               style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400)),
+                                  fontSize: 12, fontWeight: FontWeight.w400)),
                         ],
                       ),
                     ),
@@ -442,7 +467,10 @@ class _AddEditSRDialog extends StatefulWidget {
   final VoidCallback onSave;
 
   const _AddEditSRDialog(
-      {required this.poNumber, required this.panelNoPp, this.sr, required this.onSave});
+      {required this.poNumber,
+      required this.panelNoPp,
+      this.sr,
+      required this.onSave});
 
   @override
   State<_AddEditSRDialog> createState() => _AddEditSRDialogState();
@@ -457,6 +485,9 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
   late TextEditingController _remarksController;
   late TextEditingController _receivedDateController;
   late String _status;
+
+  // --- 1. STATE UNTUK LOADING ---
+  bool _isSaving = false;
 
   List<Company> _supplierCompanies = [];
   bool _isLoadingCompanies = true;
@@ -524,7 +555,11 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
     }
   }
 
+  // --- 2. FUNGSI SUBMIT YANG SUDAH DIUBAH ---
   Future<void> _submit() async {
+    // Mencegah double-click jika sudah dalam proses saving
+    if (_isSaving) return;
+
     if (_formKey.currentState!.validate()) {
       if (_selectedSupplier == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -536,57 +571,71 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
         return;
       }
       
-      DateTime? receivedDate;
-      if (_status.toLowerCase() == 'close') {
-        receivedDate = widget.sr?.receivedDate ?? DateTime.now().toUtc();
-      } else {
-        receivedDate = null;
-      }
+      // Atur state menjadi loading SEBELUM memanggil database
+      setState(() => _isSaving = true);
 
-      String finalSupplier;
-      if (_selectedSupplier == 'Lainnya...') {
-        finalSupplier = _supplierController.text.trim();
-      } else {
-        finalSupplier = _selectedSupplier ?? '';
-      }
-
-      if (finalSupplier.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Supplier tidak boleh kosong.'),
-            backgroundColor: AppColors.red,
-          ),
-        );
-        return;
-      }
-
-      final srData = AdditionalSR(
-        id: widget.sr?.id,
-        poNumber: _poController.text.trim(),
-        panelNoPp: widget.panelNoPp,
-        item: _itemController.text.trim(),
-        quantity: int.tryParse(_qtyController.text) ?? 0,
-        supplier: finalSupplier,
-        remarks: _remarksController.text.trim(),
-        status: _status,
-        receivedDate: receivedDate,
-      );
       try {
+        DateTime? receivedDate;
+        if (_status.toLowerCase() == 'close') {
+          receivedDate = widget.sr?.receivedDate ?? DateTime.now().toUtc();
+        } else {
+          receivedDate = null;
+        }
+
+        String finalSupplier;
+        if (_selectedSupplier == 'Lainnya...') {
+          finalSupplier = _supplierController.text.trim();
+        } else {
+          finalSupplier = _selectedSupplier ?? '';
+        }
+
+        if (finalSupplier.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Supplier tidak boleh kosong.'),
+              backgroundColor: AppColors.red,
+            ),
+          );
+          // Hentikan loading jika validasi gagal
+          setState(() => _isSaving = false);
+          return;
+        }
+
+        final srData = AdditionalSR(
+          id: widget.sr?.id,
+          poNumber: _poController.text.trim(),
+          panelNoPp: widget.panelNoPp,
+          item: _itemController.text.trim(),
+          quantity: int.tryParse(_qtyController.text) ?? 0,
+          supplier: finalSupplier,
+          remarks: _remarksController.text.trim(),
+          status: _status,
+          receivedDate: receivedDate,
+        );
+
         if (widget.sr == null) {
-            await DatabaseHelper.instance
-                .createAdditionalSR(widget.panelNoPp, srData);
-          } else {
-            await DatabaseHelper.instance.updateAdditionalSR(srData.id!, srData);
-          }
+          await DatabaseHelper.instance
+              .createAdditionalSR(widget.panelNoPp, srData);
+        } else {
+          await DatabaseHelper.instance.updateAdditionalSR(srData.id!, srData);
+        }
+        
+        // Pastikan widget masih ada sebelum memanggil onSave
+        if (mounted) {
           widget.onSave();
         }
-        catch (e) {
+      } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content: Text('Error: ${e.toString()}'),
                 backgroundColor: AppColors.red),
           );
+        }
+      } finally {
+        // Atur state kembali ke tidak loading SETELAH semua selesai
+        if (mounted) {
+          setState(() => _isSaving = false);
         }
       }
     }
@@ -674,33 +723,33 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
                 },
               ),
               if (_status == 'close') ...[
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _receivedDateController,
-                label: 'Received Date',
-                isEnabled: false,
-              ),
-            ] else ...[
-              const SizedBox(height: 16),
-              const Text(
-                'Received Date',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Lexend',
-                  color: Colors.black,
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: _receivedDateController,
+                  label: 'Received Date',
+                  isEnabled: false,
                 ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Diperoleh saat diterima (close)',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w300,
-                  fontFamily: 'Lexend',
-                  color: AppColors.gray,
+              ] else ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'Received Date',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Lexend',
+                    color: Colors.black,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                const Text(
+                  'Diperoleh saat diterima (close)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w300,
+                    fontFamily: 'Lexend',
+                    color: AppColors.gray,
+                  ),
+                ),
+              ],
               const SizedBox(height: 32),
               _buildActionButtons(),
             ],
@@ -957,12 +1006,14 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
     );
   }
 
+  // --- 3. TAMPILAN TOMBOL YANG SUDAH DIUBAH ---
   Widget _buildActionButtons() {
     return Row(
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: () => Navigator.of(context).pop(),
+            // Nonaktifkan tombol saat menyimpan
+            onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               side: const BorderSide(color: AppColors.schneiderGreen),
@@ -977,7 +1028,8 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton(
-            onPressed: _submit,
+            // Nonaktifkan tombol saat menyimpan
+            onPressed: _isSaving ? null : _submit,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               backgroundColor: AppColors.schneiderGreen,
@@ -986,7 +1038,17 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
                 borderRadius: BorderRadius.circular(6),
               ),
             ),
-            child: const Text("Simpan"),
+            // Tampilkan loading atau teks "Simpan" berdasarkan state
+            child: _isSaving
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
+                  )
+                : const Text("Simpan"),
           ),
         ),
       ],

@@ -714,7 +714,7 @@ class PanelProgressCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Image.asset('assets/images/cycle.png', height: 20, color: AppColors.schneiderGreen,),
+            Image.asset('assets/images/cycle.png', height: 20,),
             SizedBox(width: 8,),
             Text("Transfer", style: TextStyle(fontSize: 11, color: AppColors.black, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
           ],
@@ -734,7 +734,7 @@ class PanelProgressCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Image.asset('assets/images/edit-green.png', height: 20, color: AppColors.schneiderGreen,),
+            Image.asset('assets/images/edit-green.png', height: 20, color: AppColors.gray,),
             SizedBox(width: 8,),
             Text("Edit", style: TextStyle(fontSize: 11, color: AppColors.black, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
           ],
@@ -764,7 +764,7 @@ Widget _buildAdditionalSRButton(BuildContext context) {
       child: Column(
         children: [
           if (additionalSrCount == 0) ...[
-            Image.asset('assets/images/package.png', height: 20, color: AppColors.schneiderGreen),
+            Image.asset('assets/images/package.png', height: 20, color: AppColors.gray),
           ],
           if (additionalSrCount != 0) ...[
             Stack(
@@ -773,7 +773,7 @@ Widget _buildAdditionalSRButton(BuildContext context) {
                 Image.asset(
                   'assets/images/package.png',
                   height: 20,
-                  color: AppColors.schneiderGreen
+                  color: AppColors.gray
                 ),
                 Positioned(
                   right: -3, // posisi ke kanan (seperti issue)
@@ -837,7 +837,7 @@ Widget _buildAdditionalSRButton(BuildContext context) {
           children: [
             if (issueCount == 0)...[
             Image.asset('assets/images/issue-no.png', height: 20,
-                    color: AppColors.schneiderGreen,),
+                    color: AppColors.gray,),
             ],
             if (issueCount != 0) ...[
               Stack(
@@ -846,7 +846,7 @@ Widget _buildAdditionalSRButton(BuildContext context) {
                   Image.asset(
                     'assets/images/issue-no.png',
                     height: 20,
-                    color: AppColors.schneiderGreen,
+                    color: AppColors.gray,
                   ),
                   Positioned(
                     right: -3, // posisi ke kanan
