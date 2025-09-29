@@ -1377,31 +1377,26 @@ Future<Company?> getCompanyByUsername(String username) async {
     return data.map((json) => ProductionSlot.fromJson(json)).toList();
   }
 
-  /// Mengirim aksi transfer atau rollback untuk sebuah panel.
-  /// Aksi yang valid: "to_production", "to_fat", "to_done", "rollback".
- 
   Future<PanelDisplayData> transferPanelAction({
     required String panelNoPp,
     required String action,
+    required String actor, 
     String? slot,
   }) async {
-    // === PERBAIKAN DI SINI ===
-    final url = Uri.parse('$_baseUrl/panels/$panelNoPp/transfer'); 
-    // =========================
-    
+    final url = '$_baseUrl/panels/$panelNoPp/transfer'; 
+
     final Map<String, dynamic> body = {
       'action': action,
+      'actor': actor, 
     };
     if (slot != null) {
       body['slot'] = slot;
     }
 
-    // Panggil helper _apiRequest yang sudah Anda buat
-    // Ini lebih konsisten dengan sisa kode Anda
     try {
       final responseData = await _apiRequest(
         'POST',
-        url.toString().substring(_baseUrl.length), // Dapatkan endpoint relatif
+        url.substring(_baseUrl.length),
         body: body,
       );
 
@@ -1412,7 +1407,6 @@ Future<Company?> getCompanyByUsername(String username) async {
         throw Exception('Failed to transfer panel: No data received from server');
       }
     } catch (e) {
-        // Lemparkan kembali error dari _apiRequest agar UI bisa menampilkannya
         rethrow;
     }
   }

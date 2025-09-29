@@ -5,6 +5,7 @@ import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/models/paneldisplaydata.dart';
 import 'package:secpanel/models/productionslot.dart';
 import 'package:secpanel/theme/colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Enum untuk mengelola alur multi-langkah di dalam bottom sheet
 enum _TransferFlowStep {
@@ -76,12 +77,16 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
   Future<void> _handleTransferAction(String action) async {
     if (_isLoading) return;
     setState(() => _isLoading = true);
+
+    final prefs = await SharedPreferences.getInstance();
+    final actorUsername = prefs.getString('username') ?? 'unknown_user';
     try {
       final updatedPanelData =
           await DatabaseHelper.instance.transferPanelAction(
         panelNoPp: _currentPanelData.panel.noPp,
         action: action,
         slot: _selectedSlot,
+        actor: actorUsername, 
       );
       widget.onSuccess(updatedPanelData);
 
