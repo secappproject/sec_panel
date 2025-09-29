@@ -1,4 +1,5 @@
-// lib/main.dart
+import 'dart:io'; // 1. Tambahkan import ini di bagian atas file
+
 import 'package:flutter/material.dart';
 import 'package:secpanel/login.dart';
 import 'package:secpanel/login_change_password.dart';
@@ -43,7 +44,6 @@ class MyApp extends StatefulWidget {
 
   const MyApp({super.key, required this.isLoggedIn});
 
-  // 2. BUAT GLOBAL KEY UNTUK NAVIGATOR
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 
@@ -58,13 +58,23 @@ class _MyAppState extends State<MyApp> {
     _setupFCM();
   }
 
+  // ▼▼▼ GANTI SELURUH FUNGSI INI DENGAN VERSI BARU ▼▼▼
   Future<void> _setupFCM() async {
     final messaging = FirebaseMessaging.instance;
 
     // Minta izin (penting di iOS)
     await messaging.requestPermission();
 
-    // Ambil token device
+    // Blok baru untuk memastikan APNS token ada sebelum meminta FCM token di iOS
+    if (Platform.isIOS) {
+      String? apnsToken = await messaging.getAPNSToken();
+      if (apnsToken == null) {
+        print("❌ Gagal mendapatkan APNS token. Notifikasi tidak akan berfungsi di iOS.");
+        return; // Hentikan jika APNS token tidak ada
+      }
+    }
+
+    // Panggilan getToken() sekarang lebih aman
     String? token = await messaging.getToken();
     print("🔑 FCM Token: $token");
 
@@ -81,14 +91,14 @@ class _MyAppState extends State<MyApp> {
       }
     });
   }
+  // ▲▲▲ AKHIR DARI FUNGSI YANG DIGANTI ▲▲▲
 
   @override
   Widget build(BuildContext context) {
-    // 3. BUNGKUS MaterialApp DENGAN SessionTimeoutManager
     return SessionTimeoutManager(
-      navigatorKey: MyApp.navigatorKey, // Kirim navigator key
+      navigatorKey: MyApp.navigatorKey,
       child: MaterialApp(
-        navigatorKey: MyApp.navigatorKey, // Pasang navigator key ke MaterialApp
+        navigatorKey: MyApp.navigatorKey,
         title: '3SUTORPro',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
@@ -100,7 +110,6 @@ class _MyAppState extends State<MyApp> {
           ),
           useMaterial3: true,
         ),
-        // initialRoute bisa pakai login check dari SharedPreferences
         initialRoute: widget.isLoggedIn ? '/home' : '/login',
         routes: {
           '/login': (context) => const LoginPage(),

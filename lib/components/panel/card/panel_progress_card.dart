@@ -674,9 +674,9 @@ class PanelProgressCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
           title,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 2,
           style: const TextStyle(
             color: AppColors.gray,
             fontWeight: FontWeight.w300,
@@ -686,12 +686,15 @@ class PanelProgressCard extends StatelessWidget {
         const SizedBox(height: 4),
         Row(
           children: [
-            Text(
-              status,
-              style: const TextStyle(
-                color: AppColors.black,
-                fontWeight: FontWeight.w400,
-                fontSize: 12,
+            Flexible(
+              child: Text(
+                status,
+                style: const TextStyle(
+                  color: AppColors.black,
+                  fontWeight: FontWeight.w400,
+                  fontSize: 12,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             const SizedBox(width: 4),

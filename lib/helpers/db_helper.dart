@@ -1410,4 +1410,22 @@ Future<Company?> getCompanyByUsername(String username) async {
         rethrow;
     }
   }
+Future<void> registerDeviceToken({
+    required String username,
+    required String token,
+  }) async {
+    try {
+      await _apiRequest(
+        'POST',
+        '/user/register-device',
+        body: {
+          'username': username,
+          'token': token,
+        },
+      );
+      print("✅ FCM Token berhasil dikirim ke server untuk user: $username");
+    } catch (e) {
+      print("❌ Gagal mengirim FCM token ke server: $e");
+    }
+  }
 }

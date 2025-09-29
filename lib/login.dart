@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:secpanel/login_change_password.dart';
 import 'package:secpanel/login_custom_page_route.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
@@ -100,6 +101,24 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         if (company != null) {
           final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('loggedInUsername', username);
+          await prefs.setString('companyId', company.id);
+          await prefs.setString('companyRole', company.role.name);
+          
+          // ▼▼▼ PENAMBAHAN LOGIKA PUSH NOTIFICATION DI SINI ▼▼▼
+          try {
+            String? token = await FirebaseMessaging.instance.getToken();
+            if (token != null) {
+              await DatabaseHelper.instance.registerDeviceToken(
+                username: username,
+                token: token,
+              );
+            }
+          } catch (e) {
+            // Abaikan error jika token gagal didapat/dikirim agar tidak
+            // mengganggu proses login utama. Cukup print di console.
+            print('Error saat mendaftarkan token perangkat: $e');
+          }
           _showSuccessSnackBar('Login berhasil! Mengalihkan...');
           await prefs.setString('loggedInUsername', username);
           await prefs.setString('companyId', company.id);
