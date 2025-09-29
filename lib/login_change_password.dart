@@ -239,7 +239,7 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
               style: TextStyle(
                 fontFamily: 'Lexend',
                 fontWeight: FontWeight.w500,
-                fontSize: 14,
+                fontSize: 12,
                 color: AppColors.schneiderGreen,
               ),
             ),
@@ -273,7 +273,7 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
                     style: TextStyle(
                       fontFamily: 'Lexend',
                       fontWeight: FontWeight.w500,
-                      fontSize: 14,
+                      fontSize: 12,
                     ),
                   ),
           ),

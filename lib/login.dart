@@ -45,6 +45,7 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+// GANTI FUNGSI INI
   Future<void> _handleStartupChecks() async {
     const mobilePlatforms = [TargetPlatform.android, TargetPlatform.iOS];
     if (mobilePlatforms.contains(defaultTargetPlatform)) {
@@ -52,19 +53,26 @@ class _LoginPageState extends State<LoginPage> {
       await _requestBatteryOptimizationExemption();
     }
 
+    // Delay ini bisa dipertahankan untuk memberikan efek loading di web
     if (kIsWeb) await Future.delayed(const Duration(milliseconds: 1200));
 
     if (mounted) {
+      // Hilangkan skeleton dan langsung tampilkan form di mobile
       setState(() {
         _isPageLoading = false;
+        if (!kIsWeb) { // Jika bukan web (artinya mobile)
+          _showForm = true; // Langsung tampilkan form
+        }
       });
 
-      // kasih delay sebelum form login muncul
-      await Future.delayed(const Duration(milliseconds: 1500));
-      if (mounted) {
-        setState(() {
-          _showForm = true;
-        });
+      // Untuk web, tetap berikan delay agar ada efek animasi fade-in
+      if (kIsWeb) {
+        await Future.delayed(const Duration(milliseconds: 1500));
+        if (mounted) {
+          setState(() {
+            _showForm = true;
+          });
+        }
       }
     }
   }
@@ -321,7 +329,7 @@ Widget _buildWebAppLayout() {
               minimumSize: const Size(0, 52),
               side: const BorderSide(color: AppColors.schneiderGreen),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
             onPressed: areButtonsDisabled
@@ -455,11 +463,13 @@ Widget _buildWebAppLayout() {
       controller: _passwordController,
       obscureText: !_isPasswordVisible,
       decoration: _inputDecoration('Password').copyWith(
-        suffixIcon: IconButton(
-          icon: Icon(
-            _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-            color: AppColors.gray,
-          ),
+        suffixIcon: 
+        IconButton(
+          // icon: Icon(
+          //   _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+          //   color: AppColors.gray,
+          // ),
+          icon: _isPasswordVisible ? Image.asset("assets/images/eye-open.png", height: 24,) : Image.asset("assets/images/eye-close.png", height: 24,),
           onPressed: () =>
               setState(() => _isPasswordVisible = !_isPasswordVisible),
         ),
@@ -566,7 +576,6 @@ Widget _buildWebAppLayout() {
     }
   }
 }
-
 class VideoBackground extends StatefulWidget {
   const VideoBackground({super.key});
 
@@ -575,10 +584,10 @@ class VideoBackground extends StatefulWidget {
 }
 
 class _VideoBackgroundState extends State<VideoBackground> {
+  // Timer untuk animasi teks slogan
   Timer? _textAnimationTimer;
   int _currentTextIndex = 0;
   double _textOpacity = 0.0;
-
   final List<String> _sloganTexts = [
     'Trisutorpro',
     'Lacak panel yang perlu diselesaikan segera',
@@ -586,11 +595,34 @@ class _VideoBackgroundState extends State<VideoBackground> {
     'Catat dan selesaikan setiap kendala dengan mudah.',
   ];
 
+  // ===== PERUBAHAN DIMULAI DI SINI =====
+
+  // Timer untuk animasi background slide
+  Timer? _imageSliderTimer;
+  int _currentImageIndex = 0;
+  final int _totalImages = 12; // Jumlah total gambar background
+
   @override
   void initState() {
     super.initState();
     _startTextAnimation();
+    _startImageSlider(); // Memulai slideshow background
   }
+
+  void _startImageSlider() {
+    // Timer periodik untuk mengganti gambar setiap 5 detik
+    _imageSliderTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted) {
+        setState(() {
+          // Ganti ke gambar berikutnya, kembali ke 0 jika sudah di akhir
+          _currentImageIndex = (_currentImageIndex + 1) % _totalImages;
+        });
+      }
+    });
+  }
+  
+  // ===== AKHIR DARI PERUBAHAN LOGIKA =====
+
 
   void _startTextAnimation() {
     Future.delayed(const Duration(milliseconds: 500), () {
@@ -615,6 +647,7 @@ class _VideoBackgroundState extends State<VideoBackground> {
   @override
   void dispose() {
     _textAnimationTimer?.cancel();
+    _imageSliderTimer?.cancel(); // Pastikan timer gambar juga dihentikan
     super.dispose();
   }
 
@@ -622,12 +655,27 @@ class _VideoBackgroundState extends State<VideoBackground> {
   Widget build(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
+      alignment: Alignment.centerRight,
       children: [
-        Image.asset(
-          "assets/videos/factory-background.gif",
-          fit: BoxFit.cover,
-          alignment: Alignment.centerRight,
+        // ===== PERUBAHAN PADA TAMPILAN =====
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 1500), // Durasi fade
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          child: Image.asset(
+            // Menggunakan path dinamis sesuai indeks gambar saat ini
+            'assets/images/bg-${_currentImageIndex + 1}.png',
+            // Key penting agar AnimatedSwitcher mendeteksi perubahan widget
+            key: ValueKey<int>(_currentImageIndex),
+            fit: BoxFit.cover,
+            height: double.infinity,
+            width: double.infinity,
+            alignment: Alignment.center,
+          ),
         ),
+        // ===== AKHIR DARI PERUBAHAN TAMPILAN =====
+        
         Container(
           color: AppColors.schneiderGreen.withOpacity(0.3),
         ),
