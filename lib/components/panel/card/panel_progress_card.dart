@@ -31,6 +31,8 @@ class AlertInfo {
 
 class PanelProgressCard extends StatelessWidget {
   final AppRole currentUserRole;
+  final String? statusPenyelesaian;
+  final String? productionSlot;
   final String duration;
   final DateTime? targetDelivery;
   final double progress;
@@ -62,6 +64,8 @@ class PanelProgressCard extends StatelessWidget {
   const PanelProgressCard({
     super.key,
     required this.currentUserRole,
+    this.statusPenyelesaian,
+    this.productionSlot,
     required this.duration,
     required this.targetDelivery,
     required this.progress,
@@ -283,7 +287,54 @@ class PanelProgressCard extends StatelessWidget {
       ),
     );
   }
+  Widget _buildPanelPosition() {
+    // Tentukan status default jika null atau kosong
+    final status = statusPenyelesaian ?? 'VendorWarehouse';
+    String positionText;
+    String iconPath;
 
+    switch (status) {
+      case 'Production':
+        // Jika di produksi, tampilkan juga nomor slotnya
+        positionText = 'Production (${productionSlot ?? 'N/A'})';
+        iconPath = 'assets/images/production.png';
+        break;
+      case 'FAT':
+        positionText = 'FAT';
+        iconPath = 'assets/images/fat.png';
+        break;
+      case 'Done':
+        positionText = 'Done';
+        iconPath = 'assets/images/done.png';
+        break;
+      case 'VendorWarehouse':
+      default:
+        // Gabungkan nama vendor dan warehouse
+        List<String> locations = [];
+        if (panelVendorName.isNotEmpty) locations.add(panelVendorName);
+        if (componentVendorName.isNotEmpty) locations.add(componentVendorName);
+
+        positionText = locations.isEmpty ? 'Vendor/WHS' : locations.join(' & ');
+        iconPath = 'assets/images/vendor.png';
+        break;
+    }
+
+    return Row(
+      children: [
+        Image.asset(iconPath, height: 12, color: AppColors.gray),
+        const SizedBox(width: 4),
+        Text(
+          positionText,
+          style: const TextStyle(
+            color: AppColors.gray,
+            fontWeight: FontWeight.w300,
+            fontSize: 11,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
   @override
   Widget build(BuildContext context) {
     final bool isTemporary = ppNumber.startsWith('TEMP_PP_');
@@ -401,35 +452,55 @@ class PanelProgressCard extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Row(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Container(
-                            height: 11,
-                            width: MediaQuery.of(context).size.width * 0.10,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: FractionallySizedBox(
-                              alignment: Alignment.centerLeft,
-                              widthFactor: progress.clamp(0.0, 1.0),
-                              child: Container(
+                          Row(
+                            children: [
+                              Container(
+                                height: 11,
+                                width: MediaQuery.of(context).size.width * 0.10,
                                 decoration: BoxDecoration(
-                                  color: _getProgressColor(),
+                                  color: Colors.grey[300],
                                   borderRadius: BorderRadius.circular(20),
                                 ),
+                                child: FractionallySizedBox(
+                                  alignment: Alignment.centerLeft,
+                                  widthFactor: progress.clamp(0.0, 1.0),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: _getProgressColor(),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 12),
+                              Text(
+                                progressLabel,
+                                style: const TextStyle(
+                                  color: AppColors.black,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Text(
-                            progressLabel,
-                            style: const TextStyle(
-                              color: AppColors.black,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 12,
-                            ),
+                          SizedBox(height: 8,),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                           const Text(
+                            "Posisi:",
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w300, color: AppColors.gray),
                           ),
+                          SizedBox(width: 8,),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: _buildPanelPosition(),
+                          ),
+                        ],
+                      ),
                         ],
                       ),
                       // const SizedBox(height: 4),

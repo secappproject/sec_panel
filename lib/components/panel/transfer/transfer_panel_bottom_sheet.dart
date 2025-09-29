@@ -38,11 +38,18 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
   List<ProductionSlot> _productionSlots = [];
   String? _selectedSlot;
 
+  // bool get _isVendorBranchDone {
+  //   final panel = _currentPanelData.panel;
+  //   return (panel.statusBusbarPcc ?? '') == 'Close' &&
+  //       (panel.statusBusbarMcc ?? '') == 'Close' &&
+  //       (panel.statusPalet ?? '') == 'Close' &&
+  //       (panel.statusCorepart ?? '') == 'Close' &&
+  //       panel.isClosed;
+  // }
+
   bool get _isVendorBranchDone {
     final panel = _currentPanelData.panel;
-    return (panel.statusBusbarPcc ?? '') == 'Close' &&
-        (panel.statusBusbarMcc ?? '') == 'Close' &&
-        (panel.statusPalet ?? '') == 'Close' &&
+    return (panel.statusPalet ?? '') == 'Close' &&
         (panel.statusCorepart ?? '') == 'Close' &&
         panel.isClosed;
   }
@@ -429,7 +436,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
     // === PERBAIKAN 2: Logika untuk menampilkan label default "Vendor" ===
     final String vendorLabelSource = [
       _currentPanelData.panelVendorName,
-      _currentPanelData.busbarVendorNames,
+      // _currentPanelData.busbarVendorNames,
     ].where((e) => e.isNotEmpty).join(' & ');
     // Variabel ini akan digunakan untuk ditampilkan di UI
     final String displayVendorLabel = vendorLabelSource.isNotEmpty ? vendorLabelSource : 'Vendor';
@@ -669,7 +676,7 @@ Widget _buildConfirmProductionView() {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildConfirmationStatusItem('Busbar'),
+                    // _buildConfirmationStatusItem('Busbar'),
                     _buildConfirmationStatusItem('Component'),
                     _buildConfirmationStatusItem('Palet'),
                     _buildConfirmationStatusItem('Corepart'),
