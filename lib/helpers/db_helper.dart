@@ -795,6 +795,10 @@ Future<Company?> getCompanyByUsername(String username) async {
         'Status Busbar',
         'Close Date Busbar',
         'AO Busbar',
+        'Production Cell',
+        'Production Date',
+        'FAT Date',
+        'All Done Date',
       ];
       panelSheet.appendRow(panelHeaders.map((h) => TextCellValue(h)).toList());
 
@@ -816,6 +820,7 @@ Future<Company?> getCompanyByUsername(String username) async {
                     )))
             ? panel.closeDateBusbarPcc
             : panel.closeDateBusbarMcc;
+
         panelSheet.appendRow([
           TextCellValue(
             panel.noPp.startsWith('TEMP_') ? 'Belum Diatur' : panel.noPp,
@@ -837,6 +842,9 @@ Future<Company?> getCompanyByUsername(String username) async {
           TextCellValue(panel.statusBusbarPcc ?? ''),
           TextCellValue(formatDate(latestAoBusbar) ?? ''),
           TextCellValue(formatDate(latestCloseDateBusbar) ?? ''),
+          TextCellValue(formatDate(panelData.productionDate) ?? ''),
+          TextCellValue(formatDate(panelData.fatDate) ?? ''),
+          TextCellValue(formatDate(panelData.allDoneDate) ?? ''),
         ]);
       }
     }
