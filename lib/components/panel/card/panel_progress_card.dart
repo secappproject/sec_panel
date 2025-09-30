@@ -491,7 +491,7 @@ class PanelProgressCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                            const Text(
-                            "Posisi:",
+                            "Position:",
                             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w300, color: AppColors.gray),
                           ),
                           SizedBox(width: 8,),

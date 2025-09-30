@@ -6,7 +6,7 @@ import 'package:secpanel/models/panels.dart';
 class PanelDisplayData {
   final Panel panel;
   final String panelVendorName;
-  final String? panelRemarks; // Properti ini yang akan digunakan UI
+  final String? panelRemarks; 
   final String busbarVendorNames;
   final List<String> busbarVendorIds;
   final List<BusbarRemark> busbarRemarks;
@@ -18,6 +18,9 @@ class PanelDisplayData {
   final List<String> corepartVendorIds;
   final int issueCount;
   final int additionalSrCount;
+  final DateTime? productionDate;
+  final DateTime? fatDate;
+  final DateTime? allDoneDate;
 
   PanelDisplayData({
     required this.panel,
@@ -33,7 +36,10 @@ class PanelDisplayData {
     required this.corepartVendorNames,
     required this.corepartVendorIds,
     required this.issueCount,
-    required this.additionalSrCount
+    required this.additionalSrCount,
+    this.productionDate,
+    this.fatDate,
+    this.allDoneDate,
   });
 
   factory PanelDisplayData.fromJson(Map<String, dynamic> json) {
@@ -55,15 +61,15 @@ class PanelDisplayData {
           .toList();
     }
 
-    // ▼▼▼ [PERBAIKAN] Logika diubah di sini ▼▼▼
     final panelData = json['panel'] as Map<String, dynamic>? ?? {};
-    // 1. Buat objek Panel terlebih dahulu. Objek ini sekarang berisi remark yang benar.
     final Panel createdPanel = Panel.fromMap(panelData);
-
+    DateTime? parseDate(String? dateStr) {
+      if (dateStr == null) return null;
+      return DateTime.tryParse(dateStr)?.toLocal();
+    }
     return PanelDisplayData(
       panel: createdPanel,
       panelVendorName: json['panel_vendor_name'] as String? ?? '',
-      // 2. Gunakan remark dari objek Panel yang sudah dibuat sebagai sumber data utama.
       panelRemarks: createdPanel.remarks,
       busbarVendorNames: json['busbar_vendor_names'] as String? ?? '',
       busbarVendorIds: parseIdList(json['busbar_vendor_ids']),
@@ -76,6 +82,9 @@ class PanelDisplayData {
       corepartVendorIds: parseIdList(json['corepart_vendor_ids']),
       issueCount: json['issue_count'] as int? ?? 0,
       additionalSrCount: json['additional_sr_count'] as int? ?? 0,
+      productionDate: parseDate(json['production_date'] as String?),
+      fatDate: parseDate(json['fat_date'] as String?),
+      allDoneDate: parseDate(json['all_done_date'] as String?),
     );
   }
 }

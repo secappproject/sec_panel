@@ -1,6 +1,6 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/models/paneldisplaydata.dart';
 import 'package:secpanel/models/productionslot.dart';
@@ -38,14 +38,8 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
   List<ProductionSlot> _productionSlots = [];
   String? _selectedSlot;
 
-  // bool get _isVendorBranchDone {
-  //   final panel = _currentPanelData.panel;
-  //   return (panel.statusBusbarPcc ?? '') == 'Close' &&
-  //       (panel.statusBusbarMcc ?? '') == 'Close' &&
-  //       (panel.statusPalet ?? '') == 'Close' &&
-  //       (panel.statusCorepart ?? '') == 'Close' &&
-  //       panel.isClosed;
-  // }
+  // State untuk mengontrol baris mana yang sedang terbuka (tidak lagi digunakan di versi ini)
+  // int? _expandedCell;
 
   bool get _isVendorBranchDone {
     final panel = _currentPanelData.panel;
@@ -93,7 +87,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
         panelNoPp: _currentPanelData.panel.noPp,
         action: action,
         slot: _selectedSlot,
-        actor: actorUsername, 
+        actor: actorUsername,
       );
       widget.onSuccess(updatedPanelData);
 
@@ -172,279 +166,244 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
         return _buildStatusDisplayView();
     }
   }
-  Widget _buildSlotSelectionView() {
-    const int totalSlots = 28;
-    final int occupiedCount = _productionSlots.where((s) => s.isOccupied).length;
-    final int remainingCount = totalSlots - occupiedCount;
-    final int displayCount = (_selectedSlot == null) ? remainingCount : remainingCount - 1;
+  // TransferPanelBottomSheet.dart
 
-        Widget buildSlotItem(ProductionSlot slot) {
-      final isSelected = _selectedSlot == slot.positionCode;
-      final isOccupiedByOther = slot.isOccupied &&
-          _currentPanelData.panel.productionSlot != slot.positionCode;
+Widget _buildSlotSelectionView() {
+  // 1. Logika untuk mengelompokkan slot ke dalam 7 baris (tidak berubah)
+  final Map<int, List<ProductionSlot>> slotsByRow = {};
+  for (var slot in _productionSlots) {
+    final nameParts = slot.positionCode.split(' ');
+    if (nameParts.length < 2) {
+      debugPrint('Slot positionCode format salah, dilewati: ${slot.positionCode}');
+      continue;
+    }
 
-      Color backgroundColor;
-      Color textColor;
-      Border? border;
+    final detailParts = nameParts[1].split('-');
+    if (detailParts.isEmpty) {
+      debugPrint('Slot positionCode format detail salah, dilewati: ${slot.positionCode}');
+      continue;
+    }
 
-      // === PERUBAHAN DI SINI ===
-      if (isOccupiedByOther) {
-        // Style baru untuk "Unavailable"
-        backgroundColor = Colors.white; // Latar belakang putih
-        textColor = Colors.grey.shade400; // Teks abu-abu (disabled)
-        border = Border.all(color: Colors.grey.shade300); // Border abu-abu tipis
-      } else if (isSelected) {
-        // Style untuk "Selected"
-        backgroundColor = const Color(0xFFE0F1E3);
-        textColor = const Color(0xFF008A15);
-        border = Border.all(color: const Color(0xFF008A15));
-      } else {
-        // Style untuk "Available"
-        backgroundColor = const Color(0xFFF5F5F5);
-        textColor = Colors.black;
-        border = null;
-      }
-      // ==========================
+    final rowNum = int.tryParse(detailParts[0]);
+    if (rowNum != null) {
+      (slotsByRow[rowNum] ??= []).add(slot);
+    } else {
+      debugPrint('Gagal parse nomor baris dari slot: ${slot.positionCode}');
+    }
+  }
 
-      return GestureDetector(
-        onTap: isOccupiedByOther
-            ? null
-            : () {
-                setState(() {
-                  if (_selectedSlot == slot.positionCode) {
-                    _selectedSlot = null; 
-                  } else {
-                    _selectedSlot = slot.positionCode;
-                  }
-                });
-              },
-        child: Container(
-          width: 35,
-          height: 35,
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(12),
-            border: border,
-          ),
-          child: Center(
-            child: Text(
-              slot.positionCode,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Lexend',
-                fontSize: 12,
-                color: textColor,
-              ),
-            ),
+  // Widget untuk merender satu baris Cell (tidak berubah)
+  Widget buildCellRowItem(int rowNum, List<ProductionSlot> slotsInRow) {
+    final availableSlots = slotsInRow.where((s) => !s.isOccupied).toList();
+    final occupiedSlots = slotsInRow.where((s) => s.isOccupied).toList();
+    final bool canSelect = availableSlots.isNotEmpty;
+    final bool isSelected =
+        _selectedSlot != null && _selectedSlot!.startsWith('Cell $rowNum');
+
+    final occupiedPanelNames = occupiedSlots
+        .map((s) => s.panelNoPanel ?? s.panelNoPp ?? 'Unknown')
+        .join(', ');
+
+    return GestureDetector(
+      onTap: canSelect
+          ? () {
+              setState(() {
+                if (isSelected) {
+                  _selectedSlot = null;
+                } else {
+                  _selectedSlot = availableSlots.first.positionCode;
+                }
+              });
+            }
+          : null,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.schneiderGreen.withOpacity(0.1)
+              : (canSelect
+                  ? Colors.white
+                  : AppColors.grayLight.withOpacity(0.5)),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.schneiderGreen : AppColors.grayLight,
+            width: 1.5,
           ),
         ),
-      );
-    }
-
-    Widget buildSlotColumn(String prefix) {
-      final columnSlots = _productionSlots
-          .where((s) => s.positionCode.startsWith(prefix))
-          .toList()
-        ..sort((a, b) => a.positionCode.compareTo(b.positionCode));
-
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: columnSlots
-            .map((slot) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: buildSlotItem(slot),
-                ))
-            .toList(),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-      child: Column(
-        key: const ValueKey('selectSlot'),
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildHeader('Transfer to Production',
-              isSubPage: true,
-              onBack: () =>
-                  setState(() => _currentStep = _TransferFlowStep.displayStatus)),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Text(
-                'Select Position',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Lexend'),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '$displayCount/28 Slot Tersisa',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      fontFamily: 'Lexend'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          _buildLegend(),
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                buildSlotColumn('D'),
-                buildSlotColumn('C'),
-                buildSlotColumn('B'),
-                buildSlotColumn('A'),
-                // === PERUBAHAN 2: Garis pemisah dibuat lebih halus warnanya ===
-                Container(
-                  width: 8,
-                  height: 341,
-                  color: AppColors.grayLight, // Warna lebih halus (0xFFEEEEEE)
-                ),
-                // === PERUBAHAN 1: Widget Office diposisikan di tengah ===
-                SizedBox(
-                  height: 341,
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset('assets/images/office.png',
-                            width: 24,),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Office',
-                          style: TextStyle(
-                              color: Color(0xFF5C5C5C),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'Lexend'),
-                        ),
-                      ],
+                Expanded(
+                  child: Text(
+                    'Production Cell $rowNum',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w400,
+                      fontSize: 14,
+                      color: isSelected
+                          ? AppColors.schneiderGreen
+                          : (canSelect ? AppColors.black : AppColors.gray),
                     ),
+                  ),
+                ),
+                Text(
+                  '${availableSlots.length}/8 Available',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w300,
+                    fontSize: 12,
+                    color:
+                        isSelected ? AppColors.schneiderGreen : AppColors.gray,
                   ),
                 ),
               ],
             ),
-          ),
-          _buildFooterButtons(
-            secondaryText: 'Kembali',
-            secondaryAction: () =>
-                setState(() => _currentStep = _TransferFlowStep.displayStatus),
-            primaryText: 'Lanjutkan',
-            primaryAction: _selectedSlot == null
-                ? null
-                : () => setState(() =>
-                    _currentStep = _TransferFlowStep.confirmToProduction),
-          ),
-        ],
+            if (occupiedSlots.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Panel in Production: $occupiedPanelNames',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.gray,
+                  fontWeight: FontWeight.w300
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ]
+          ],
+        ),
       ),
     );
   }
 
- Widget _buildLegend() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        // === PERUBAHAN DI SINI: Legenda untuk "Unavailable" disesuaikan ===
-        _buildLegendItem(Colors.white, 'Unavailable', borderColor: Colors.grey.shade300),
-        const SizedBox(width: 32),
-        _buildLegendItem(Colors.white, 'Selected', borderColor: const Color(0xFF008A15)),
-        const SizedBox(width: 32),
-        _buildLegendItem(const Color(0xFFF5F5F5), 'Available'),
-      ],
-    );
-  }
+  // --- PERBAIKAN UTAMA ADA DI SINI ---
+  // 1. Ambil keys (nomor baris) dan ubah menjadi List
+  final sortedKeys = slotsByRow.keys.toList();
+  // 2. Urutkan list tersebut agar tampilan selalu konsisten (1, 2, 3, ...)
+  sortedKeys.sort();
+  // --- AKHIR PERBAIKAN ---
 
-  Widget _buildLegendItem(Color color, String label, {Color? borderColor}) {
-    return Row(
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: borderColor ?? Colors.transparent, width: 1.5),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(label, style: const TextStyle(fontSize: 12, fontFamily: 'Lexend')),
-      ],
-    );
-  }
+  final int totalRemainingCount =
+      _productionSlots.where((s) => !s.isOccupied).length;
 
-  Widget _buildFooterButtons({
-    required String primaryText,
-    required VoidCallback? primaryAction,
-    required String secondaryText,
-    required VoidCallback? secondaryAction,
-  }) {
-    return Row(
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+    child: Column(
+      key: const ValueKey('selectCellFinal'),
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: secondaryAction,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF008A15),
-              side: const BorderSide(color: Color(0xFF008A15), width: 1.5),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-              padding: const EdgeInsets.symmetric(vertical: 14),
+        _buildHeader('Transfer to Production',
+            isSubPage: true,
+            onBack: () =>
+                setState(() => _currentStep = _TransferFlowStep.displayStatus)),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Text(
+              'Select Production Cell',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Lexend'),
             ),
-            child: Text(secondaryText, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
-          ),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '$totalRemainingCount/${_productionSlots.length} Available',
+                style: const TextStyle(
+                    fontWeight: FontWeight.w400,
+                    fontSize: 12,
+                    fontFamily: 'Lexend'),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: primaryAction,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF008A15),
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: AppColors.grayLight,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-              padding: const EdgeInsets.symmetric(vertical: 14),
+        const SizedBox(height: 24),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
+                // 3. Gunakan list yang sudah diurutkan untuk membuat widget
+                children: sortedKeys
+                    .map((rowNum) =>
+                        buildCellRowItem(rowNum, slotsByRow[rowNum]!))
+                    .toList(),
+              ),
             ),
-            child: Text(primaryText, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
-          ),
+            const SizedBox(width: 16),
+            Row(
+              children: [
+                Container(
+                  width: 6,
+                  height: 400, 
+                  color: AppColors.grayLight,
+                ),
+                const SizedBox(width: 24),
+                Column(
+                  children: [
+                    Image.asset(
+                      'assets/images/office.png',
+                      width: 24,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Office',
+                      style: TextStyle(
+                          color: Color(0xFF5C5C5C),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w300,
+                          fontFamily: 'Lexend'),
+                    ),
+                  ],
+                ),
+              ],
+            )
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildFooterButtons(
+          secondaryText: 'Kembali',
+          secondaryAction: () =>
+              setState(() => _currentStep = _TransferFlowStep.displayStatus),
+          primaryText: 'Lanjutkan',
+          primaryAction: _selectedSlot == null
+              ? null
+              : () => setState(
+                  () => _currentStep = _TransferFlowStep.confirmToProduction),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
+
   Widget _buildStatusDisplayView() {
-    final status = _currentPanelData.panel.statusPenyelesaian ?? 'VendorWarehouse';
+    final status =
+        _currentPanelData.panel.statusPenyelesaian ?? 'VendorWarehouse';
     String title = 'Transfer Position';
     String statusText = '';
     Widget actionButton;
     VoidCallback? rollbackAction;
 
-    // === PERBAIKAN 2: Logika untuk menampilkan label default "Vendor" ===
-    final String vendorLabelSource = [
-      _currentPanelData.panelVendorName,
-      // _currentPanelData.busbarVendorNames,
-    ].where((e) => e.isNotEmpty).join(' & ');
-    // Variabel ini akan digunakan untuk ditampilkan di UI
-    final String displayVendorLabel = vendorLabelSource.isNotEmpty ? vendorLabelSource : 'Vendor';
-    // ====================================================================
+    final String vendorLabelSource = [_currentPanelData.panelVendorName]
+        .where((e) => e.isNotEmpty)
+        .join(' & ');
+    final String displayVendorLabel =
+        vendorLabelSource.isNotEmpty ? vendorLabelSource : 'Vendor';
 
-    final String warehouseLabel = _currentPanelData.componentVendorNames.isNotEmpty
-        ? _currentPanelData.componentVendorNames
-        : 'Warehouse';
+    final String warehouseLabel =
+        _currentPanelData.componentVendorNames.isNotEmpty
+            ? _currentPanelData.componentVendorNames
+            : 'Warehouse';
 
     switch (status) {
       case 'Production':
@@ -455,7 +414,9 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
           assetIconPath: 'assets/images/fat.png',
           onPressed: () {
             _fetchProductionSlots().then((_) {
-              if (mounted) setState(() => _currentStep = _TransferFlowStep.confirmToFat);
+              if (mounted) {
+                setState(() => _currentStep = _TransferFlowStep.confirmToFat);
+              }
             });
           },
         );
@@ -486,7 +447,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
       case 'VendorWarehouse':
       default:
         List<String> locations = [];
-        if (!_isVendorBranchDone) locations.add(displayVendorLabel); // Gunakan displayVendorLabel
+        if (!_isVendorBranchDone) locations.add(displayVendorLabel);
         if (!_isWarehouseBranchDone) locations.add(warehouseLabel);
         statusText = locations.isEmpty
             ? 'Siap untuk Produksi'
@@ -525,9 +486,16 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
                   padding: const EdgeInsets.only(bottom: 16.0),
                   child: Row(
                     children: [
-                      const Text('Status: ', style: TextStyle(color: AppColors.gray, fontWeight: FontWeight.w300, fontSize: 12)),
+                      const Text('Status: ',
+                          style: TextStyle(
+                              color: AppColors.gray,
+                              fontWeight: FontWeight.w300,
+                              fontSize: 12)),
                       Expanded(
-                        child: Text(statusText, style: const TextStyle(fontWeight: FontWeight.w400, fontSize: 12), overflow: TextOverflow.ellipsis),
+                        child: Text(statusText,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w400, fontSize: 12),
+                            overflow: TextOverflow.ellipsis),
                       ),
                     ],
                   ),
@@ -536,28 +504,49 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
                 const SizedBox(height: 12),
                 _buildStatusTimeline(
                   currentStage: status,
-                  // === PERBAIKAN 2 (Lanjutan): Gunakan variabel yang benar di sini ===
                   vendorLabel: displayVendorLabel,
-                  // =================================================================
                   warehouseLabel: warehouseLabel,
                   isVendorDone: _isVendorBranchDone,
                   isWarehouseDone: _isWarehouseBranchDone,
+                  panelCreatedDate: _currentPanelData.panel
+                      .startDate, 
+                  productionDate: _currentPanelData.productionDate,
+                  fatDate: _currentPanelData.fatDate,
+                  allDoneDate: _currentPanelData.allDoneDate,
                 ),
-                if (status == 'Production' && _currentPanelData.panel.productionSlot != null) ...[
-                  const Divider(height: 32, color: AppColors.grayLight,),
+                if (status == 'Production' &&
+                    _currentPanelData.panel.productionSlot != null) ...[
+                  const Divider(
+                    height: 32,
+                    color: AppColors.grayLight,
+                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Position:', style: TextStyle(color: AppColors.gray, fontWeight: FontWeight.w300, fontSize: 12)),
+                      const Text('Position:',
+                          style: TextStyle(
+                              color: AppColors.gray,
+                              fontWeight: FontWeight.w300,
+                              fontSize: 12)),
                       Container(
                         alignment: Alignment.center,
-                        width: 32,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         height: 32,
                         decoration: BoxDecoration(
                           color: AppColors.grayLight,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Text(_currentPanelData.panel.productionSlot!, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400)),
+                        child: Text(
+                            RegExp(r'Cell\s+\d+')
+                                    .firstMatch(_currentPanelData.panel.productionSlot!)
+                                    ?.group(0) ??
+                                _currentPanelData.panel.productionSlot!,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+
                       )
                     ],
                   )
@@ -575,41 +564,173 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
     );
   }
 
-// Helper baru untuk menampilkan status item di halaman konfirmasi
-  Widget _buildConfirmationStatusItem(String title) {
+  Widget _buildStatusTimeline({
+    required String currentStage,
+    required String vendorLabel,
+    required String warehouseLabel,
+    required bool isVendorDone,
+    required bool isWarehouseDone,
+    DateTime? panelCreatedDate,
+    DateTime? productionDate,
+    DateTime? fatDate,
+    DateTime? allDoneDate,
+  }) {
+    final stages = ['VendorWarehouse', 'Production', 'FAT', 'Done'];
+    final stageIndex = stages.indexOf(currentStage);
+
+    final bool vendorCheck = stageIndex > 0 || isVendorDone;
+    final bool warehouseCheck = stageIndex > 0 || isWarehouseDone;
+
+    final bool productionDone = stageIndex >= 2;
+    final bool fatDone = stageIndex >= 3;
+    final bool allDone = stageIndex >= 3;
+
+    final bool isProductionActive = stageIndex == 1;
+    final bool isFatActive = stageIndex == 2;
+    final bool isDoneActive = stageIndex == 3;
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: AppColors.gray,
-            fontWeight: FontWeight.w300,
-            fontSize: 12,
-          ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            return Column(
+              children: [
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildTimelineNode(
+                        vendorLabel,
+                        Image.asset('assets/images/vendor.png',
+                            color: vendorCheck
+                                ? AppColors.schneiderGreen
+                                : AppColors.blue,
+                            width: 24),
+                        isComplete: vendorCheck,
+                        isActive: !vendorCheck,
+                        date: panelCreatedDate,
+                      ),
+                      const SizedBox(width: 40),
+                      _buildTimelineNode(
+                        warehouseLabel,
+                        Image.asset('assets/images/warehouse.png',
+                            color: warehouseCheck
+                                ? AppColors.schneiderGreen
+                                : AppColors.blue,
+                            width: 24),
+                        isComplete: warehouseCheck,
+                        isActive: !warehouseCheck,
+                        date: panelCreatedDate,
+                      ),
+                    ],
+                  ),
+                ),
+                _buildTimelineConnector(
+                    isComplete: stageIndex >= 1,
+                    branchWidth: constraints.maxWidth),
+              ],
+            );
+          },
         ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Close',
-              style: TextStyle(
-                color: AppColors.black,
-                fontWeight: FontWeight.w400,
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(width: 4),
-            // Menggunakan icon yang sama dengan di panel card
-            Image.asset('assets/images/done-green.png', height: 14),
-          ],
+        _buildTimelineNode(
+          'Production',
+          Image.asset('assets/images/production.png',
+              color: stageIndex >= 1
+                  ? (isProductionActive
+                      ? AppColors.blue
+                      : AppColors.schneiderGreen)
+                  : AppColors.gray,
+              width: 24),
+          isComplete: productionDone,
+          isActive: isProductionActive,
+          date: productionDate,
+          datePrefix: 'Start',
+        ),
+        _buildTimelineConnector(isComplete: stageIndex >= 2),
+        _buildTimelineNode(
+          'FAT',
+          Image.asset('assets/images/fat.png',
+              color: stageIndex >= 2
+                  ? (isFatActive ? AppColors.blue : AppColors.schneiderGreen)
+                  : AppColors.gray,
+              width: 24),
+          isComplete: fatDone,
+          isActive: isFatActive,
+          date: fatDate,
+          datePrefix: 'Start',
+        ),
+        _buildTimelineConnector(isComplete: stageIndex >= 3),
+        _buildTimelineNode(
+          'All Done',
+          Image.asset('assets/images/done.png',
+              color: stageIndex >= 3
+                  ? AppColors.schneiderGreen
+                  : (isFatActive) ?
+                  
+                  AppColors.blue
+                  : AppColors.gray,
+              width: 24),
+          isComplete: fatDone,
+          isActive: isFatActive,
+          date: allDoneDate,
+          datePrefix: 'Done',
         ),
       ],
     );
   }
 
-Widget _buildConfirmProductionView() {
+  Widget _buildTimelineNode(String label, Widget icon,
+      {required bool isComplete,
+      bool isActive = false,
+      DateTime? date,
+      String datePrefix = 'Start'}) {
+    final Color color = isActive
+        ? AppColors.blue
+        : (isComplete ? AppColors.schneiderGreen : AppColors.gray);
+    final String dateText =
+        date != null ? DateFormat('d MMM yyyy').format(date) : '';
+
+    return SizedBox(
+      width: 85,
+      child: Column(
+        children: [
+          icon,
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 10, fontWeight: FontWeight.w300, color: color),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (dateText.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2.0),
+              child: Text(
+                "$datePrefix $dateText",
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w300,
+                  color: AppColors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          const SizedBox(height: 4),
+          if (isActive)
+            Image.asset('assets/images/progress_load.png', width: 14)
+          else if (isComplete)
+            Icon(Icons.check_circle, size: 14, color: color)
+          else
+            SizedBox(height: dateText.isNotEmpty ? 0 : 0),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConfirmProductionView() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
       child: Column(
@@ -625,8 +746,6 @@ Widget _buildConfirmProductionView() {
             style: TextStyle(color: AppColors.gray, fontSize: 12),
           ),
           const SizedBox(height: 24),
-          
-          // Card container baru yang meniru gaya PanelProgressCard
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -637,7 +756,6 @@ Widget _buildConfirmProductionView() {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Label persentase
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -652,8 +770,6 @@ Widget _buildConfirmProductionView() {
                   ],
                 ),
                 const SizedBox(height: 8),
-
-                // Progress bar yang sudah di-styling
                 Container(
                   height: 8,
                   decoration: BoxDecoration(
@@ -661,22 +777,19 @@ Widget _buildConfirmProductionView() {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: FractionallySizedBox(
-                    widthFactor: 1.0, // Selalu 100%
+                    widthFactor: 1.0,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: AppColors.schneiderGreen, // Selalu hijau
+                        color: AppColors.schneiderGreen,
                         borderRadius: BorderRadius.circular(20),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
-
-                // Baris untuk menampilkan status item
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // _buildConfirmationStatusItem('Busbar'),
                     _buildConfirmationStatusItem('Component'),
                     _buildConfirmationStatusItem('Palet'),
                     _buildConfirmationStatusItem('Corepart'),
@@ -697,163 +810,122 @@ Widget _buildConfirmProductionView() {
       ),
     );
   }
-  
-  // Helper baru untuk visualisasi di halaman konfirmasi FAT
-  Widget _buildSlotStateColumn({
-    required String slotName,
-    required String countText,
-    required Widget subtitle,
-    required bool isOrigin,
-  }) {
-    // Widget untuk kotak nama slot (A2, C7, dll)
-    Widget slotBox;
-    if (isOrigin) {
-      // Style untuk slot "sebelum" (terisi)
-      slotBox = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.schneiderGreen.withOpacity(0.1),
-          border: Border.all(color: AppColors.schneiderGreen),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          slotName,
-          style: const TextStyle(
-            color: AppColors.schneiderGreen,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Lexend',
-          ),
-        ),
-      );
-    } else {
-      // Style untuk slot "sesudah" (kosong dengan border putus-putus)
-      slotBox = DashedBorderContainer(
-        color: AppColors.gray,
-        strokeWidth: 1.5,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          child: Text(
-            slotName,
-            style: const TextStyle(
-              color: AppColors.gray,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Lexend',
-            ),
-          ),
-        ),
-      );
-    }
+// TransferPanelBottomSheet.dart
 
-    return Column(
+Widget _buildConfirmFatView() {
+  final String currentSlotName = _currentPanelData.panel.productionSlot ?? 'N/A';
+
+  // --- PERBAIKAN LOGIKA UTAMA DI SINI ---
+  int? rowNum;
+  // Parsing untuk mendapatkan nomor baris/Cell dari kode slot (misal: dari "Cell 1-B" menjadi 1)
+  final nameParts = currentSlotName.split(' ');
+  if (nameParts.length > 1) {
+    final detailParts = nameParts[1].split('-');
+    if (detailParts.isNotEmpty) {
+      rowNum = int.tryParse(detailParts[0]);
+    }
+  }
+
+  // Siapkan variabel default jika terjadi error
+  int availableBefore = 0;
+  int availableAfter = 0;
+  int capacity = 8; // Asumsi kapasitas per cell adalah 8
+  String cellDisplayName = "Cell ?";
+
+  if (rowNum != null) {
+    cellDisplayName = "Cell $rowNum";
+    // Filter untuk mendapatkan semua slot yang hanya ada di baris ini
+    final slotsInThisRow = _productionSlots
+        .where((s) => s.positionCode.startsWith('Cell $rowNum-'))
+        .toList();
+    
+    capacity = slotsInThisRow.length; // Kapasitas cell ini (seharusnya 8)
+    if (capacity > 0) {
+      // Hitung slot terisi di cell ini SEBELUM transfer
+      final occupiedBefore = slotsInThisRow.where((s) => s.isOccupied).length;
+      availableBefore = capacity - occupiedBefore;
+      // Setelah transfer, slot tersedia akan bertambah 1
+      availableAfter = availableBefore + 1;
+    }
+  }
+
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+    child: Column(
+      key: const ValueKey('confirmFat'),
+      mainAxisSize: MainAxisSize.min,
       children: [
-        slotBox,
-        const SizedBox(height: 12),
-        // Widget untuk kotak jumlah slot (8/28, 9/28, dll)
-        Container(
-          width: 60,
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF5F5F5),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            children: [
-              Text(
-                countText,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Lexend',
-                ),
+        _buildHandle(),
+        _buildHeader('Transfer to FAT'),
+        const SizedBox(height: 24),
+        const Text(
+          'Transfer ke FAT akan mengeluarkan panel dari slot produksi',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              color: AppColors.gray, fontSize: 12, fontFamily: 'Lexend', fontWeight: FontWeight.w300),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Visualisasi "Sebelum"
+            _buildSlotStateColumn(
+              slotName: cellDisplayName,      // Menampilkan "Cell X"
+              countText: '$availableBefore/$capacity', // Menampilkan kapasitas Cell
+              subtitle: const Text(
+                'Slot Available',
+                style: TextStyle(
+                    color: AppColors.gray, fontSize: 8, fontFamily: 'Lexend', fontWeight: FontWeight.w300),
               ),
-              subtitle,
-            ],
-          ),
+              isOrigin: true,
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.0),
+              child: Icon(Icons.arrow_forward, color: AppColors.gray),
+            ),
+            _buildSlotStateColumn(
+              slotName: cellDisplayName,     // Menampilkan "Cell X"
+              countText: '$availableAfter/$capacity',  // Menampilkan kapasitas Cell setelah +1
+              subtitle: Text.rich(
+                TextSpan(children: [
+                  const TextSpan(
+                      text: 'Slot Available',
+                      style: TextStyle(
+                    color: AppColors.gray, fontSize: 8, fontFamily: 'Lexend', fontWeight: FontWeight.w300)),
+                  TextSpan(
+                      text: ' (+1)',
+                      style: TextStyle(
+                          color: AppColors.schneiderGreen.withOpacity(0.8),
+                          fontWeight: FontWeight.w300,
+                          fontSize: 8)),
+                ]),
+              ),
+              isOrigin: false,
+            ),
+          ],
+        ),
+        const SizedBox(height: 32),
+        _buildFooterButtons(
+          secondaryText: 'Kembali',
+          secondaryAction: () =>
+              setState(() => _currentStep = _TransferFlowStep.displayStatus),
+          primaryText: 'Ya, Transfer',
+          primaryAction: () => _handleTransferAction('to_fat'),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
-  Widget _buildConfirmFatView() {
-    const int totalSlots = 28;
-    // Hitung jumlah slot yang terisi secara permanen oleh panel lain
-    final int occupiedByOthers = _productionSlots
-        .where((s) => s.isOccupied && s.panelNoPp != _currentPanelData.panel.noPp)
-        .length;
-    
-    // Jumlah slot yang tersedia sebelum panel ini ditransfer
-    final int availableBefore = totalSlots - occupiedByOthers - 1;
-    // Jumlah slot yang tersedia setelah panel ini ditransfer
-    final int availableAfter = availableBefore + 1;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-      child: Column(
-        key: const ValueKey('confirmFat'),
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildHandle(),
-          _buildHeader('Transfer to FAT'),
-          const SizedBox(height: 24),
-          const Text(
-            'Transfer ke FAT akan mengeluarkan panel dari slot produksi',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.gray, fontSize: 12, fontFamily: 'Lexend'),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Visualisasi "Sebelum"
-              _buildSlotStateColumn(
-                slotName: _currentPanelData.panel.productionSlot ?? 'N/A',
-                countText: '$availableBefore/28',
-                subtitle: const Text(
-                  'Slot',
-                  style: TextStyle(color: AppColors.gray, fontSize: 8, fontFamily: 'Lexend'),
-                ),
-                isOrigin: true,
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24.0),
-                child: Icon(Icons.arrow_forward, color: AppColors.gray),
-              ),
-              // Visualisasi "Sesudah"
-              _buildSlotStateColumn(
-                slotName: _currentPanelData.panel.productionSlot ?? 'N/A',
-                countText: '$availableAfter/28',
-                subtitle: Text.rich(
-                  TextSpan(children: [
-                    const TextSpan(text: 'Slot', style: TextStyle(color: AppColors.gray, fontSize: 8)),
-                    TextSpan(text: ' (+1)', style: TextStyle(color: AppColors.schneiderGreen.withOpacity(0.8), fontSize: 8)),
-                  ]),
-                ),
-                isOrigin: false,
-              ),
-            ],
-          ),
-          const SizedBox(height: 32),
-          _buildFooterButtons(
-            secondaryText: 'Kembali',
-            secondaryAction: () =>
-                setState(() => _currentStep = _TransferFlowStep.displayStatus),
-            primaryText: 'Ya, Transfer',
-            primaryAction: () => _handleTransferAction('to_fat'),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildHeader(String title, {bool isSubPage = false, VoidCallback? onBack}) {
+  Widget _buildHeader(String title,
+      {bool isSubPage = false, VoidCallback? onBack}) {
     return Row(
       children: [
-        if (isSubPage) IconButton(icon: const Icon(Icons.arrow_back), onPressed: onBack)
-        else const SizedBox(width: 48), // Placeholder
+        if (isSubPage)
+          IconButton(icon: const Icon(Icons.arrow_back), onPressed: onBack)
+        else
+          const SizedBox(width: 48), // Placeholder
         Expanded(
           child: Text(
             title,
@@ -883,47 +955,98 @@ Widget _buildConfirmProductionView() {
     );
   }
 
-Widget _buildActionButtons({required Widget primaryButton, String? secondaryText, VoidCallback? secondaryAction}) {
+  Widget _buildFooterButtons({
+    required String primaryText,
+    required VoidCallback? primaryAction,
+    required String secondaryText,
+    required VoidCallback? secondaryAction,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: secondaryAction,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF008A15),
+              side: const BorderSide(color: Color(0xFF008A15), width: 1.5),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+            child: Text(secondaryText,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w500, fontSize: 12)),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: primaryAction,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF008A15),
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: AppColors.grayLight,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+            child: Text(primaryText,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w500, fontSize: 12)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons(
+      {required Widget primaryButton,
+      String? secondaryText,
+      VoidCallback? secondaryAction}) {
     Widget secondaryButton;
 
-    // === PERBAIKAN LOGIKA DI SINI ===
-    // Cukup periksa apakah ada 'secondaryAction'. Jika ada, tentukan jenis tombolnya.
     if (secondaryAction != null) {
-      // Tentukan teksnya. Jika tidak diberi tahu, anggap saja "Rollback".
       final String text = secondaryText ?? 'Rollback';
-
-      if(text == 'Kembali') {
-        // Jika teksnya 'Kembali', buat tombol outline hijau.
-        secondaryButton = Expanded(child: _buildActionButton(text, onPressed: secondaryAction, isOutline: true));
-      } else { 
-        // Untuk kasus lain (termasuk "Rollback"), buat tombol teks merah.
+      if (text == 'Kembali') {
+        secondaryButton = Expanded(
+            child: _buildActionButton(text,
+                onPressed: secondaryAction, isOutline: true));
+      } else {
         secondaryButton = TextButton(
-            onPressed: secondaryAction,
-            child: Text(text, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500, fontSize: 12)),
-          );
+          onPressed: secondaryAction,
+          child: Text(text,
+              style: const TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12)),
+        );
       }
     } else {
-      // Jika tidak ada aksi sekunder, jangan tampilkan tombol apa pun.
       secondaryButton = const Spacer();
     }
-    // ===============================
-    
+
     return Row(
       children: [
         secondaryButton,
-        // Atur jarak antar tombol dengan lebih baik
-        if (secondaryAction != null && secondaryText != 'Kembali') const Spacer(),
-        if (secondaryAction != null && secondaryText == 'Kembali') const SizedBox(width: 16),
-        // Tombol primer sekarang mengambil sisa ruang yang fleksibel
+        if (secondaryAction != null && secondaryText != 'Kembali')
+          const Spacer(),
+        if (secondaryAction != null && secondaryText == 'Kembali')
+          const SizedBox(width: 16),
         Flexible(flex: 2, child: primaryButton),
       ],
     );
   }
-  
-Widget _buildActionButton(String text, {VoidCallback? onPressed, String? assetIconPath, bool isOutline = false}) {
+
+  Widget _buildActionButton(String text,
+      {VoidCallback? onPressed,
+      String? assetIconPath,
+      bool isOutline = false}) {
     final textColor = isOutline ? AppColors.schneiderGreen : Colors.white;
-    final backgroundColor = isOutline ? Colors.white : AppColors.schneiderGreen;
-    final borderColor = isOutline ? AppColors.schneiderGreen : Colors.transparent;
+    final backgroundColor =
+        isOutline ? Colors.white : AppColors.schneiderGreen;
+    final borderColor =
+        isOutline ? AppColors.schneiderGreen : Colors.transparent;
 
     return ElevatedButton(
       onPressed: onPressed,
@@ -935,7 +1058,7 @@ Widget _buildActionButton(String text, {VoidCallback? onPressed, String? assetIc
         shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(6),
-          side: BorderSide(color: borderColor, width: 1.5), // Sedikit pertebal border
+          side: BorderSide(color: borderColor, width: 1.5),
         ),
         padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 12),
       ),
@@ -945,119 +1068,30 @@ Widget _buildActionButton(String text, {VoidCallback? onPressed, String? assetIc
           Flexible(
             child: Text(
               text,
-              textAlign: TextAlign.center, // Penting jika teks wrap
-              style: TextStyle(color: textColor, fontWeight: FontWeight.w500, fontSize: 12),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: textColor, fontWeight: FontWeight.w500, fontSize: 12),
             ),
           ),
           if (assetIconPath != null) ...[
             const SizedBox(width: 8),
-            Image.asset(assetIconPath, width: 16, height: 16, color: textColor),
+            Image.asset(assetIconPath,
+                width: 16, height: 16, color: textColor),
           ]
         ],
       ),
     );
   }
 
-  Widget _buildStatusTimeline({
-    required String currentStage,
-    required String vendorLabel,
-    required String warehouseLabel,
-    required bool isVendorDone,
-    required bool isWarehouseDone,
-  }) {
-    final stages = ['VendorWarehouse', 'Production', 'FAT', 'Done'];
-    final stageIndex = stages.indexOf(currentStage);
-
-    final bool vendorCheck = stageIndex > 0 || isVendorDone;
-    final bool warehouseCheck = stageIndex > 0 || isWarehouseDone;
-    
-    final bool productionDone = stageIndex >= 2;
-    final bool fatDone = stageIndex >= 3;
-    final bool isProductionActive = stageIndex == 1;
-    final bool isFatActive = stageIndex == 2;
-
-    return Column(
-      children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            return Column(
-              children: [
-                Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildTimelineNode(
-                        vendorLabel,
-                        Image.asset('assets/images/vendor.png', color: vendorCheck ? AppColors.schneiderGreen : AppColors.blue, width: 24),
-                        isComplete: vendorCheck,
-                        isActive: !vendorCheck,
-                      ),
-                      const SizedBox(width: 40),
-                      _buildTimelineNode(
-                        warehouseLabel,
-                        Image.asset('assets/images/warehouse.png', color: warehouseCheck ? AppColors.schneiderGreen : AppColors.blue, width: 24),
-                        isComplete: warehouseCheck,
-                        isActive: !warehouseCheck,
-                      ),
-                    ],
-                  ),
-                ),
-                _buildTimelineConnector(isComplete: stageIndex >= 1, branchWidth: constraints.maxWidth),
-              ],
-            );
-          },
-        ),
-        _buildTimelineNode(
-          'Production',
-          Image.asset('assets/images/production.png', color: stageIndex >= 1 ? (isProductionActive ? AppColors.blue : AppColors.schneiderGreen) : AppColors.gray, width: 24),
-          isComplete: productionDone,
-          isActive: isProductionActive,
-        ),
-        _buildTimelineConnector(isComplete: stageIndex >= 2),
-        _buildTimelineNode(
-          'FAT',
-          Image.asset('assets/images/fat.png', color: stageIndex >= 2 ? (isFatActive ? AppColors.blue : AppColors.schneiderGreen) : AppColors.gray, width: 24),
-          isComplete: fatDone,
-          isActive: isFatActive,
-        ),
-      ],
-    );
-  }
-
-Widget _buildTimelineNode(String label, Widget icon, {required bool isComplete, bool isActive = false}) {
-    final Color color = isActive ? AppColors.blue : (isComplete ? AppColors.schneiderGreen : AppColors.gray);
-
-    // === PERBAIKAN 1: Beri lebar yang konsisten agar tidak mencong ===
-    return SizedBox(
-      width: 65, // Memberi lebar minimum agar rata
-      child: Column(
-        children: [
-          icon,
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w300, color: color),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          if (isActive) Image.asset('assets/images/progress_load.png', width: 14)
-          else if (isComplete) Icon(Icons.check_circle, size: 14, color: color)
-          else const SizedBox(height: 14), // Placeholder agar tinggi sama
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimelineConnector({required bool isComplete, double? branchWidth}) {
+  Widget _buildTimelineConnector(
+      {required bool isComplete, double? branchWidth}) {
     final color = isComplete ? AppColors.schneiderGreen : AppColors.grayLight;
     if (branchWidth != null) {
       return SizedBox(
         height: 20,
         child: CustomPaint(
-          painter: _BranchConnectorPainter(color: color, branchWidth: branchWidth),
+          painter:
+              _BranchConnectorPainter(color: color, branchWidth: branchWidth),
           child: Container(),
         ),
       );
@@ -1070,41 +1104,107 @@ Widget _buildTimelineNode(String label, Widget icon, {required bool isComplete, 
     );
   }
 
-  Widget _buildStatusDetail(String label, bool isClosed) {
+  Widget _buildConfirmationStatusItem(String title) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.gray)),
+        Text(
+          title,
+          style: const TextStyle(
+            color: AppColors.gray,
+            fontWeight: FontWeight.w300,
+            fontSize: 12,
+          ),
+        ),
         const SizedBox(height: 4),
         Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
+            const Text(
               'Close',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isClosed ? AppColors.schneiderGreen : Colors.grey),
+              style: TextStyle(
+                color: AppColors.black,
+                fontWeight: FontWeight.w400,
+                fontSize: 12,
+              ),
             ),
             const SizedBox(width: 4),
-            Icon(Icons.check_circle, color: isClosed ? AppColors.schneiderGreen : Colors.grey, size: 16)
+            Image.asset('assets/images/done-green.png', height: 14),
           ],
-        )
+        ),
       ],
     );
   }
 
-  Widget _buildSlotInfo(String slot, String description, {bool isOrigin = true}) {
+  Widget _buildSlotStateColumn({
+    required String slotName,
+    required String countText,
+    required Widget subtitle,
+    required bool isOrigin,
+  }) {
+    Widget slotBox;
+    if (isOrigin) {
+      slotBox = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.schneiderGreen.withOpacity(0.1),
+          border: Border.all(color: AppColors.schneiderGreen),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          slotName,
+          style: const TextStyle(
+            color: AppColors.schneiderGreen,
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            fontFamily: 'Lexend',
+          ),
+        ),
+      );
+    } else {
+      slotBox = DashedBorderContainer(
+        color: AppColors.gray,
+        strokeWidth: 1,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Text(
+            slotName,
+            style: const TextStyle(
+              color: AppColors.gray,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Lexend',
+            ),
+          ),
+        ),
+      );
+    }
+
     return Column(
       children: [
+        slotBox,
+        const SizedBox(height: 12),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          width: 80,
+          padding: const EdgeInsets.symmetric(vertical: 6),
           decoration: BoxDecoration(
-            color: isOrigin ? AppColors.schneiderGreen.withOpacity(0.2) : const Color(0xFFFEFEFE),
-            border: Border.all(color: isOrigin ? AppColors.schneiderGreen : AppColors.gray),
+            color: const Color(0xFFF5F5F5),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Text(slot, style: TextStyle(fontWeight: FontWeight.bold, color: isOrigin ? AppColors.schneiderGreen : AppColors.gray)),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          description,
-          style: TextStyle(fontSize: 10, color: AppColors.gray, fontWeight: isOrigin ? FontWeight.normal : FontWeight.bold),
+          child: Column(
+            children: [
+              Text(
+                countText,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Lexend',
+                ),
+              ),
+              subtitle,
+            ],
+          ),
         ),
       ],
     );
@@ -1118,7 +1218,10 @@ class _BranchConnectorPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color..strokeWidth = 2..style = PaintingStyle.stroke;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
     final path = Path();
     const double horizontalLineLength = 90;
     final double startX = (branchWidth / 2) - (horizontalLineLength / 2);
@@ -1132,9 +1235,10 @@ class _BranchConnectorPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _BranchConnectorPainter oldDelegate) => color != oldDelegate.color || branchWidth != oldDelegate.branchWidth;
+  bool shouldRepaint(covariant _BranchConnectorPainter oldDelegate) =>
+      color != oldDelegate.color || branchWidth != oldDelegate.branchWidth;
 }
-// Helper widget untuk membuat border putus-putus
+
 class DashedBorderContainer extends StatelessWidget {
   final Widget child;
   final Color color;
@@ -1191,7 +1295,8 @@ class _DashedBorderPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     Path path = Path();
-    path.addRRect(RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, size.width, size.height), radius));
+    path.addRRect(RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, size.width, size.height), radius));
 
     Path dashPath = Path();
     double distance = 0.0;
