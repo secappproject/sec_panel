@@ -30,7 +30,7 @@ class _ProjectWbsSummary {
   });
 }
 
-// ### BARU: Helper class untuk membuat TabBar menjadi sticky ###
+// ### Helper class untuk membuat TabBar menjadi sticky ###
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   _SliverAppBarDelegate(this._tabBar);
 
@@ -70,8 +70,9 @@ enum ChartTimeView { daily, monthly, yearly }
 
 class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late final TabController _tabController;
+  late final TabController _chartTabController; // ### BARU: Controller untuk Chart Tab
   final TextEditingController _searchController = TextEditingController();
-  
+
 
   List<PanelDisplayData> _allPanelsData = [];
   List<Company> _allK3Vendors = [];
@@ -135,6 +136,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    _chartTabController = TabController(length: 2, vsync: this); // ### BARU: Inisialisasi
     _tabController.addListener(() => setState(() {}));
     loadInitialData();
   }
@@ -168,7 +170,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-  // GANTI SELURUH FUNGSI INI
+
 void _prepareChartData() {
   final panelsToDisplay = filteredPanelsForDisplay;
 
@@ -214,8 +216,8 @@ void _prepareChartData() {
     quartile: _selectedQuartile,
   );
 
-  // ### PERUBAHAN: Gunakan fungsi baru yang spesifik untuk Busbar ###
-  _busbarChartData = _calculateBusbarDeliveryByTime( // <--- GANTI DI SINI
+  // Kalkulasi untuk Busbar
+  _busbarChartData = _calculateBusbarDeliveryByTime(
     panelsToDisplay,
     (data) {
       if (data.busbarVendorNames.isNotEmpty) {
@@ -231,8 +233,8 @@ void _prepareChartData() {
     week: _selectedWeek,
     quartile: _selectedQuartile,
   );
-  
-  _busbarWipChartData = _calculateBusbarWipByTime( // <--- DAN DI SINI
+
+  _busbarWipChartData = _calculateBusbarWipByTime(
     panelsToDisplay,
     (data) {
       if (data.busbarVendorNames.isNotEmpty) {
@@ -248,7 +250,6 @@ void _prepareChartData() {
     week: _selectedWeek,
     quartile: _selectedQuartile,
   );
-  // ### AKHIR PERUBAHAN ###
 
 
   // Kalkulasi untuk Project (Tidak Berubah)
@@ -274,6 +275,7 @@ void _prepareChartData() {
   @override
   void dispose() {
     _tabController.dispose();
+    _chartTabController.dispose(); // ### BARU: Dispose controller
     _searchController.dispose();
     super.dispose();
   }
@@ -910,14 +912,14 @@ void _prepareChartData() {
                 children: [
                   // Placeholder for icon
                   if (title == "In Production")...[
-                  Container(
+                  SizedBox(
                     width: 28,
                     height: 28,
                     child: Image.asset("assets/images/in.png"),
                   ),
                   ],
                   if (title == "Out Production")...[
-                  Container(
+                  SizedBox(
                     width: 28,
                     height: 28,
                     child: Image.asset("assets/images/out.png"),
@@ -1289,7 +1291,7 @@ void _prepareChartData() {
             ],
           ),
         ),
-        
+
         Expanded(
           child: _isChartView
               ? _buildChartView()
@@ -1325,7 +1327,6 @@ void _prepareChartData() {
                         ),
                       );
                     } else {
-                      // ### PERUBAHAN ###
                       // Layout Mobile (Scrollable dengan Sticky Header)
                       return CustomScrollView(
                         slivers: [
@@ -1352,8 +1353,7 @@ void _prepareChartData() {
       ],
     );
   }
-  
-  // ### DIUBAH ###
+
   // Method ini tidak lagi dipakai di mobile, hanya di desktop
   Widget _buildPanelView() {
     final panelsToDisplay = filteredPanelsForDisplay;
@@ -1369,7 +1369,7 @@ void _prepareChartData() {
         ),
       );
     }
-    
+
     // Hanya mengembalikan GridView untuk desktop
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1435,7 +1435,6 @@ void _prepareChartData() {
     );
   }
 
-  // ### BARU ###
   // Method ini membuat daftar panel sebagai Sliver untuk layout mobile
   Widget _buildPanelSliverList() {
     final panelsToDisplay = filteredPanelsForDisplay;
@@ -1454,7 +1453,7 @@ void _prepareChartData() {
         ),
       );
     }
-    
+
     // Memberi padding horizontal pada list
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
@@ -1517,7 +1516,7 @@ void _prepareChartData() {
     final days = lastDay.day + (firstDay.weekday - 1);
     return (days / 7).ceil();
   }
-  // ### GANTI FUNGSI INI DENGAN VERSI FINAL ###
+
 Map<String, dynamic> _calculateBusbarDeliveryByTime(
   List<PanelDisplayData> panels,
   List<String> Function(PanelDisplayData) getVendors, {
@@ -1582,12 +1581,11 @@ Map<String, dynamic> _calculateBusbarDeliveryByTime(
       break;
   }
 
-  // ### PERUBAHAN LOGIKA UTAMA ###
   // Busbar dianggap "closed" HANYA JIKA statusnya 'Close'
   final relevantPanels = panels.where((data) {
       return (data.panel.statusBusbarPcc ?? '') == 'Close';
   });
-  
+
   for (var data in relevantPanels) {
     // Gunakan startDate untuk menempatkan di timeline, karena closedDate diabaikan
     final dateForChart = data.panel.startDate ?? DateTime.now();
@@ -1671,8 +1669,6 @@ Map<String, dynamic> _calculateBusbarDeliveryByTime(
   return {'data': sortedMap, 'vendors': sortedVendors};
 }
 
-
-// ### GANTI FUNGSI INI DENGAN VERSI FINAL ###
 Map<String, dynamic> _calculateBusbarWipByTime(
   List<PanelDisplayData> panels,
   List<String> Function(PanelDisplayData) getVendors, {
@@ -1736,13 +1732,12 @@ Map<String, dynamic> _calculateBusbarWipByTime(
       break;
   }
 
-  // ### PERUBAHAN LOGIKA UTAMA ###
   // Busbar dianggap WIP jika statusnya BUKAN 'Close'
   final relevantPanels = panels.where((data) {
     final status = data.panel.statusBusbarPcc ?? '';
     return status != 'Close';
   });
-  
+
   for (var data in relevantPanels) {
     // Gunakan startDate untuk menempatkan di timeline
     final dateForChart = data.panel.startDate ?? DateTime.now();
@@ -1758,9 +1753,9 @@ Map<String, dynamic> _calculateBusbarWipByTime(
         isInDateRange = true;
       }
     }
-    
+
     if (!isInDateRange) continue;
-    
+
     final key = keyFormat.format(dateForChart);
     final vendorsFromPanel = getVendors(data);
     counts.putIfAbsent(key, () => {});
@@ -1910,12 +1905,12 @@ Map<String, dynamic> _calculateWipByTime(
         isInDateRange = true;
       }
     }
-    
+
     // Jika tanggalnya tidak masuk rentang, lewati panel ini dan lanjut ke berikutnya.
     if (!isInDateRange) continue;
-    
+
     // ### AKHIR PERUBAHAN UTAMA ###
-    
+
     final key = keyFormat.format(dateForChart);
     final vendorsFromPanel = getVendors(data);
     counts.putIfAbsent(key, () => {});
@@ -2123,7 +2118,6 @@ Map<String, dynamic> _calculateWipByTime(
   return {'data': sortedMap, 'vendors': sortedVendors};
 }
 
-// ### BARU: Tambahkan seluruh fungsi ini ###
 Map<String, dynamic> _calculateWipByProject(
   List<PanelDisplayData> panels, {
   required ChartTimeView view,
@@ -2188,11 +2182,11 @@ Map<String, dynamic> _calculateWipByProject(
 
   // Hanya filter panel yang belum closed
   final relevantPanels = panels.where((data) => !data.panel.isClosed);
-  
+
   // Kumpulkan semua nama project yang mungkin ada dari panel yang relevan
   final allPossibleProjects = relevantPanels
       .map((p) => p.panel.project?.trim() ?? '')
-      .map((name) => name.isEmpty ? "No Vendor" : name)
+      .map((name) => name.isEmpty ? "No Project" : name) // Ganti 'No Vendor' menjadi 'No Project'
       .toSet()
       .toList();
 
@@ -2280,6 +2274,7 @@ Map<String, dynamic> _calculateWipByProject(
   final sortedProjects = allPossibleProjects..sort();
   return {'data': sortedMap, 'projects': sortedProjects};
 }
+
   Map<String, dynamic> _calculateDeliveryByProject(
     List<PanelDisplayData> panels, {
     required ChartTimeView view,
@@ -2293,7 +2288,7 @@ Map<String, dynamic> _calculateWipByProject(
     final Map<String, Map<String, int>> counts = {};
     late DateTimeRange displayRange;
     late DateFormat keyFormat;
-    
+
     // --- BARU: Logika penentuan rentang waktu disamakan dengan _calculateDeliveryByTime ---
     switch (view) {
       case ChartTimeView.daily:
@@ -2341,7 +2336,7 @@ Map<String, dynamic> _calculateWipByProject(
     final relevantPanels = panels.where(
        (data) {
         if (data.panel.closedDate == null) return false;
-        
+
         if (view == ChartTimeView.yearly) {
           return years.contains(data.panel.closedDate!.year);
         }
@@ -2424,7 +2419,7 @@ Map<String, dynamic> _calculateWipByProject(
           return a.compareTo(b);
         }
       });
-      
+
     final finalKeys = sortedKeys;
 
     final sortedMap = {for (var k in finalKeys) k: counts[k]!};
@@ -2432,69 +2427,94 @@ Map<String, dynamic> _calculateWipByProject(
     return {'data': sortedMap, 'projects': sortedProjects};
   }
 
+  // ### BARU: Widget untuk konten tab "By Vendor"
+  Widget _buildVendorChartView() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isDesktop = constraints.maxWidth >= 800.0;
 
+        if (isDesktop) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _buildGroupedBarChartCard(
+                    title: "Delivered & On-Progress Panel",
+                    itemType: "Panel",
+                    closedChartData: _panelChartData,
+                    wipChartData: _panelWipChartData,
+                    currentView: _panelChartView,
+                    onToggle: (newView) => setState(() => _panelChartView = newView),
+                  ),
+                ),
+                const SizedBox(width: 24),
+                Expanded(
+                  child: _buildGroupedBarChartCard(
+                    title: "Delivered & On-Progress Busbar",
+                    itemType: "Busbar",
+                    closedChartData: _busbarChartData,
+                    wipChartData: _busbarWipChartData,
+                    currentView: _busbarChartView,
+                    onToggle: (newView) => setState(() => _busbarChartView = newView),
+                  ),
+                ),
+              ],
+            ),
+          );
+        } else {
+          // Layout Mobile
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildGroupedBarChartCard(
+                  title: "Delivered & On-Progress Panel",
+                  itemType: "Panel",
+                  closedChartData: _panelChartData,
+                  wipChartData: _panelWipChartData,
+                  currentView: _panelChartView,
+                  onToggle: (newView) => setState(() => _panelChartView = newView),
+                ),
+                const SizedBox(height: 24),
+                _buildGroupedBarChartCard(
+                  title: "Delivered & On-Progress Busbar",
+                  itemType: "Busbar",
+                  closedChartData: _busbarChartData,
+                  wipChartData: _busbarWipChartData,
+                  currentView: _busbarChartView,
+                  onToggle: (newView) => setState(() => _busbarChartView = newView),
+                ),
+              ],
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  // ### BARU: Widget untuk konten tab "By Project"
+  Widget _buildProjectChartView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+      child: _buildGroupedBarChartCard(
+        title: "Delivered & On-Progress by Project",
+        itemType: "by Project",
+        closedChartData: _projectChartData,
+        wipChartData: _projectWipChartData,
+        currentView: _projectChartView,
+        onToggle: (newView) => setState(() => _projectChartView = newView),
+      )
+    );
+  }
+
+
+  // ### DIUBAH: Widget ini sekarang menjadi kerangka untuk TabBar dan TabBarView
   Widget _buildChartView() {
     _prepareChartData();
-
     final panelsToDisplay = filteredPanelsForDisplay;
-
-    // --- FIX 1: Filter data untuk tabel sesuai dengan filter waktu chart ---
-    final now = DateTime.now();
-    late DateTime timeLimit;
-
-    switch (_projectChartView) {
-      case ChartTimeView.daily:
-        timeLimit = DateTime(now.year, now.month, now.day - 6);
-        break;
-      case ChartTimeView.monthly:
-        timeLimit = DateTime(now.year, now.month - 4, 1);
-        break;
-      case ChartTimeView.yearly:
-        timeLimit = DateTime(now.year - 4, 1, 1);
-        break;
-    }
-
-    final relevantDeliveredPanels = panelsToDisplay.where(
-      (data) =>
-          data.panel.isClosed &&
-          data.panel.closedDate != null &&
-          data.panel.closedDate!.isAfter(
-            timeLimit.subtract(const Duration(days: 1)),
-          ) &&
-          data.panel.closedDate!.isBefore(now.add(const Duration(days: 1))),
-    );
-    // --- AKHIR DARI FIX 1 ---
-
-    final Map<String, int> summaryCount = {};
-
-    // Gunakan data yang sudah difilter waktu
-    for (final data in relevantDeliveredPanels) {
-      final project = data.panel.project?.trim();
-      final finalProject = (project == null || project.isEmpty)
-          ? "No Project"
-          : project;
-      final wbs = data.panel.noWbs?.trim();
-      final finalWbs = (wbs == null || wbs.isEmpty) ? "No WBS" : wbs;
-      final key = "$finalProject|$finalWbs";
-      summaryCount[key] = (summaryCount[key] ?? 0) + 1;
-    }
-
-    final summaryList = summaryCount.entries.map((entry) {
-      final parts = entry.key.split('|');
-      return _ProjectWbsSummary(
-        project: parts[0],
-        wbs: parts[1],
-        count: entry.value,
-      );
-    }).toList();
-
-    summaryList.sort((a, b) {
-      int projectComp = a.project.toLowerCase().compareTo(
-            b.project.toLowerCase(),
-          );
-      if (projectComp != 0) return projectComp;
-      return a.wbs.toLowerCase().compareTo(b.wbs.toLowerCase());
-    });
 
     if (panelsToDisplay.isEmpty && _allPanelsData.isNotEmpty) {
       return const Center(
@@ -2513,119 +2533,54 @@ Map<String, dynamic> _calculateWipByProject(
       );
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const double breakpoint = 800.0;
-        final bool isDesktop = constraints.maxWidth >= breakpoint;
-
-        if (isDesktop) {
-          // Layout untuk Desktop/Layar Lebar
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
-            child: Column(
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: _buildGroupedBarChartCard(
-                      title: "Delivered & On-Progress Panel", // Judul baru yang lebih umum
-                      itemType: "Panel",
-                      closedChartData: _panelChartData,     // Data chart atas
-                      wipChartData: _panelWipChartData,       // Data chart bawah
-                      currentView: _panelChartView,
-                      onToggle: (newView) {
-                        setState(() {
-                          _panelChartView = newView;
-                        });
-                      },
-                    ),),
-                    const SizedBox(width: 24),
-                    Expanded(
-                      child: _buildGroupedBarChartCard(
-                    title: "Delivered & On-Progress Busbar",
-                      itemType: "Busbar",
-                      closedChartData: _busbarChartData,
-                      wipChartData: _busbarWipChartData, // Pastikan Anda sudah membuat ini
-                      currentView: _busbarChartView,
-                      onToggle: (newView) {
-                        setState(() {
-                          _busbarChartView = newView;
-                        });
-                      },
-                    ),
-                    ),
-                  ],
-                ),
-                // const SizedBox(height: 24),
-                // _buildProjectSummaryCard(
-                //   closedChartData: _projectChartData,
-                //   wipChartData: _projectWipChartData,
-                //   summaryData: summaryList,
-                //   currentView: _projectChartView,
-                //   onToggle: (newView) {
-                //     setState(() {
-                //       _projectChartView = newView;
-                //     });
-                //   },
-                // ),
-              ],
+    // Menggunakan DefaultTabController dan Scaffold untuk membuat struktur Tab
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: AppBar(
+          toolbarHeight: 0, // Sembunyikan toolbar default
+          automaticallyImplyLeading: false,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          elevation: 0,
+          bottom: TabBar(
+            controller: _chartTabController,
+            labelColor: AppColors.black,
+            unselectedLabelColor: AppColors.gray,
+            indicatorColor: AppColors.schneiderGreen,
+            indicatorWeight: 2,
+            indicatorSize: TabBarIndicatorSize.label,
+            overlayColor: WidgetStateProperty.all(Colors.transparent),
+            dividerColor: Colors.transparent,
+            labelStyle: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Lexend',
+              fontSize: 14, // Sedikit diperbesar agar mudah dibaca
             ),
-          );
-        } else {
-          // Layout untuk Mobile/Layar Kecil
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                  // Ganti panggilan untuk Panel
-                _buildGroupedBarChartCard(
-                  title: "Delivered & On-Progress Panel", // Judul baru yang lebih umum
-                  itemType: "Panel",
-                  closedChartData: _panelChartData,     // Data chart atas
-                  wipChartData: _panelWipChartData,       // Data chart bawah
-                  currentView: _panelChartView,
-                  onToggle: (newView) {
-                    setState(() {
-                      _panelChartView = newView;
-                    });
-                  },
-                ),
-                const SizedBox(height: 24),
-                _buildGroupedBarChartCard(
-                title: "Delivered & On-Progress Busbar",
-                itemType: "Busbar",
-                closedChartData: _busbarChartData,
-                wipChartData: _busbarWipChartData, // Pastikan Anda sudah membuat ini
-                currentView: _busbarChartView,
-                onToggle: (newView) {
-                  setState(() {
-                    _busbarChartView = newView;
-                  });
-                },
-              ),
-                // const SizedBox(height: 24),
-                // _buildProjectSummaryCard(
-                //   closedChartData: _projectChartData,
-                //   wipChartData: _projectWipChartData,
-                //   summaryData: summaryList,
-                //   currentView: _projectChartView,
-                //   onToggle: (newView) {
-                //     setState(() {
-                //       _projectChartView = newView;
-                //     });
-                //   },
-                // ),
-              ],
+            unselectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.w400,
+              fontFamily: 'Lexend',
+              fontSize: 14,
             ),
-          );
-        }
-      },
+            tabs: const [
+              Tab(text: "By Vendor"),
+              Tab(text: "By Project"),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          controller: _chartTabController,
+          children: [
+            // Konten untuk Tab "By Vendor"
+            _buildVendorChartView(),
+            // Konten untuk Tab "By Project"
+            _buildProjectChartView(),
+          ],
+        ),
+      ),
     );
   }
 
-  // --- WIDGET HELPER BARU: HANYA UNTUK TOMBOL TOGGLE ---
   Widget _buildToggleButtons({
     required ChartTimeView currentView,
     required ValueChanged<ChartTimeView> onToggle,
@@ -2670,7 +2625,6 @@ Map<String, dynamic> _calculateWipByProject(
     );
   }
 
-  // --- BARU: Widget untuk dropdown filter di chart ---
   Widget _buildChartFilterDropdowns({
     required ChartTimeView currentView,
   }) {
@@ -2840,7 +2794,6 @@ Map<String, dynamic> _calculateWipByProject(
     return const SizedBox.shrink();
   }
 
-  // == PERUBAHAN: DARI DIALOG MENJADI BOTTOM SHEET DENGAN SELECT ALL ==
   void _showYearMultiSelectBottomSheet() {
     final availableYears =
         List.generate(10, (index) => DateTime.now().year - index);
@@ -2861,7 +2814,7 @@ Map<String, dynamic> _calculateWipByProject(
             return Container(
               decoration: BoxDecoration(
                 color: AppColors.white,
-                borderRadius: BorderRadius.only(topRight: Radius.circular(12), topLeft: Radius.circular(12))),
+                borderRadius: const BorderRadius.only(topRight: Radius.circular(12), topLeft: Radius.circular(12))),
               child: Padding(
                 padding: EdgeInsets.only(
                   top: 16,
@@ -2908,22 +2861,22 @@ Map<String, dynamic> _calculateWipByProject(
                           final year = availableYears[index];
                           return CheckboxListTile(
                               shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8), 
-                            ),
-                            controlAffinity: ListTileControlAffinity.leading,
-                            title: Text(year.toString(), style: TextStyle(fontWeight: FontWeight.w300),),
-                            value: tempSelectedYears.contains(year),
-                            activeColor: AppColors.schneiderGreen,
-                            checkColor: Colors.white,
-                            onChanged: (bool? value) {
-                              setSheetState(() {
-                                if (value == true) {
-                                  tempSelectedYears.add(year);
-                                } else {
-                                  tempSelectedYears.remove(year);
-                                }
-                              });
-                            },
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              controlAffinity: ListTileControlAffinity.leading,
+                              title: Text(year.toString(), style: const TextStyle(fontWeight: FontWeight.w300),),
+                              value: tempSelectedYears.contains(year),
+                              activeColor: AppColors.schneiderGreen,
+                              checkColor: Colors.white,
+                              onChanged: (bool? value) {
+                                setSheetState(() {
+                                  if (value == true) {
+                                    tempSelectedYears.add(year);
+                                  } else {
+                                    tempSelectedYears.remove(year);
+                                  }
+                                });
+                              },
                           );
                         },
                       ),
@@ -2959,7 +2912,6 @@ Map<String, dynamic> _calculateWipByProject(
     );
   }
 
-  // == WIDGET BARU: Tombol untuk membuka dialog multi-select ==
   Widget _buildYearMultiSelect() {
     final dropdownStyle = TextStyle(
       fontSize: 12,
@@ -2989,8 +2941,8 @@ Map<String, dynamic> _calculateWipByProject(
           children: [
             Flexible(
               child: Text(
-                displayText, 
-                style: dropdownStyle, 
+                displayText,
+                style: dropdownStyle,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -3002,581 +2954,6 @@ Map<String, dynamic> _calculateWipByProject(
     );
   }
 
-  // --- WIDGET HELPER BARU: HANYA UNTUK KONTEN CHART PROJECT ---
-  Widget _buildProjectBarChartItself({
-    required Map<String, dynamic> chartData,
-  }) {
-    final Map<String, Map<String, int>> data =
-        (chartData['data'] as Map<String, Map<String, int>>? ?? {});
-    final List<String> projects =
-        (chartData['projects'] as List<String>? ?? []);
-
-    final List<Color> colorPalette = [
-      const Color(0xFF1D20E4),
-      const Color(0xFFED1B3A),
-      const Color(0xFFFEB019),
-      const Color(0xFF09AF77),
-      const Color(0xFF008FFB),
-      const Color(0xFFFF5DD1),
-      const Color(0xFF5D5FFF),
-      const Color(0xFFC83CFF),
-    ];
-    final Map<String, Color> projectColors = {
-      for (int i = 0; i < projects.length; i++)
-        projects[i]: colorPalette[i % colorPalette.length],
-    };
-
-    double maxValue = 0;
-    data.values.forEach((projectMap) {
-      double groupTotal = 0;
-      projectMap.values.forEach((count) {
-        groupTotal += count;
-      });
-      if (groupTotal > maxValue) {
-        maxValue = groupTotal;
-      }
-    });
-    if (maxValue == 0) maxValue = 50;
-
-    const double barWidth = 24.0;
-    const double barsSpace = 4.0;
-    const double groupsSpace = 24.0;
-    final double widthPerGroup = projects.isEmpty
-        ? barWidth
-        : (projects.length * barWidth) + ((projects.length - 1) * barsSpace);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (projects.isNotEmpty)
-          Wrap(
-            spacing: 16,
-            runSpacing: 8,
-            children: projects.map((project) {
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: projectColors[project],
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      project,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w300,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-        const SizedBox(height: 24),
-        SizedBox(
-          height: 250,
-          child: data.isEmpty
-              ? const Center(
-                  child: Text(
-                    "Tidak ada data delivery\nyang sesuai filter.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.gray,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                )
-              : LayoutBuilder(
-                  builder: (context, constraints) {
-                    final double calculatedWidth =
-                        (data.keys.length * widthPerGroup) +
-                            ((data.keys.length - 1) * groupsSpace);
-                    final double availableWidth = constraints.maxWidth;
-                    final double finalChartWidth = math.max(
-                      availableWidth,
-                      calculatedWidth,
-                    );
-
-                    return SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SizedBox(
-                        width: finalChartWidth,
-                        child: BarChart(
-                          BarChartData(
-                            alignment: calculatedWidth < availableWidth
-                                ? BarChartAlignment.spaceAround
-                                : BarChartAlignment.start,
-                            groupsSpace: groupsSpace,
-                            maxY: maxValue * 1.25,
-                            barTouchData: BarTouchData(
-                              handleBuiltInTouches: false,
-                              touchTooltipData: BarTouchTooltipData(
-                                getTooltipColor: (_) => Colors.transparent,
-                                tooltipPadding: EdgeInsets.zero,
-                                tooltipMargin: 8,
-                                getTooltipItem:
-                                    (group, groupIndex, rod, rodIndex) {
-                                  if (rod.toY == 0) return null;
-                                  return BarTooltipItem(
-                                    rod.toY.round().toString(),
-                                    const TextStyle(
-                                      color: AppColors.black,
-                                      fontWeight: FontWeight.w400,
-                                      fontSize: 14,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            titlesData: FlTitlesData(
-                              show: true,
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  getTitlesWidget:
-                                      (double value, TitleMeta meta) {
-                                    final index = value.toInt();
-                                    if (index >= data.keys.length) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    final key = data.keys.elementAt(index);
-                                    final title =
-                                        _projectChartView ==
-                                                ChartTimeView.monthly
-                                            ? key.split(' ')[0]
-                                            : _projectChartView ==
-                                                    ChartTimeView.daily
-                                                ? key.replaceAll(', ', '\n')
-                                                : key;
-                                    return SideTitleWidget(
-                                      axisSide: meta.axisSide,
-                                      space: 8.0,
-                                      child: Text(
-                                        title,
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          fontSize: 10,
-                                          color: AppColors.gray,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  reservedSize: 38,
-                                ),
-                              ),
-                              leftTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              // === PERUBAHAN DIMULAI DI SINI ===
-                              topTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  reservedSize: 26, // Beri ruang lebih untuk garis
-                                  getTitlesWidget: (double value, TitleMeta meta) {
-                                    final index = value.toInt();
-                                    if (index >= data.keys.length) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    final groupKey = data.keys.elementAt(index);
-                                    final projectCounts = data[groupKey]!;
-
-                                    // Hitung total untuk grup ini
-                                    final total = projectCounts.values.fold(0, (sum, item) => sum + item);
-
-                                    // Jangan tampilkan total jika nilainya 0
-                                    if (total == 0) {
-                                      return const SizedBox.shrink();
-                                    }
-
-                                    return SideTitleWidget(
-                                      axisSide: meta.axisSide,
-                                      space: 4.0, // Jarak di atas bar
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            total.toString(),
-                                            style: const TextStyle(
-                                              color: AppColors.gray,
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Container(
-                                            height: 4,
-                                            width: widthPerGroup, // ### FIX DI SINI ###
-                                            color: AppColors.grayNeutral,
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              // === PERUBAHAN BERAKHIR DI SINI ===
-                              rightTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                            ),
-                            borderData: FlBorderData(show: false),
-                            gridData: const FlGridData(show: false),
-                            barGroups: List.generate(data.keys.length, (index) {
-                              final monthKey = data.keys.elementAt(index);
-                              final projectCounts = data[monthKey]!;
-                              return BarChartGroupData(
-                                x: index,
-                                barsSpace: barsSpace,
-                                showingTooltipIndicators: List.generate(
-                                  projects.length,
-                                  (i) => i,
-                                ),
-                                barRods: List.generate(projects.length, (
-                                  projectIndex,
-                                ) {
-                                  final projectName = projects[projectIndex];
-                                  final count =
-                                      projectCounts[projectName]?.toDouble() ??
-                                          0;
-                                  final bool isZero = count == 0;
-                                  final Color barColor =
-                                      projectColors[projectName] ?? Colors.grey;
-
-                                  return BarChartRodData(
-                                    toY: isZero ? 0.1 : count,
-                                    color: barColor.withOpacity(
-                                      isZero ? 1.0 : 1.0,
-                                    ),
-                                    width: barWidth,
-                                    borderRadius: isZero
-                                        ? BorderRadius.circular(2)
-                                        : BorderRadius.circular(6),
-                                  );
-                                }),
-                              );
-                            }),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-/// ### WIDGET KARTU PROJECT (TELAH DIUBAH) ###
-/// Menampilkan dua chart (atas-bawah) untuk data Project, diikuti tabel summary.
-// Widget _buildProjectSummaryCard({
-//   required Map<String, dynamic> closedChartData,
-//   required Map<String, dynamic> wipChartData,
-//   required List<_ProjectWbsSummary> summaryData,
-//   required ChartTimeView currentView,
-//   required ValueChanged<ChartTimeView> onToggle,
-// }) {
-//   // Ambil nama project dari salah satu set data (keduanya seharusnya sama)
-//   final List<String> projects = (closedChartData['projects'] as List<String>? ?? []);
-
-
-//   // Siapkan palet warna untuk project
-//   final List<Color> colorPalette = [
-//     const Color(0xFF1D20E4), const Color(0xFFED1B3A), const Color(0xFFFEB019),
-//     const Color(0xFF09AF77), const Color(0xFF008FFB), const Color(0xFFFF5DD1),
-//     const Color.fromARGB(255, 130, 132, 255), const Color(0xFFC83CFF),
-//      const Color.fromARGB(255, 6, 149, 80), const Color.fromARGB(255, 6, 92, 149),const Color.fromARGB(255, 149, 6, 68),
-//      const Color.fromARGB(255, 104, 255, 200), const Color.fromARGB(255, 149, 130, 6),const Color.fromARGB(255, 6, 147, 149),
-//   ];
-//   final Map<String, Color> projectColors = {
-//     for (int i = 0; i < projects.length; i++)
-//       projects[i]: colorPalette[i % colorPalette.length],
-//   };  
-  
-
-//   // Widget legenda bersama untuk kedua chart
-//   Widget legendWidget = projects.isNotEmpty
-//       ? Wrap(
-//           spacing: 16,
-//           runSpacing: 8,
-//           children: projects.map((project) {
-//             return Row(
-//               mainAxisSize: MainAxisSize.min,
-//               children: [
-//                 Container(
-//                   width: 12,
-//                   height: 12,
-//                   decoration: BoxDecoration(
-//                     color: projectColors[project],
-//                     borderRadius: BorderRadius.circular(4),
-//                   ),
-//                 ),
-//                 const SizedBox(width: 4),
-//                 Flexible(
-//                   child: Text(
-//                     project,
-//                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
-//                     overflow: TextOverflow.ellipsis,
-//                   ),
-//                 ),
-//               ],
-//             );
-//           }).toList(),
-//         )
-//       : const SizedBox.shrink();
-
-//   return Container(
-//     padding: const EdgeInsets.all(16),
-//     decoration: BoxDecoration(
-//       color: Colors.white,
-//       borderRadius: BorderRadius.circular(12),
-//       border: Border.all(color: AppColors.grayLight),
-//     ),
-//     child: Column(
-//       crossAxisAlignment: CrossAxisAlignment.stretch,
-//       children: [
-//         // --- BAGIAN HEADER (Title, Filter, Toggle) ---
-//         LayoutBuilder(
-//           builder: (context, constraints) {
-//             const double breakpoint = 850.0;
-//             // Layout header responsif (Desktop vs Mobile)
-//             if (constraints.maxWidth > breakpoint) {
-//               return Row(
-//                 crossAxisAlignment: CrossAxisAlignment.center,
-//                 children: [
-//                   const Expanded(
-//                     child: Text(
-//                       "Panel Progress by Project",
-//                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: AppColors.black),
-//                     ),
-//                   ),
-//                   _buildChartFilterDropdowns(currentView: currentView),
-//                   const SizedBox(width: 8),
-//                   _buildToggleButtons(currentView: currentView, onToggle: onToggle),
-//                 ],
-//               );
-//             } else {
-//               return Column(
-//                 crossAxisAlignment: CrossAxisAlignment.start,
-//                 children: [
-//                   Row(
-//                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                     crossAxisAlignment: CrossAxisAlignment.start,
-//                     children: [
-//                       const Expanded(
-//                         child: Text(
-//                           "Panel Progress by Project",
-//                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: AppColors.black),
-//                         ),
-//                       ),
-//                       _buildToggleButtons(currentView: currentView, onToggle: onToggle),
-//                     ],
-//                   ),
-//                   const SizedBox(height: 12),
-//                   _buildChartFilterDropdowns(currentView: currentView),
-//                 ],
-//               );
-//             }
-//           },
-//         ),
-//         const SizedBox(height: 16),
-//         legendWidget,
-//         const SizedBox(height: 24),
-
-//         // --- CHART ATAS (CLOSED) ---
-//         const Text(
-//           "Jumlah Panel Closed by Project",
-//           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
-//         ),
-//         const SizedBox(height: 8),
-//         _buildBarChartItself(
-//           chartData: closedChartData,
-//           colorMap: projectColors,
-//           currentView: currentView,
-//         ),
-        
-//         const SizedBox(height: 24),
-
-//         // --- CHART BAWAH (WORK IN PROGRESS) ---
-//         const Text(
-//           "Jumlah Panel Work In Progress by Project",
-//           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
-//         ),
-//         const SizedBox(height: 8),
-//         _buildBarChartItself(
-//           chartData: wipChartData,
-//           colorMap: projectColors,
-//           currentView: currentView,
-//         ),
-
-//         const SizedBox(height: 24),
-//         const Divider(),
-//         const SizedBox(height: 16),
-        
-//         // --- TABEL SUMMARY (TETAP SAMA) ---
-//         const Text(
-//           "Rincian Delivered Panel",
-//           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
-//         ),
-//         const SizedBox(height: 12),
-//         _buildDeliveredSummaryTable(summaryData),
-//       ],
-//     ),
-//   );
-// }
-  // --- FIX 2: Widget tabel diganti untuk mendukung merge cells ---
-  Widget _buildDeliveredSummaryTable(List<_ProjectWbsSummary> summaryData) {
-    if (summaryData.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 20),
-          child: Text(
-            "Tidak ada data rincian.",
-            style: TextStyle(color: AppColors.gray),
-          ),
-        ),
-      );
-    }
-
-    // Kelompokkan data berdasarkan nama project
-    final Map<String, List<String>> groupedData = {};
-    for (var summary in summaryData) {
-      if (!groupedData.containsKey(summary.project)) {
-        groupedData[summary.project] = [];
-      }
-      groupedData[summary.project]!.add(summary.wbs);
-    }
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Header Tabel
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.grayLight.withOpacity(0.3),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(8),
-              topRight: Radius.circular(8),
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: const Row(
-            children: [
-              Expanded(
-                flex: 1,
-                child: Text(
-                  'Project',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.black,
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 1,
-                child: Text(
-                  'WBS',
-                  style: TextStyle(fontWeight: FontWeight.w400),
-                ),
-              ),
-            ],
-          ),
-        ),
-        // Body Tabel
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.grayLight.withOpacity(0.5)),
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(8),
-              bottomRight: Radius.circular(8),
-            ),
-          ),
-          child: Column(
-            children: groupedData.entries.map((entry) {
-              final project = entry.key;
-              final wbsList = entry.value;
-
-              return IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Kolom Project (Merged)
-                    Expanded(
-                      flex: 1,
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            right: BorderSide(
-                              color: AppColors.grayLight.withOpacity(0.5),
-                            ),
-                          ),
-                        ),
-                        child: Align(
-                          alignment: Alignment.topLeft,
-                          child: Text(
-                            project,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.gray,
-                              fontWeight: FontWeight.w300,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Kolom WBS (List)
-                    Expanded(
-                      flex: 1,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: wbsList.asMap().entries.map((wbsEntry) {
-                          final index = wbsEntry.key;
-                          final wbs = wbsEntry.value;
-                          return Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              border: index != wbsList.length - 1
-                                  ? Border(
-                                      bottom: BorderSide(
-                                        color: AppColors.grayLight.withOpacity(
-                                          0.5,
-                                        ),
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                            child: Text(
-                              wbs,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.gray,
-                                fontWeight: FontWeight.w300,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-/// ### BARU: Widget helper untuk merender satu instance Bar Chart ###
-/// Digunakan untuk menampilkan chart "Closed" dan "Work in Progress" secara terpisah.
 Widget _buildBarChartItself({
   required Map<String, dynamic> chartData,
   required Map<String, Color> colorMap,
@@ -3634,21 +3011,15 @@ Widget _buildBarChartItself({
                       groupsSpace: groupsSpace,
                       maxY: maxValue * 1.25,
 
-                      // ================== PERUBAHAN DIMULAI DI SINI ==================
                       barTouchData: BarTouchData(
-                        // 1. Nonaktifkan interaksi hover/sentuh bawaan
                         handleBuiltInTouches: false,
                         touchTooltipData: BarTouchTooltipData(
-                          // 2. Buat background tooltip menjadi transparan
                           getTooltipColor: (_) => Colors.transparent,
                           tooltipPadding: EdgeInsets.zero,
-                          // 3. Atur jarak tulisan dari atas bar
                           tooltipMargin: 4,
                           getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                            // Jangan tampilkan nilai jika 0
                             if (rod.toY.round() == 0) return null;
-                            
-                            // 4. Tampilkan nilai bar sebagai teks biasa
+
                             return BarTooltipItem(
                               rod.toY.round().toString(),
                               const TextStyle(
@@ -3660,8 +3031,7 @@ Widget _buildBarChartItself({
                           },
                         ),
                       ),
-                      // ================== PERUBAHAN SELESAI DI SINI ==================
-                      
+
                       titlesData: FlTitlesData(
                         show: true,
                         bottomTitles: AxisTitles(
@@ -3721,11 +3091,8 @@ Widget _buildBarChartItself({
                         return BarChartGroupData(
                           x: index,
                           barsSpace: barsSpace,
-                          
-                          // ================== PERUBAHAN TAMBAHAN DI SINI ==================
-                          // 5. Perintahkan untuk selalu menampilkan tooltip untuk semua bar
+
                           showingTooltipIndicators: List.generate(seriesNames.length, (i) => i),
-                          // ================================================================
 
                           barRods: List.generate(seriesNames.length, (seriesIndex) {
                             final seriesName = seriesNames[seriesIndex];
@@ -3747,6 +3114,7 @@ Widget _buildBarChartItself({
           ),
   );
 }
+// GANTI SELURUH WIDGET INI
 Widget _buildGroupedBarChartCard({
   required String title,
   required String itemType, // Parameter untuk membuat judul dinamis
@@ -3755,35 +3123,44 @@ Widget _buildGroupedBarChartCard({
   required ChartTimeView currentView,
   required ValueChanged<ChartTimeView> onToggle,
 }) {
-  // Ambil nama vendor dari salah satu dataset (keduanya seharusnya sama)
-  final List<String> vendors = (closedChartData['vendors'] as List<String>? ?? []);
-  
+  // ### PERBAIKAN DI SINI ###
+  // 1. Ambil nama series (vendor/project) dari KEDUA dataset
+  final List<String> closedSeries = (closedChartData['vendors'] as List<String>? ?? closedChartData['projects'] as List<String>? ?? []);
+  final List<String> wipSeries = (wipChartData['vendors'] as List<String>? ?? wipChartData['projects'] as List<String>? ?? []);
+
+  // 2. Gabungkan keduanya, hilangkan duplikat, dan urutkan.
+  // Ini memastikan semua series dari kedua chart masuk ke dalam legenda.
+  final List<String> seriesNames = {...closedSeries, ...wipSeries}.toList()..sort();
+  // ### AKHIR PERBAIKAN ###
+
   // Siapkan palet warna
   final List<Color> colorPalette = [
     const Color(0xFF1D20E4), const Color(0xFFED1B3A), const Color(0xFFFEB019),
     const Color(0xFF09AF77), const Color(0xFF008FFB), const Color(0xFFFF5DD1),
     const Color(0xFF5D5FFF), const Color(0xFFC83CFF),
+    // Tambahkan lebih banyak warna jika proyek/vendor bisa lebih dari 8
+    const Color(0xFF00E396), const Color(0xFF775DD0), const Color(0xFFFEB019), const Color(0xFFE91E63),
   ];
-  final Map<String, Color> vendorColors = {
-    for (int i = 0; i < vendors.length; i++)
-      vendors[i]: colorPalette[i % colorPalette.length],
+  final Map<String, Color> seriesColors = {
+    for (int i = 0; i < seriesNames.length; i++)
+      seriesNames[i]: colorPalette[i % colorPalette.length],
   };
 
-  // Widget legenda bersama untuk kedua chart
-  Widget legendWidget = vendors.isNotEmpty
+  // Widget legenda bersama untuk kedua chart (sekarang sudah komprehensif)
+  Widget legendWidget = seriesNames.isNotEmpty
       ? Wrap(
           spacing: 16,
           runSpacing: 8,
-          children: vendors.map((vendor) {
+          children: seriesNames.map((name) {
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
                   width: 12, height: 12,
-                  decoration: BoxDecoration(color: vendorColors[vendor], borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(color: seriesColors[name], borderRadius: BorderRadius.circular(4)),
                 ),
                 const SizedBox(width: 4),
-                Text(vendor, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300)),
+                Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300)),
               ],
             );
           }).toList(),
@@ -3843,34 +3220,33 @@ Widget _buildGroupedBarChartCard({
 
         // --- CHART ATAS (CLOSED) ---
         Text(
-          "Jumlah $itemType Closed",
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.black),
+          "Jumlah ${itemType == "by Project" ? "Panel" : itemType} Closed",
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.black),
         ),
         const SizedBox(height: 8),
         _buildBarChartItself(
           chartData: closedChartData,
-          colorMap: vendorColors,
+          colorMap: seriesColors,
           currentView: currentView,
         ),
-        
+
         const SizedBox(height: 24),
 
         // --- CHART BAWAH (WORK IN PROGRESS) ---
         Text(
-          "Jumlah $itemType Work In Progress",
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.black),
+          "Jumlah ${itemType == "by Project" ? "Panel" : itemType} Work In Progress",
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.black),
         ),
         const SizedBox(height: 8),
         _buildBarChartItself(
           chartData: wipChartData,
-          colorMap: vendorColors,
+          colorMap: seriesColors,
           currentView: currentView,
         ),
       ],
     ),
   );
 }
-  // --- Widget Skeleton (tidak ada perubahan) ---
   Widget _buildSkeletonView() {
     return SingleChildScrollView(
       physics: const NeverScrollableScrollPhysics(),
@@ -3956,49 +3332,49 @@ Widget _buildGroupedBarChartCard({
     );
   }
   BarTooltipItem? _getTooltipWithComparison(
-    BarChartGroupData group,
-    int groupIndex,
-    BarChartRodData rod,
-    int rodIndex,
-    Map<String, Map<String, int>> chartData,
-    List<String> seriesNames, // Ini bisa berupa 'vendors' atau 'projects'
-  ) {
-    // Jangan tampilkan tooltip untuk bar yang nilainya nol
-    if (rod.toY.round() == 0) return null;
+  BarChartGroupData group,
+  int groupIndex,
+  BarChartRodData rod,
+  int rodIndex,
+  Map<String, Map<String, int>> chartData,
+  List<String> seriesNames, // Ini bisa berupa 'vendors' atau 'projects'
+) {
+  // Jangan tampilkan tooltip untuk bar yang nilainya nol
+  if (rod.toY.round() == 0) return null;
 
-    final currentValue = rod.toY.round();
-    String tooltipText = '$currentValue';
+  final currentValue = rod.toY.round();
+  String tooltipText = '$currentValue';
 
-    // Lakukan perbandingan hanya jika ini bukan grup data pertama (indeks > 0)
-    if (groupIndex > 0) {
-      // Ambil key dari grup data sebelumnya (misal: "Sep 2025")
-      final previousGroupKey = chartData.keys.elementAt(groupIndex - 1);
-      final previousGroupData = chartData[previousGroupKey];
+  // Lakukan perbandingan hanya jika ini bukan grup data pertama (indeks > 0)
+  if (groupIndex > 0) {
+    // Ambil key dari grup data sebelumnya (misal: "Sep 2025")
+    final previousGroupKey = chartData.keys.elementAt(groupIndex - 1);
+    final previousGroupData = chartData[previousGroupKey];
 
-      // Ambil nama dari seri data saat ini (misal: "ABACUS" atau nama project)
-      final seriesName = seriesNames[rodIndex];
+    // Ambil nama dari seri data saat ini (misal: "ABACUS" atau nama project)
+    final seriesName = seriesNames[rodIndex];
 
-      // Ambil nilai dari seri yang sama pada periode sebelumnya, default ke 0 jika tidak ada
-      final previousValue = previousGroupData?[seriesName] ?? 0;
+    // Ambil nilai dari seri yang sama pada periode sebelumnya, default ke 0 jika tidak ada
+    final previousValue = previousGroupData?[seriesName] ?? 0;
 
-      final diff = currentValue - previousValue;
+    final diff = currentValue - previousValue;
 
-      // Format teks perubahan berdasarkan nilai perbedaan (diff)
-      if (diff > 0) {
-        tooltipText += ' (+${diff})'; // Hasil: 20 (+2)
-      } else if (diff < 0) {
-        tooltipText += ' (${diff})'; // Hasil: 18 (-2)
-      }
-      // Jika tidak ada perubahan (diff == 0), kita tidak menambahkan apa-apa
+    // Format teks perubahan berdasarkan nilai perbedaan (diff)
+    if (diff > 0) {
+      tooltipText += ' (+${diff})'; // Hasil: 20 (+2)
+    } else if (diff < 0) {
+      tooltipText += ' (${diff})'; // Hasil: 18 (-2)
     }
-
-    return BarTooltipItem(
-      tooltipText,
-      const TextStyle(
-        color: AppColors.black,
-        fontWeight: FontWeight.w500, // Sedikit tebalkan agar mudah dibaca
-        fontSize: 12, // Sedikit kecilkan agar muat
-      ),
-    );
+    // Jika tidak ada perubahan (diff == 0), kita tidak menambahkan apa-apa
   }
+
+  return BarTooltipItem(
+    tooltipText,
+    const TextStyle(
+      color: AppColors.black,
+      fontWeight: FontWeight.w500, // Sedikit tebalkan agar mudah dibaca
+      fontSize: 12, // Sedikit kecilkan agar muat
+    ),
+  );
+}
 }
