@@ -2016,6 +2016,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       )
     ];
 
+
     Widget buildDropdown<T>({
       required T value,
       required List<DropdownMenuItem<T>> items,
@@ -2124,6 +2125,22 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     hint: 'Periode',
                     onChanged: (val) {
                         setState(() => _selectedQuartile = val);
+                    },
+                ),
+            ],
+        );
+    }
+    else if (currentView == ChartTimeView.yearly) {
+        return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+                // Tahun (tidak berubah)
+                buildDropdown<int>(
+                    value: _selectedYear,
+                    items: yearItems,
+                    hint: 'Tahun',
+                    onChanged: (val) {
+                        if (val != null) setState(() => _selectedYear = val);
                     },
                 ),
             ],
