@@ -90,11 +90,12 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Map<String, dynamic> _busbarChartData = {};
   Map<String, dynamic> _projectChartData = {};
 
-  // --- BARU: State untuk filter dropdown di chart ---
-  int _selectedYear = DateTime.now().year;
+  // --- State untuk filter dropdown di chart ---
+  int _selectedYear = DateTime.now().year; // Untuk filter Daily & Monthly
+  List<int> _selectedYears = [DateTime.now().year]; // BARU: Untuk filter Yearly (multi-select)
   int _selectedMonth = DateTime.now().month;
   int? _selectedWeek; // Bisa null, artinya "semua minggu"
-  int? _selectedQuartile = (DateTime.now().month / 3).ceil(); // Diubah menjadi nullable
+  int? _selectedQuartile = (DateTime.now().month / 3).ceil();
 
   // --- State untuk filter (tidak ada perubahan di sini) ---
   List<String> searchChips = [];
@@ -190,6 +191,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       view: _panelChartView,
       allPossibleVendors: allPanelVendorNames,
       year: _selectedYear,
+      years: _selectedYears, // Mengirim list tahun
       month: _selectedMonth,
       week: _selectedWeek,
       quartile: _selectedQuartile,
@@ -209,6 +211,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       view: _busbarChartView,
       allPossibleVendors: allBusbarVendorNames,
       year: _selectedYear,
+      years: _selectedYears, // Mengirim list tahun
       month: _selectedMonth,
       week: _selectedWeek,
       quartile: _selectedQuartile,
@@ -218,6 +221,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       panelsToDisplay,
       view: _projectChartView,
       year: _selectedYear,
+      years: _selectedYears, // Mengirim list tahun
       month: _selectedMonth,
       week: _selectedWeek,
       quartile: _selectedQuartile,
@@ -1327,9 +1331,9 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return LayoutBuilder(
       builder: (context, constraints) {
         final int crossAxisCount = (constraints.maxWidth / 500).floor().clamp(
-                2,
-                4,
-              );
+              2,
+              4,
+            );
 
         return GridView.builder(
           padding: const EdgeInsets.fromLTRB(0, 12, 0, 100),
@@ -1478,6 +1482,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required List<String> allPossibleVendors,
     // --- BARU: parameter filter ---
     required int year,
+    required List<int> years, // Diubah
     required int month,
     int? week,
     int? quartile,
@@ -1485,8 +1490,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final Map<String, Map<String, int>> counts = {};
     late DateTimeRange displayRange;
     late DateFormat keyFormat;
-    late int limit;
-    final now = DateTime.now();
 
     switch (view) {
       case ChartTimeView.daily:
@@ -1524,19 +1527,28 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         break;
       case ChartTimeView.yearly:
         keyFormat = DateFormat('yyyy');
-        displayRange = DateTimeRange(
-          start: DateTime(now.year - 4, 1, 1),
-          end: DateTime(now.year, 12, 31),
-        );
-        limit = 5;
+        // displayRange tidak digunakan untuk filtering yearly, tapi bisa untuk referensi
+        if (years.isEmpty) {
+          displayRange = DateTimeRange(start: DateTime.now(), end: DateTime.now());
+        } else {
+          years.sort();
+          displayRange = DateTimeRange(start: DateTime(years.first, 1, 1), end: DateTime(years.last, 12, 31));
+        }
         break;
     }
 
     final relevantPanels = panels.where(
-      (data) =>
-          data.panel.closedDate != null &&
-          !data.panel.closedDate!.isBefore(displayRange.start) &&
-          !data.panel.closedDate!.isAfter(displayRange.end.add(const Duration(days: 1))),
+      (data) {
+        if (data.panel.closedDate == null) return false;
+        
+        if (view == ChartTimeView.yearly) {
+          return years.contains(data.panel.closedDate!.year);
+        }
+
+        // Logic untuk daily/monthly
+        return !data.panel.closedDate!.isBefore(displayRange.start) &&
+               !data.panel.closedDate!.isAfter(displayRange.end.add(const Duration(days: 1)));
+      }
     );
 
     for (var data in relevantPanels) {
@@ -1572,8 +1584,9 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           }
       }
     } else { // Yearly
-      for (int i = 0; i < limit; i++) {
-        allKeys.add(keyFormat.format(DateTime(now.year - (limit - 1) + i)));
+      years.sort();
+      for (final yearValue in years) {
+        allKeys.add(yearValue.toString());
       }
     }
 
@@ -1584,15 +1597,19 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final sortedKeys = counts.keys.toList()
       ..sort((a, b) {
         try {
+          // Parsing 'MMM' (Jan, Feb, etc.) without a year requires a base date
+          if (view == ChartTimeView.monthly && quartile == null) {
+              final dateA = DateFormat('MMM', 'id_ID').parse(a);
+              final dateB = DateFormat('MMM', 'id_ID').parse(b);
+              return dateA.month.compareTo(dateB.month);
+          }
           return keyFormat.parse(a).compareTo(keyFormat.parse(b));
         } catch (e) {
           return a.compareTo(b);
         }
       });
 
-    final finalKeys = (view == ChartTimeView.yearly && sortedKeys.length > limit)
-        ? sortedKeys.sublist(sortedKeys.length - limit)
-        : sortedKeys;
+    final finalKeys = sortedKeys;
 
     final sortedMap = {for (var k in finalKeys) k: counts[k]!};
     final sortedVendors = allPossibleVendors..sort();
@@ -1604,6 +1621,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required ChartTimeView view,
     // --- BARU: parameter filter ---
     required int year,
+    required List<int> years, // Diubah
     required int month,
     int? week,
     int? quartile,
@@ -1611,9 +1629,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final Map<String, Map<String, int>> counts = {};
     late DateTimeRange displayRange;
     late DateFormat keyFormat;
-    late int limit;
-    final now = DateTime.now();
-
+    
     // --- BARU: Logika penentuan rentang waktu disamakan dengan _calculateDeliveryByTime ---
     switch (view) {
       case ChartTimeView.daily:
@@ -1649,19 +1665,27 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         break;
       case ChartTimeView.yearly:
         keyFormat = DateFormat('yyyy');
-        displayRange = DateTimeRange(
-          start: DateTime(now.year - 4, 1, 1),
-          end: DateTime(now.year, 12, 31),
-        );
-        limit = 5;
+        if (years.isEmpty) {
+          displayRange = DateTimeRange(start: DateTime.now(), end: DateTime.now());
+        } else {
+          years.sort();
+          displayRange = DateTimeRange(start: DateTime(years.first, 1, 1), end: DateTime(years.last, 12, 31));
+        }
         break;
     }
 
     final relevantPanels = panels.where(
-      (data) =>
-          data.panel.closedDate != null &&
-          !data.panel.closedDate!.isBefore(displayRange.start) &&
-          !data.panel.closedDate!.isAfter(displayRange.end.add(const Duration(days: 1))),
+       (data) {
+        if (data.panel.closedDate == null) return false;
+        
+        if (view == ChartTimeView.yearly) {
+          return years.contains(data.panel.closedDate!.year);
+        }
+
+        // Logic untuk daily/monthly
+        return !data.panel.closedDate!.isBefore(displayRange.start) &&
+               !data.panel.closedDate!.isAfter(displayRange.end.add(const Duration(days: 1)));
+      }
     );
 
     final allPossibleProjects = relevantPanels
@@ -1713,8 +1737,9 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             }
         }
     } else { // Yearly
-      for (int i = 0; i < limit; i++) {
-        allKeys.add(keyFormat.format(DateTime(now.year - (limit - 1) + i)));
+      years.sort();
+      for (final yearValue in years) {
+        allKeys.add(yearValue.toString());
       }
     }
 
@@ -1725,15 +1750,18 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final sortedKeys = counts.keys.toList()
       ..sort((a, b) {
         try {
+          if (view == ChartTimeView.monthly && quartile == null) {
+              final dateA = DateFormat('MMM', 'id_ID').parse(a);
+              final dateB = DateFormat('MMM', 'id_ID').parse(b);
+              return dateA.month.compareTo(dateB.month);
+          }
           return keyFormat.parse(a).compareTo(keyFormat.parse(b));
         } catch (e) {
           return a.compareTo(b);
         }
       });
-
-    final finalKeys = (view == ChartTimeView.yearly && sortedKeys.length > limit)
-        ? sortedKeys.sublist(sortedKeys.length - limit)
-        : sortedKeys;
+      
+    final finalKeys = sortedKeys;
 
     final sortedMap = {for (var k in finalKeys) k: counts[k]!};
     final sortedProjects = allPossibleProjects..sort();
@@ -2111,7 +2139,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         // Item baru untuk "Semua Bulan"
                         DropdownMenuItem<int?>(
                             value: null, // 'null' merepresentasikan "Semua Bulan"
-                            child: Text("All Week", style: dropdownStyle),
+                            child: Text("All Month", style: dropdownStyle),
                         ),
                         // Item untuk Kuartal 1-4
                         ...List.generate(
@@ -2131,25 +2159,174 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         );
     }
     else if (currentView == ChartTimeView.yearly) {
-        return Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-                // Tahun (tidak berubah)
-                buildDropdown<int>(
-                    value: _selectedYear,
-                    items: yearItems,
-                    hint: 'Tahun',
-                    onChanged: (val) {
-                        if (val != null) setState(() => _selectedYear = val);
-                    },
-                ),
-            ],
-        );
+      // Tampilan Yearly sekarang menggunakan multi-select
+      return _buildYearMultiSelect();
     }
 
-    return const SizedBox.shrink(); // Tampilan yearly tidak punya dropdown
+    return const SizedBox.shrink();
   }
 
+  // == PERUBAHAN: DARI DIALOG MENJADI BOTTOM SHEET DENGAN SELECT ALL ==
+  void _showYearMultiSelectBottomSheet() {
+    final availableYears =
+        List.generate(10, (index) => DateTime.now().year - index);
+    final List<int> tempSelectedYears = List.from(_selectedYears);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setSheetState) {
+            final bool isAllSelected =
+                Set.from(tempSelectedYears).containsAll(availableYears);
+
+            return Container(
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.only(topRight: Radius.circular(12), topLeft: Radius.circular(12))),
+              child: Padding(
+                padding: EdgeInsets.only(
+                  top: 16,
+                  left: 16,
+                  right: 16,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Select Years',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setSheetState(() {
+                              if (isAllSelected) {
+                                tempSelectedYears.clear();
+                              } else {
+                                tempSelectedYears.clear();
+                                tempSelectedYears.addAll(availableYears);
+                              }
+                            });
+                          },
+                          child: Text(isAllSelected ? 'Unselect All' : 'Select All', style: TextStyle(color: AppColors.schneiderGreen),),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    SizedBox(
+                      height: (availableYears.length * 52.0).clamp(0, 300.0),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: availableYears.length,
+                        itemBuilder: (context, index) {
+                          final year = availableYears[index];
+                          return CheckboxListTile(
+                              shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8), 
+                            ),
+                            controlAffinity: ListTileControlAffinity.leading,
+                            title: Text(year.toString(), style: TextStyle(fontWeight: FontWeight.w300),),
+                            value: tempSelectedYears.contains(year),
+                            activeColor: AppColors.schneiderGreen,
+                            checkColor: Colors.white,
+                            onChanged: (bool? value) {
+                              setSheetState(() {
+                                if (value == true) {
+                                  tempSelectedYears.add(year);
+                                } else {
+                                  tempSelectedYears.remove(year);
+                                }
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.schneiderGreen,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text('Apply', style: TextStyle(fontSize: 12),),
+                      onPressed: () {
+                        setState(() {
+                          _selectedYears = tempSelectedYears;
+                          if (_selectedYears.isEmpty) {
+                            _selectedYears.add(DateTime.now().year);
+                          }
+                        });
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // == WIDGET BARU: Tombol untuk membuka dialog multi-select ==
+  Widget _buildYearMultiSelect() {
+    final dropdownStyle = TextStyle(
+      fontSize: 12,
+      color: Colors.grey[700],
+      fontWeight: FontWeight.w400,
+    );
+
+    _selectedYears.sort((a,b) => b.compareTo(a)); // Tampilkan dari tahun terbaru
+    String displayText = _selectedYears.join(', ');
+    if (displayText.isEmpty) {
+      displayText = "Select Years";
+    }
+
+    return InkWell(
+      onTap: _showYearMultiSelectBottomSheet, // DIUBAH ke bottom sheet
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        height: 30,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: AppColors.grayLight),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                displayText, 
+                style: dropdownStyle, 
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.keyboard_arrow_down, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
 
   // --- WIDGET HELPER BARU: HANYA UNTUK KONTEN CHART PROJECT ---
   Widget _buildProjectBarChartItself({

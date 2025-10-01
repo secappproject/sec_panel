@@ -289,7 +289,8 @@ class PanelProgressCard extends StatelessWidget {
   }
   Widget _buildPanelPosition() {
     // Tentukan status default jika null atau kosong
-    final status = statusPenyelesaian ?? 'VendorWarehouse';
+    // final status = statusPenyelesaian ?? 'VendorWarehouse';
+    final status = statusPenyelesaian ?? 'Warehouse';
     String positionText;
     String iconPath;
 
@@ -310,12 +311,14 @@ class PanelProgressCard extends StatelessWidget {
       case 'VendorWarehouse':
       default:
         // Gabungkan nama vendor dan warehouse
-        List<String> locations = [];
-        if (panelVendorName.isNotEmpty) locations.add(panelVendorName);
-        if (componentVendorName.isNotEmpty) locations.add(componentVendorName);
+        // List<String> locations = [];
+        // if (panelVendorName.isNotEmpty) locations.add(panelVendorName);
+        // if (componentVendorName.isNotEmpty) locations.add(componentVendorName);
 
-        positionText = locations.isEmpty ? 'Vendor/WHS' : locations.join(' & ');
-        iconPath = 'assets/images/vendor.png';
+        // positionText = locations.isEmpty ? 'Vendor/WHS' : locations.join(' & ');
+
+        positionText = 'Warehouse';
+        iconPath = 'assets/images/warehouse.png';
         break;
     }
 
@@ -326,8 +329,8 @@ class PanelProgressCard extends StatelessWidget {
         Text(
           positionText,
           style: const TextStyle(
-            color: AppColors.gray,
-            fontWeight: FontWeight.w300,
+            color: AppColors.black,
+            fontWeight: FontWeight.w400,
             fontSize: 11,
           ),
           overflow: TextOverflow.ellipsis,
@@ -455,6 +458,22 @@ class PanelProgressCard extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                           const Text(
+                            "Position:",
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w300, color: AppColors.gray),
+                          ),
+                          SizedBox(width: 8,),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: _buildPanelPosition(),
+                          ),
+                        ],
+                      ),
+                          
+                          SizedBox(height: 8,),
                           Row(
                             children: [
                               Container(
@@ -486,21 +505,6 @@ class PanelProgressCard extends StatelessWidget {
                               ),
                             ],
                           ),
-                          SizedBox(height: 8,),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                           const Text(
-                            "Position:",
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w300, color: AppColors.gray),
-                          ),
-                          SizedBox(width: 8,),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: _buildPanelPosition(),
-                          ),
-                        ],
-                      ),
                         ],
                       ),
                       // const SizedBox(height: 4),
