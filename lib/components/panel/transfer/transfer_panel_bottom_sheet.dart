@@ -839,11 +839,11 @@ Widget _buildConfirmFatView() {
         .where((s) => s.positionCode.startsWith('Cell $rowNum-'))
         .toList();
     
-    capacity = slotsInThisRow.length; // Kapasitas cell ini (seharusnya 8)
+    capacity = 8; // Kapasitas cell ini (seharusnya 8)
     if (capacity > 0) {
       // Hitung slot terisi di cell ini SEBELUM transfer
       final occupiedBefore = slotsInThisRow.where((s) => s.isOccupied).length;
-      availableBefore = capacity - occupiedBefore;
+      availableBefore =  capacity - occupiedBefore;
       // Setelah transfer, slot tersedia akan bertambah 1
       availableAfter = availableBefore + 1;
     }
