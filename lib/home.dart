@@ -71,6 +71,7 @@ enum ChartTimeView { daily, monthly, yearly }
 class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late final TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
+  
 
   List<PanelDisplayData> _allPanelsData = [];
   List<Company> _allK3Vendors = [];
@@ -89,6 +90,9 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Map<String, dynamic> _panelChartData = {};
   Map<String, dynamic> _busbarChartData = {};
   Map<String, dynamic> _projectChartData = {};
+  Map<String, dynamic> _panelWipChartData = {};
+  Map<String, dynamic> _busbarWipChartData = {};
+  Map<String, dynamic> _projectWipChartData = {};
 
   // --- State untuk filter dropdown di chart ---
   int _selectedYear = DateTime.now().year; // Untuk filter Daily & Monthly
@@ -164,70 +168,109 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+  // GANTI SELURUH FUNGSI INI
+void _prepareChartData() {
+  final panelsToDisplay = filteredPanelsForDisplay;
 
-  void _prepareChartData() {
-    final panelsToDisplay = filteredPanelsForDisplay;
+  final allPanelVendorNames = _allK3Vendors.map((v) => v.name).toList();
+  final allBusbarVendorNames = _allK5Vendors.map((v) => v.name).toList();
 
-    final allPanelVendorNames = _allK3Vendors.map((v) => v.name).toList();
-    final allBusbarVendorNames = _allK5Vendors.map((v) => v.name).toList();
-
-    if (panelsToDisplay.any((p) => p.panelVendorName.isEmpty)) {
-      if (!allPanelVendorNames.contains("No Vendor")) {
-        allPanelVendorNames.add("No Vendor");
-      }
+  if (panelsToDisplay.any((p) => p.panelVendorName.isEmpty)) {
+    if (!allPanelVendorNames.contains("No Vendor")) {
+      allPanelVendorNames.add("No Vendor");
     }
-    if (panelsToDisplay.any((p) => p.busbarVendorNames.isEmpty)) {
-      if (!allBusbarVendorNames.contains("No Vendor")) {
-        allBusbarVendorNames.add("No Vendor");
-      }
+  }
+  if (panelsToDisplay.any((p) => p.busbarVendorNames.isEmpty)) {
+    if (!allBusbarVendorNames.contains("No Vendor")) {
+      allBusbarVendorNames.add("No Vendor");
     }
+  }
 
-    // --- BARU: Mengirim state filter ke fungsi kalkulasi ---
-    _panelChartData = _calculateDeliveryByTime(
-      panelsToDisplay,
-      (data) => [
-        data.panelVendorName.isNotEmpty ? data.panelVendorName : "No Vendor",
-      ],
-      view: _panelChartView,
-      allPossibleVendors: allPanelVendorNames,
-      year: _selectedYear,
-      years: _selectedYears, // Mengirim list tahun
-      month: _selectedMonth,
-      week: _selectedWeek,
-      quartile: _selectedQuartile,
-    );
+  // Kalkulasi untuk Panel (Tidak Berubah)
+  _panelChartData = _calculateDeliveryByTime(
+    panelsToDisplay,
+    (data) => [
+      data.panelVendorName.isNotEmpty ? data.panelVendorName : "No Vendor",
+    ],
+    view: _panelChartView,
+    allPossibleVendors: allPanelVendorNames,
+    year: _selectedYear,
+    years: _selectedYears,
+    month: _selectedMonth,
+    week: _selectedWeek,
+    quartile: _selectedQuartile,
+  );
+  _panelWipChartData = _calculateWipByTime(
+    panelsToDisplay,
+    (data) => [
+      data.panelVendorName.isNotEmpty ? data.panelVendorName : "No Vendor",
+    ],
+    view: _panelChartView,
+    allPossibleVendors: allPanelVendorNames,
+    year: _selectedYear,
+    years: _selectedYears,
+    month: _selectedMonth,
+    week: _selectedWeek,
+    quartile: _selectedQuartile,
+  );
 
-    _busbarChartData = _calculateDeliveryByTime(
-      panelsToDisplay,
-      (data) {
-        if (data.busbarVendorNames.isNotEmpty) {
-          return data.busbarVendorNames
-              .split(',')
-              .map((e) => e.trim())
-              .toList();
-        }
-        return ["No Vendor"];
-      },
-      view: _busbarChartView,
-      allPossibleVendors: allBusbarVendorNames,
-      year: _selectedYear,
-      years: _selectedYears, // Mengirim list tahun
-      month: _selectedMonth,
-      week: _selectedWeek,
-      quartile: _selectedQuartile,
-    );
+  // ### PERUBAHAN: Gunakan fungsi baru yang spesifik untuk Busbar ###
+  _busbarChartData = _calculateBusbarDeliveryByTime( // <--- GANTI DI SINI
+    panelsToDisplay,
+    (data) {
+      if (data.busbarVendorNames.isNotEmpty) {
+        return data.busbarVendorNames.split(',').map((e) => e.trim()).toList();
+      }
+      return ["No Vendor"];
+    },
+    view: _busbarChartView,
+    allPossibleVendors: allBusbarVendorNames,
+    year: _selectedYear,
+    years: _selectedYears,
+    month: _selectedMonth,
+    week: _selectedWeek,
+    quartile: _selectedQuartile,
+  );
+  
+  _busbarWipChartData = _calculateBusbarWipByTime( // <--- DAN DI SINI
+    panelsToDisplay,
+    (data) {
+      if (data.busbarVendorNames.isNotEmpty) {
+        return data.busbarVendorNames.split(',').map((e) => e.trim()).toList();
+      }
+      return ["No Vendor"];
+    },
+    view: _busbarChartView,
+    allPossibleVendors: allBusbarVendorNames,
+    year: _selectedYear,
+    years: _selectedYears,
+    month: _selectedMonth,
+    week: _selectedWeek,
+    quartile: _selectedQuartile,
+  );
+  // ### AKHIR PERUBAHAN ###
 
-    _projectChartData = _calculateDeliveryByProject(
+
+  // Kalkulasi untuk Project (Tidak Berubah)
+  _projectChartData = _calculateDeliveryByProject(
       panelsToDisplay,
       view: _projectChartView,
       year: _selectedYear,
-      years: _selectedYears, // Mengirim list tahun
+      years: _selectedYears,
       month: _selectedMonth,
       week: _selectedWeek,
       quartile: _selectedQuartile,
-    );
-  }
-
+  );
+  _projectWipChartData = _calculateWipByProject(
+    panelsToDisplay,
+    view: _projectChartView,
+    year: _selectedYear,
+    years: _selectedYears,
+    month: _selectedMonth,
+    week: _selectedWeek,
+    quartile: _selectedQuartile,
+  );
+}
   @override
   void dispose() {
     _tabController.dispose();
@@ -1474,148 +1517,769 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final days = lastDay.day + (firstDay.weekday - 1);
     return (days / 7).ceil();
   }
+  // ### GANTI FUNGSI INI DENGAN VERSI FINAL ###
+Map<String, dynamic> _calculateBusbarDeliveryByTime(
+  List<PanelDisplayData> panels,
+  List<String> Function(PanelDisplayData) getVendors, {
+  required ChartTimeView view,
+  required List<String> allPossibleVendors,
+  required int year,
+  required List<int> years,
+  required int month,
+  int? week,
+  int? quartile,
+}) {
+  final Map<String, Map<String, int>> counts = {};
+  late DateTimeRange displayRange;
+  late DateFormat keyFormat;
 
-  Map<String, dynamic> _calculateDeliveryByTime(
-    List<PanelDisplayData> panels,
-    List<String> Function(PanelDisplayData) getVendors, {
-    required ChartTimeView view,
-    required List<String> allPossibleVendors,
-    // --- BARU: parameter filter ---
-    required int year,
-    required List<int> years, // Diubah
-    required int month,
-    int? week,
-    int? quartile,
-  }) {
-    final Map<String, Map<String, int>> counts = {};
-    late DateTimeRange displayRange;
-    late DateFormat keyFormat;
-
-    switch (view) {
-      case ChartTimeView.daily:
-        keyFormat = DateFormat('E, d', 'id_ID'); // Format: Sen, 17
-        if (week != null) {
-          // Tampilkan 7 hari dalam minggu yang dipilih
-          final firstDayOfMonth = DateTime(year, month, 1);
-          final dayOfWeekOffset = (1 - firstDayOfMonth.weekday + 7) % 7;
-          final firstMonday = firstDayOfMonth.subtract(Duration(days: dayOfWeekOffset));
-          final startDate = firstMonday.add(Duration(days: (week - 1) * 7));
-          displayRange = DateTimeRange(start: startDate, end: startDate.add(const Duration(days: 6)));
-        } else {
-          // Tampilkan seluruh bulan
-          displayRange = DateTimeRange(
-            start: DateTime(year, month, 1),
-            end: DateTime(year, month + 1, 0),
-          );
-        }
-        break;
-      case ChartTimeView.monthly:
-        if (quartile == null) { // KONDISI BARU: Jika "Semua Bulan" dipilih
-            keyFormat = DateFormat('MMM', 'id_ID'); // Format: Jan, Feb, Mar
-            displayRange = DateTimeRange(
-              start: DateTime(year, 1, 1),
-              end: DateTime(year, 12, 31),
-            );
-        } else { // LOGIKA LAMA: Jika Kuartal dipilih
-            keyFormat = DateFormat('MMM yyyy', 'id_ID');
-            final startMonth = (quartile - 1) * 3 + 1;
-            displayRange = DateTimeRange(
-              start: DateTime(year, startMonth, 1),
-              end: DateTime(year, startMonth + 3, 0),
-            );
-        }
-        break;
-      case ChartTimeView.yearly:
-        keyFormat = DateFormat('yyyy');
-        // displayRange tidak digunakan untuk filtering yearly, tapi bisa untuk referensi
-        if (years.isEmpty) {
-          displayRange = DateTimeRange(start: DateTime.now(), end: DateTime.now());
-        } else {
-          years.sort();
-          displayRange = DateTimeRange(start: DateTime(years.first, 1, 1), end: DateTime(years.last, 12, 31));
-        }
-        break;
-    }
-
-    final relevantPanels = panels.where(
-      (data) {
-        if (data.panel.closedDate == null) return false;
-        
-        if (view == ChartTimeView.yearly) {
-          return years.contains(data.panel.closedDate!.year);
-        }
-
-        // Logic untuk daily/monthly
-        return !data.panel.closedDate!.isBefore(displayRange.start) &&
-               !data.panel.closedDate!.isAfter(displayRange.end.add(const Duration(days: 1)));
+  // Setup rentang waktu (tidak ada perubahan)
+  switch (view) {
+    case ChartTimeView.daily:
+      keyFormat = DateFormat('E, d', 'id_ID');
+      if (week != null) {
+        final firstDayOfMonth = DateTime(year, month, 1);
+        final dayOfWeekOffset = (1 - firstDayOfMonth.weekday + 7) % 7;
+        final firstMonday =
+            firstDayOfMonth.subtract(Duration(days: dayOfWeekOffset));
+        final startDate = firstMonday.add(Duration(days: (week - 1) * 7));
+        displayRange = DateTimeRange(
+            start: startDate, end: startDate.add(const Duration(days: 6)));
+      } else {
+        displayRange = DateTimeRange(
+          start: DateTime(year, month, 1),
+          end: DateTime(year, month + 1, 0),
+        );
       }
-    );
-
-    for (var data in relevantPanels) {
-      final date = data.panel.closedDate!;
-      final key = keyFormat.format(date);
-      final vendorsFromPanel = getVendors(data);
-      counts.putIfAbsent(key, () => {});
-      for (var vendor in vendorsFromPanel) {
-        if (vendor.isNotEmpty && allPossibleVendors.contains(vendor)) {
-          counts[key]![vendor] = (counts[key]![vendor] ?? 0) + 1;
-        }
+      break;
+    case ChartTimeView.monthly:
+      if (quartile == null) {
+        keyFormat = DateFormat('MMM', 'id_ID');
+        displayRange = DateTimeRange(
+          start: DateTime(year, 1, 1),
+          end: DateTime(year, 12, 31),
+        );
+      } else {
+        keyFormat = DateFormat('MMM yyyy', 'id_ID');
+        final startMonth = (quartile - 1) * 3 + 1;
+        displayRange = DateTimeRange(
+          start: DateTime(year, startMonth, 1),
+          end: DateTime(year, startMonth + 3, 0),
+        );
       }
-    }
-
-    // --- BARU: Pastikan semua label ada di chart ---
-    final allKeys = <String>{};
-    if (view == ChartTimeView.daily && week == null) { // Tampilkan semua tanggal di bulan
-      for (int i = 0; i < displayRange.duration.inDays + 1; i++) {
-        allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
+      break;
+    case ChartTimeView.yearly:
+      keyFormat = DateFormat('yyyy');
+      if (years.isEmpty) {
+        displayRange =
+            DateTimeRange(start: DateTime.now(), end: DateTime.now());
+      } else {
+        years.sort();
+        displayRange = DateTimeRange(
+            start: DateTime(years.first, 1, 1),
+            end: DateTime(years.last, 12, 31));
       }
-    } else if (view == ChartTimeView.daily && week != null) { // Tampilkan 7 hari di minggu
-        for (int i = 0; i < 7; i++) {
-        allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
-      }
-    } else if (view == ChartTimeView.monthly) { // Logika baru untuk label bulan/kuartal
-      if (quartile == null) { // Jika "Semua Bulan", buat label untuk 12 bulan
-          for (int i = 1; i <= 12; i++) {
-            allKeys.add(keyFormat.format(DateTime(year, i)));
-          }
-      } else { // Jika Kuartal, buat label untuk 3 bulan
-          for (int i = 0; i < 3; i++) {
-            allKeys.add(keyFormat.format(DateTime(year, (quartile - 1) * 3 + 1 + i)));
-          }
-      }
-    } else { // Yearly
-      years.sort();
-      for (final yearValue in years) {
-        allKeys.add(yearValue.toString());
-      }
-    }
-
-    for (final key in allKeys) {
-      counts.putIfAbsent(key, () => {});
-    }
-
-    final sortedKeys = counts.keys.toList()
-      ..sort((a, b) {
-        try {
-          // Parsing 'MMM' (Jan, Feb, etc.) without a year requires a base date
-          if (view == ChartTimeView.monthly && quartile == null) {
-              final dateA = DateFormat('MMM', 'id_ID').parse(a);
-              final dateB = DateFormat('MMM', 'id_ID').parse(b);
-              return dateA.month.compareTo(dateB.month);
-          }
-          return keyFormat.parse(a).compareTo(keyFormat.parse(b));
-        } catch (e) {
-          return a.compareTo(b);
-        }
-      });
-
-    final finalKeys = sortedKeys;
-
-    final sortedMap = {for (var k in finalKeys) k: counts[k]!};
-    final sortedVendors = allPossibleVendors..sort();
-    return {'data': sortedMap, 'vendors': sortedVendors};
+      break;
   }
 
+  // ### PERUBAHAN LOGIKA UTAMA ###
+  // Busbar dianggap "closed" HANYA JIKA statusnya 'Close'
+  final relevantPanels = panels.where((data) {
+      return (data.panel.statusBusbarPcc ?? '') == 'Close';
+  });
+  
+  for (var data in relevantPanels) {
+    // Gunakan startDate untuk menempatkan di timeline, karena closedDate diabaikan
+    final dateForChart = data.panel.startDate ?? DateTime.now();
+
+    // Cek apakah tanggal berada dalam rentang chart yang dipilih
+    bool isInDateRange = false;
+    if (view == ChartTimeView.yearly) {
+      if (years.contains(dateForChart.year)) {
+        isInDateRange = true;
+      }
+    } else {
+      if (!dateForChart.isBefore(displayRange.start) && !dateForChart.isAfter(displayRange.end.add(const Duration(days: 1)))) {
+        isInDateRange = true;
+      }
+    }
+
+    if (!isInDateRange) continue;
+
+    final key = keyFormat.format(dateForChart);
+    final vendorsFromPanel = getVendors(data);
+    counts.putIfAbsent(key, () => {});
+    for (var vendor in vendorsFromPanel) {
+      if (vendor.isNotEmpty && allPossibleVendors.contains(vendor)) {
+        counts[key]![vendor] = (counts[key]![vendor] ?? 0) + 1;
+      }
+    }
+  }
+
+  // Sisa kode di bawah ini tidak berubah
+  final allKeys = <String>{};
+  if (view == ChartTimeView.daily && week == null) {
+    for (int i = 0; i < displayRange.duration.inDays + 1; i++) {
+      allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
+    }
+  } else if (view == ChartTimeView.daily && week != null) {
+    for (int i = 0; i < 7; i++) {
+      allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
+    }
+  } else if (view == ChartTimeView.monthly) {
+    if (quartile == null) {
+      for (int i = 1; i <= 12; i++) {
+        allKeys.add(keyFormat.format(DateTime(year, i)));
+      }
+    } else {
+      for (int i = 0; i < 3; i++) {
+        allKeys
+            .add(keyFormat.format(DateTime(year, (quartile - 1) * 3 + 1 + i)));
+      }
+    }
+  } else {
+    years.sort();
+    for (final yearValue in years) {
+      allKeys.add(yearValue.toString());
+    }
+  }
+
+  for (final key in allKeys) {
+    counts.putIfAbsent(key, () => {});
+  }
+
+  final sortedKeys = counts.keys.toList()
+    ..sort((a, b) {
+      try {
+        if (view == ChartTimeView.monthly && quartile == null) {
+          final dateA = DateFormat('MMM', 'id_ID').parse(a);
+          final dateB = DateFormat('MMM', 'id_ID').parse(b);
+          return dateA.month.compareTo(dateB.month);
+        }
+        if (view == ChartTimeView.yearly) {
+          return a.compareTo(b);
+        }
+        return keyFormat.parse(a).compareTo(keyFormat.parse(b));
+      } catch (e) {
+        return a.compareTo(b);
+      }
+    });
+
+  final finalKeys = sortedKeys;
+  final sortedMap = {for (var k in finalKeys) k: counts[k]!};
+  final sortedVendors = allPossibleVendors..sort();
+  return {'data': sortedMap, 'vendors': sortedVendors};
+}
+
+
+// ### GANTI FUNGSI INI DENGAN VERSI FINAL ###
+Map<String, dynamic> _calculateBusbarWipByTime(
+  List<PanelDisplayData> panels,
+  List<String> Function(PanelDisplayData) getVendors, {
+  required ChartTimeView view,
+  required List<String> allPossibleVendors,
+  required int year,
+  required List<int> years,
+  required int month,
+  int? week,
+  int? quartile,
+}) {
+  final Map<String, Map<String, int>> counts = {};
+  late DateTimeRange displayRange;
+  late DateFormat keyFormat;
+
+  // Setup rentang waktu (tidak ada perubahan)
+  switch (view) {
+    case ChartTimeView.daily:
+      keyFormat = DateFormat('E, d', 'id_ID');
+      if (week != null) {
+        final firstDayOfMonth = DateTime(year, month, 1);
+        final dayOfWeekOffset = (1 - firstDayOfMonth.weekday + 7) % 7;
+        final firstMonday =
+            firstDayOfMonth.subtract(Duration(days: dayOfWeekOffset));
+        final startDate = firstMonday.add(Duration(days: (week - 1) * 7));
+        displayRange = DateTimeRange(
+            start: startDate, end: startDate.add(const Duration(days: 6)));
+      } else {
+        displayRange = DateTimeRange(
+          start: DateTime(year, month, 1),
+          end: DateTime(year, month + 1, 0),
+        );
+      }
+      break;
+    case ChartTimeView.monthly:
+      if (quartile == null) {
+        keyFormat = DateFormat('MMM', 'id_ID');
+        displayRange = DateTimeRange(
+          start: DateTime(year, 1, 1),
+          end: DateTime(year, 12, 31),
+        );
+      } else {
+        keyFormat = DateFormat('MMM yyyy', 'id_ID');
+        final startMonth = (quartile - 1) * 3 + 1;
+        displayRange = DateTimeRange(
+          start: DateTime(year, startMonth, 1),
+          end: DateTime(year, startMonth + 3, 0),
+        );
+      }
+      break;
+    case ChartTimeView.yearly:
+      keyFormat = DateFormat('yyyy');
+      if (years.isEmpty) {
+        displayRange = DateTimeRange(start: DateTime.now(), end: DateTime.now());
+      } else {
+        years.sort();
+        displayRange = DateTimeRange(
+            start: DateTime(years.first, 1, 1),
+            end: DateTime(years.last, 12, 31));
+      }
+      break;
+  }
+
+  // ### PERUBAHAN LOGIKA UTAMA ###
+  // Busbar dianggap WIP jika statusnya BUKAN 'Close'
+  final relevantPanels = panels.where((data) {
+    final status = data.panel.statusBusbarPcc ?? '';
+    return status != 'Close';
+  });
+  
+  for (var data in relevantPanels) {
+    // Gunakan startDate untuk menempatkan di timeline
+    final dateForChart = data.panel.startDate ?? DateTime.now();
+
+    bool isInDateRange = false;
+    if (view == ChartTimeView.yearly) {
+      if (years.contains(dateForChart.year)) {
+        isInDateRange = true;
+      }
+    } else {
+      if (!dateForChart.isBefore(displayRange.start) &&
+          !dateForChart.isAfter(displayRange.end.add(const Duration(days: 1)))) {
+        isInDateRange = true;
+      }
+    }
+    
+    if (!isInDateRange) continue;
+    
+    final key = keyFormat.format(dateForChart);
+    final vendorsFromPanel = getVendors(data);
+    counts.putIfAbsent(key, () => {});
+    for (var vendor in vendorsFromPanel) {
+      if (vendor.isNotEmpty && allPossibleVendors.contains(vendor)) {
+        counts[key]![vendor] = (counts[key]![vendor] ?? 0) + 1;
+      }
+    }
+  }
+
+  // Sisa kode di bawah ini tidak berubah
+  final allKeys = <String>{};
+  if (view == ChartTimeView.daily && week == null) {
+    for (int i = 0; i < displayRange.duration.inDays + 1; i++) {
+      allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
+    }
+  } else if (view == ChartTimeView.daily && week != null) {
+    for (int i = 0; i < 7; i++) {
+      allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
+    }
+  } else if (view == ChartTimeView.monthly) {
+    if (quartile == null) {
+      for (int i = 1; i <= 12; i++) {
+        allKeys.add(keyFormat.format(DateTime(year, i)));
+      }
+    } else {
+      for (int i = 0; i < 3; i++) {
+        allKeys.add(keyFormat.format(DateTime(year, (quartile - 1) * 3 + 1 + i)));
+      }
+    }
+  } else {
+    years.sort();
+    for (final yearValue in years) {
+      allKeys.add(yearValue.toString());
+    }
+  }
+
+  for (final key in allKeys) {
+    counts.putIfAbsent(key, () => {});
+  }
+
+  final sortedKeys = counts.keys.toList()
+    ..sort((a, b) {
+      try {
+        if (view == ChartTimeView.monthly && quartile == null) {
+          final dateA = DateFormat('MMM', 'id_ID').parse(a);
+          final dateB = DateFormat('MMM', 'id_ID').parse(b);
+          return dateA.month.compareTo(dateB.month);
+        }
+        return keyFormat.parse(a).compareTo(keyFormat.parse(b));
+      } catch (e) {
+        return a.compareTo(b);
+      }
+    });
+
+  final finalKeys = sortedKeys;
+  final sortedMap = {for (var k in finalKeys) k: counts[k]!};
+  final sortedVendors = allPossibleVendors..sort();
+  return {'data': sortedMap, 'vendors': sortedVendors};
+}
+Map<String, dynamic> _calculateWipByTime(
+  List<PanelDisplayData> panels,
+  List<String> Function(PanelDisplayData) getVendors, {
+  required ChartTimeView view,
+  required List<String> allPossibleVendors,
+  required int year,
+  required List<int> years,
+  required int month,
+  int? week,
+  int? quartile,
+}) {
+  final Map<String, Map<String, int>> counts = {};
+  late DateTimeRange displayRange;
+  late DateFormat keyFormat;
+
+  // Logika penentuan rentang waktu (displayRange) dan format (keyFormat)
+  // tidak ada perubahan, jadi kita biarkan.
+  switch (view) {
+    case ChartTimeView.daily:
+      keyFormat = DateFormat('E, d', 'id_ID');
+      if (week != null) {
+        final firstDayOfMonth = DateTime(year, month, 1);
+        final dayOfWeekOffset = (1 - firstDayOfMonth.weekday + 7) % 7;
+        final firstMonday =
+            firstDayOfMonth.subtract(Duration(days: dayOfWeekOffset));
+        final startDate = firstMonday.add(Duration(days: (week - 1) * 7));
+        displayRange = DateTimeRange(
+            start: startDate, end: startDate.add(const Duration(days: 6)));
+      } else {
+        displayRange = DateTimeRange(
+          start: DateTime(year, month, 1),
+          end: DateTime(year, month + 1, 0),
+        );
+      }
+      break;
+    case ChartTimeView.monthly:
+      if (quartile == null) {
+        keyFormat = DateFormat('MMM', 'id_ID');
+        displayRange = DateTimeRange(
+          start: DateTime(year, 1, 1),
+          end: DateTime(year, 12, 31),
+        );
+      } else {
+        keyFormat = DateFormat('MMM yyyy', 'id_ID');
+        final startMonth = (quartile - 1) * 3 + 1;
+        displayRange = DateTimeRange(
+          start: DateTime(year, startMonth, 1),
+          end: DateTime(year, startMonth + 3, 0),
+        );
+      }
+      break;
+    case ChartTimeView.yearly:
+      keyFormat = DateFormat('yyyy');
+      if (years.isEmpty) {
+        displayRange = DateTimeRange(start: DateTime.now(), end: DateTime.now());
+      } else {
+        years.sort();
+        displayRange = DateTimeRange(
+            start: DateTime(years.first, 1, 1),
+            end: DateTime(years.last, 12, 31));
+      }
+      break;
+  }
+
+  // ### PERUBAHAN UTAMA DIMULAI DARI SINI ###
+
+  // 1. (DIUBAH) Filter awal hanya untuk panel yang belum di-close.
+  final relevantPanels = panels.where((data) => !data.panel.isClosed);
+
+  for (var data in relevantPanels) {
+    // 2. (BARU) Tentukan tanggal untuk chart.
+    // Jika startDate ada, pakai itu. Jika tidak, pakai tanggal hari ini.
+    final dateForChart = data.panel.startDate ?? DateTime.now();
+
+    // 3. (BARU) Pindahkan filter waktu ke dalam loop.
+    // Cek apakah tanggal panel (baik dari startDate atau hari ini) masuk
+    // dalam rentang waktu yang dipilih di chart.
+    bool isInDateRange = false;
+    if (view == ChartTimeView.yearly) {
+      if (years.contains(dateForChart.year)) {
+        isInDateRange = true;
+      }
+    } else {
+      // Logika untuk daily/monthly
+      if (!dateForChart.isBefore(displayRange.start) &&
+          !dateForChart.isAfter(displayRange.end.add(const Duration(days: 1)))) {
+        isInDateRange = true;
+      }
+    }
+    
+    // Jika tanggalnya tidak masuk rentang, lewati panel ini dan lanjut ke berikutnya.
+    if (!isInDateRange) continue;
+    
+    // ### AKHIR PERUBAHAN UTAMA ###
+    
+    final key = keyFormat.format(dateForChart);
+    final vendorsFromPanel = getVendors(data);
+    counts.putIfAbsent(key, () => {});
+    for (var vendor in vendorsFromPanel) {
+      if (vendor.isNotEmpty && allPossibleVendors.contains(vendor)) {
+        counts[key]![vendor] = (counts[key]![vendor] ?? 0) + 1;
+      }
+    }
+  }
+
+  // Sisa kode di bawah ini tidak perlu diubah, biarkan saja.
+  final allKeys = <String>{};
+  if (view == ChartTimeView.daily && week == null) {
+    for (int i = 0; i < displayRange.duration.inDays + 1; i++) {
+      allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
+    }
+  } else if (view == ChartTimeView.daily && week != null) {
+    for (int i = 0; i < 7; i++) {
+      allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
+    }
+  } else if (view == ChartTimeView.monthly) {
+    if (quartile == null) {
+      for (int i = 1; i <= 12; i++) {
+        allKeys.add(keyFormat.format(DateTime(year, i)));
+      }
+    } else {
+      for (int i = 0; i < 3; i++) {
+        allKeys.add(keyFormat.format(DateTime(year, (quartile - 1) * 3 + 1 + i)));
+      }
+    }
+  } else {
+    years.sort();
+    for (final yearValue in years) {
+      allKeys.add(yearValue.toString());
+    }
+  }
+
+  for (final key in allKeys) {
+    counts.putIfAbsent(key, () => {});
+  }
+
+  final sortedKeys = counts.keys.toList()
+    ..sort((a, b) {
+      try {
+        if (view == ChartTimeView.monthly && quartile == null) {
+          final dateA = DateFormat('MMM', 'id_ID').parse(a);
+          final dateB = DateFormat('MMM', 'id_ID').parse(b);
+          return dateA.month.compareTo(dateB.month);
+        }
+        return keyFormat.parse(a).compareTo(keyFormat.parse(b));
+      } catch (e) {
+        return a.compareTo(b);
+      }
+    });
+
+  final finalKeys = sortedKeys;
+  final sortedMap = {for (var k in finalKeys) k: counts[k]!};
+  final sortedVendors = allPossibleVendors..sort();
+  return {'data': sortedMap, 'vendors': sortedVendors};
+}
+  Map<String, dynamic> _calculateDeliveryByTime(
+  List<PanelDisplayData> panels,
+  List<String> Function(PanelDisplayData) getVendors, {
+  required ChartTimeView view,
+  required List<String> allPossibleVendors,
+  required int year,
+  required List<int> years,
+  required int month,
+  int? week,
+  int? quartile,
+}) {
+  final Map<String, Map<String, int>> counts = {};
+  late DateTimeRange displayRange;
+  late DateFormat keyFormat;
+
+  switch (view) {
+    case ChartTimeView.daily:
+      keyFormat = DateFormat('E, d', 'id_ID');
+      if (week != null) {
+        final firstDayOfMonth = DateTime(year, month, 1);
+        final dayOfWeekOffset = (1 - firstDayOfMonth.weekday + 7) % 7;
+        final firstMonday =
+            firstDayOfMonth.subtract(Duration(days: dayOfWeekOffset));
+        final startDate = firstMonday.add(Duration(days: (week - 1) * 7));
+        displayRange = DateTimeRange(
+            start: startDate, end: startDate.add(const Duration(days: 6)));
+      } else {
+        displayRange = DateTimeRange(
+          start: DateTime(year, month, 1),
+          end: DateTime(year, month + 1, 0),
+        );
+      }
+      break;
+    case ChartTimeView.monthly:
+      if (quartile == null) {
+        keyFormat = DateFormat('MMM', 'id_ID');
+        displayRange = DateTimeRange(
+          start: DateTime(year, 1, 1),
+          end: DateTime(year, 12, 31),
+        );
+      } else {
+        keyFormat = DateFormat('MMM yyyy', 'id_ID');
+        final startMonth = (quartile - 1) * 3 + 1;
+        displayRange = DateTimeRange(
+          start: DateTime(year, startMonth, 1),
+          end: DateTime(year, startMonth + 3, 0),
+        );
+      }
+      break;
+    case ChartTimeView.yearly:
+      keyFormat = DateFormat('yyyy');
+      if (years.isEmpty) {
+        displayRange =
+            DateTimeRange(start: DateTime.now(), end: DateTime.now());
+      } else {
+        years.sort();
+        displayRange = DateTimeRange(
+            start: DateTime(years.first, 1, 1),
+            end: DateTime(years.last, 12, 31));
+      }
+      break;
+  }
+
+  // ============== BAGIAN PENTING YANG DIPERBAIKI ==============
+  final relevantPanels = panels.where((data) {
+    if (data.panel.closedDate == null) return false;
+
+    // Logika untuk Yearly View (Multi-select)
+    if (view == ChartTimeView.yearly) {
+      return years.contains(data.panel.closedDate!.year);
+    }
+
+    // Logika untuk Daily/Monthly View
+    return !data.panel.closedDate!.isBefore(displayRange.start) &&
+        !data.panel.closedDate!
+            .isAfter(displayRange.end.add(const Duration(days: 1)));
+  });
+  // ==========================================================
+
+  for (var data in relevantPanels) {
+    final date = data.panel.closedDate!;
+    final key = keyFormat.format(date);
+    final vendorsFromPanel = getVendors(data);
+    counts.putIfAbsent(key, () => {});
+    for (var vendor in vendorsFromPanel) {
+      if (vendor.isNotEmpty && allPossibleVendors.contains(vendor)) {
+        counts[key]![vendor] = (counts[key]![vendor] ?? 0) + 1;
+      }
+    }
+  }
+
+  final allKeys = <String>{};
+  if (view == ChartTimeView.daily && week == null) {
+    for (int i = 0; i < displayRange.duration.inDays + 1; i++) {
+      allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
+    }
+  } else if (view == ChartTimeView.daily && week != null) {
+    for (int i = 0; i < 7; i++) {
+      allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
+    }
+  } else if (view == ChartTimeView.monthly) {
+    if (quartile == null) {
+      for (int i = 1; i <= 12; i++) {
+        allKeys.add(keyFormat.format(DateTime(year, i)));
+      }
+    } else {
+      for (int i = 0; i < 3; i++) {
+        allKeys
+            .add(keyFormat.format(DateTime(year, (quartile - 1) * 3 + 1 + i)));
+      }
+    }
+  } else {
+    years.sort();
+    for (final yearValue in years) {
+      allKeys.add(yearValue.toString());
+    }
+  }
+
+  for (final key in allKeys) {
+    counts.putIfAbsent(key, () => {});
+  }
+
+  final sortedKeys = counts.keys.toList()
+    ..sort((a, b) {
+      try {
+        if (view == ChartTimeView.monthly && quartile == null) {
+          final dateA = DateFormat('MMM', 'id_ID').parse(a);
+          final dateB = DateFormat('MMM', 'id_ID').parse(b);
+          return dateA.month.compareTo(dateB.month);
+        }
+        // Perbaikan untuk sorting yearly
+        if (view == ChartTimeView.yearly) {
+          return a.compareTo(b);
+        }
+        return keyFormat.parse(a).compareTo(keyFormat.parse(b));
+      } catch (e) {
+        return a.compareTo(b);
+      }
+    });
+
+  final finalKeys = sortedKeys;
+
+  final sortedMap = {for (var k in finalKeys) k: counts[k]!};
+  final sortedVendors = allPossibleVendors..sort();
+  return {'data': sortedMap, 'vendors': sortedVendors};
+}
+
+// ### BARU: Tambahkan seluruh fungsi ini ###
+Map<String, dynamic> _calculateWipByProject(
+  List<PanelDisplayData> panels, {
+  required ChartTimeView view,
+  required int year,
+  required List<int> years,
+  required int month,
+  int? week,
+  int? quartile,
+}) {
+  final Map<String, Map<String, int>> counts = {};
+  late DateTimeRange displayRange;
+  late DateFormat keyFormat;
+
+  // Logika penentuan rentang waktu (sama seperti fungsi lainnya)
+  switch (view) {
+    case ChartTimeView.daily:
+      keyFormat = DateFormat('E, d', 'id_ID');
+      if (week != null) {
+        final firstDayOfMonth = DateTime(year, month, 1);
+        final dayOfWeekOffset = (1 - firstDayOfMonth.weekday + 7) % 7;
+        final firstMonday =
+            firstDayOfMonth.subtract(Duration(days: dayOfWeekOffset));
+        final startDate = firstMonday.add(Duration(days: (week - 1) * 7));
+        displayRange = DateTimeRange(
+            start: startDate, end: startDate.add(const Duration(days: 6)));
+      } else {
+        displayRange = DateTimeRange(
+          start: DateTime(year, month, 1),
+          end: DateTime(year, month + 1, 0),
+        );
+      }
+      break;
+    case ChartTimeView.monthly:
+      if (quartile == null) {
+        keyFormat = DateFormat('MMM', 'id_ID');
+        displayRange = DateTimeRange(
+          start: DateTime(year, 1, 1),
+          end: DateTime(year, 12, 31),
+        );
+      } else {
+        keyFormat = DateFormat('MMM yyyy', 'id_ID');
+        final startMonth = (quartile - 1) * 3 + 1;
+        displayRange = DateTimeRange(
+          start: DateTime(year, startMonth, 1),
+          end: DateTime(year, startMonth + 3, 0),
+        );
+      }
+      break;
+    case ChartTimeView.yearly:
+      keyFormat = DateFormat('yyyy');
+      if (years.isEmpty) {
+        displayRange =
+            DateTimeRange(start: DateTime.now(), end: DateTime.now());
+      } else {
+        years.sort();
+        displayRange = DateTimeRange(
+            start: DateTime(years.first, 1, 1),
+            end: DateTime(years.last, 12, 31));
+      }
+      break;
+  }
+
+  // Hanya filter panel yang belum closed
+  final relevantPanels = panels.where((data) => !data.panel.isClosed);
+  
+  // Kumpulkan semua nama project yang mungkin ada dari panel yang relevan
+  final allPossibleProjects = relevantPanels
+      .map((p) => p.panel.project?.trim() ?? '')
+      .map((name) => name.isEmpty ? "No Vendor" : name)
+      .toSet()
+      .toList();
+
+
+  for (var data in relevantPanels) {
+    // Gunakan startDate jika ada, jika tidak, gunakan tanggal hari ini
+    final dateForChart = data.panel.startDate ?? DateTime.now();
+
+    // Cek apakah tanggal panel masuk dalam rentang waktu chart
+    bool isInDateRange = false;
+    if (view == ChartTimeView.yearly) {
+      if (years.contains(dateForChart.year)) {
+        isInDateRange = true;
+      }
+    } else {
+      if (!dateForChart.isBefore(displayRange.start) &&
+          !dateForChart
+              .isAfter(displayRange.end.add(const Duration(days: 1)))) {
+        isInDateRange = true;
+      }
+    }
+
+    if (!isInDateRange) continue;
+
+    final key = keyFormat.format(dateForChart);
+    final projectName = data.panel.project?.trim();
+    final finalProjectName =
+        (projectName == null || projectName.isEmpty) ? "No Project" : projectName;
+
+    counts.putIfAbsent(key, () => {});
+    counts[key]![finalProjectName] = (counts[key]![finalProjectName] ?? 0) + 1;
+  }
+
+  // Sisa kode di bawah ini untuk memastikan semua label & urutan benar
+  final allKeys = <String>{};
+  if (view == ChartTimeView.daily && week == null) {
+    for (int i = 0; i < displayRange.duration.inDays + 1; i++) {
+      allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
+    }
+  } else if (view == ChartTimeView.daily && week != null) {
+    for (int i = 0; i < 7; i++) {
+      allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
+    }
+  } else if (view == ChartTimeView.monthly) {
+    if (quartile == null) {
+      for (int i = 1; i <= 12; i++) {
+        allKeys.add(keyFormat.format(DateTime(year, i)));
+      }
+    } else {
+      for (int i = 0; i < 3; i++) {
+        allKeys
+            .add(keyFormat.format(DateTime(year, (quartile - 1) * 3 + 1 + i)));
+      }
+    }
+  } else {
+    years.sort();
+    for (final yearValue in years) {
+      allKeys.add(yearValue.toString());
+    }
+  }
+
+  for (final key in allKeys) {
+    counts.putIfAbsent(key, () => {});
+  }
+
+  final sortedKeys = counts.keys.toList()
+    ..sort((a, b) {
+      try {
+        if (view == ChartTimeView.monthly && quartile == null) {
+          final dateA = DateFormat('MMM', 'id_ID').parse(a);
+          final dateB = DateFormat('MMM', 'id_ID').parse(b);
+          return dateA.month.compareTo(dateB.month);
+        }
+        if (view == ChartTimeView.yearly) {
+          return a.compareTo(b);
+        }
+        return keyFormat.parse(a).compareTo(keyFormat.parse(b));
+      } catch (e) {
+        return a.compareTo(b);
+      }
+    });
+
+  final finalKeys = sortedKeys;
+  final sortedMap = {for (var k in finalKeys) k: counts[k]!};
+  final sortedProjects = allPossibleProjects..sort();
+  return {'data': sortedMap, 'projects': sortedProjects};
+}
   Map<String, dynamic> _calculateDeliveryByProject(
     List<PanelDisplayData> panels, {
     required ChartTimeView view,
@@ -1865,42 +2529,46 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   children: [
                     Expanded(
                       child: _buildGroupedBarChartCard(
-                        title: "Delivered (Closed) Panel",
-                        chartData: _panelChartData,
-                        currentView: _panelChartView,
-                        onToggle: (newView) {
-                          setState(() {
-                            _panelChartView = newView;
-                          });
-                        },
-                      ),
-                    ),
+                      title: "Delivered & On-Progress Panel", // Judul baru yang lebih umum
+                      itemType: "Panel",
+                      closedChartData: _panelChartData,     // Data chart atas
+                      wipChartData: _panelWipChartData,       // Data chart bawah
+                      currentView: _panelChartView,
+                      onToggle: (newView) {
+                        setState(() {
+                          _panelChartView = newView;
+                        });
+                      },
+                    ),),
                     const SizedBox(width: 24),
                     Expanded(
                       child: _buildGroupedBarChartCard(
-                        title: "Delivered (Closed) Busbar",
-                        chartData: _busbarChartData,
-                        currentView: _busbarChartView,
-                        onToggle: (newView) {
-                          setState(() {
-                            _busbarChartView = newView;
-                          });
-                        },
-                      ),
+                    title: "Delivered & On-Progress Busbar",
+                      itemType: "Busbar",
+                      closedChartData: _busbarChartData,
+                      wipChartData: _busbarWipChartData, // Pastikan Anda sudah membuat ini
+                      currentView: _busbarChartView,
+                      onToggle: (newView) {
+                        setState(() {
+                          _busbarChartView = newView;
+                        });
+                      },
+                    ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-                _buildProjectSummaryCard(
-                  chartData: _projectChartData,
-                  summaryData: summaryList,
-                  currentView: _projectChartView,
-                  onToggle: (newView) {
-                    setState(() {
-                      _projectChartView = newView;
-                    });
-                  },
-                ),
+                // const SizedBox(height: 24),
+                // _buildProjectSummaryCard(
+                //   closedChartData: _projectChartData,
+                //   wipChartData: _projectWipChartData,
+                //   summaryData: summaryList,
+                //   currentView: _projectChartView,
+                //   onToggle: (newView) {
+                //     setState(() {
+                //       _projectChartView = newView;
+                //     });
+                //   },
+                // ),
               ],
             ),
           );
@@ -1911,9 +2579,12 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                  // Ganti panggilan untuk Panel
                 _buildGroupedBarChartCard(
-                  title: "Delivered (Closed) Panel",
-                  chartData: _panelChartData,
+                  title: "Delivered & On-Progress Panel", // Judul baru yang lebih umum
+                  itemType: "Panel",
+                  closedChartData: _panelChartData,     // Data chart atas
+                  wipChartData: _panelWipChartData,       // Data chart bawah
                   currentView: _panelChartView,
                   onToggle: (newView) {
                     setState(() {
@@ -1923,26 +2594,29 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 24),
                 _buildGroupedBarChartCard(
-                  title: "Delivered (Closed) Busbar",
-                  chartData: _busbarChartData,
-                  currentView: _busbarChartView,
-                  onToggle: (newView) {
-                    setState(() {
-                      _busbarChartView = newView;
-                    });
-                  },
-                ),
-                const SizedBox(height: 24),
-                _buildProjectSummaryCard(
-                  chartData: _projectChartData,
-                  summaryData: summaryList,
-                  currentView: _projectChartView,
-                  onToggle: (newView) {
-                    setState(() {
-                      _projectChartView = newView;
-                    });
-                  },
-                ),
+                title: "Delivered & On-Progress Busbar",
+                itemType: "Busbar",
+                closedChartData: _busbarChartData,
+                wipChartData: _busbarWipChartData, // Pastikan Anda sudah membuat ini
+                currentView: _busbarChartView,
+                onToggle: (newView) {
+                  setState(() {
+                    _busbarChartView = newView;
+                  });
+                },
+              ),
+                // const SizedBox(height: 24),
+                // _buildProjectSummaryCard(
+                //   closedChartData: _projectChartData,
+                //   wipChartData: _projectWipChartData,
+                //   summaryData: summaryList,
+                //   currentView: _projectChartView,
+                //   onToggle: (newView) {
+                //     setState(() {
+                //       _projectChartView = newView;
+                //     });
+                //   },
+                // ),
               ],
             ),
           );
@@ -2599,117 +3273,163 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ],
     );
   }
+/// ### WIDGET KARTU PROJECT (TELAH DIUBAH) ###
+/// Menampilkan dua chart (atas-bawah) untuk data Project, diikuti tabel summary.
+// Widget _buildProjectSummaryCard({
+//   required Map<String, dynamic> closedChartData,
+//   required Map<String, dynamic> wipChartData,
+//   required List<_ProjectWbsSummary> summaryData,
+//   required ChartTimeView currentView,
+//   required ValueChanged<ChartTimeView> onToggle,
+// }) {
+//   // Ambil nama project dari salah satu set data (keduanya seharusnya sama)
+//   final List<String> projects = (closedChartData['projects'] as List<String>? ?? []);
 
-  // --- WIDGET GABUNGAN YANG DI-REFACTOR ---
-  Widget _buildProjectSummaryCard({
-    required Map<String, dynamic> chartData,
-    required List<_ProjectWbsSummary> summaryData,
-    required ChartTimeView currentView,
-    required ValueChanged<ChartTimeView> onToggle,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.grayLight),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          const double breakpoint = 850.0;
-          if (constraints.maxWidth > breakpoint) {
-            // Layout untuk Layar Lebar (NON-HP)
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Kolom Kiri: Judul dan Chart
-                Expanded(
-                  flex: 5,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Delivered (Closed) Panel by Project",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildProjectBarChartItself(chartData: chartData),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 24),
-                // Kolom Kanan: Tabs dan Tabel
-                Expanded(
-                  flex: 4,
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          _buildChartFilterDropdowns(currentView: currentView),
-                          const SizedBox(width: 8),
-                          _buildToggleButtons(
-                            currentView: currentView,
-                            onToggle: onToggle,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      _buildDeliveredSummaryTable(summaryData),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          } else {
-            // Layout untuk Layar Kecil (HP)
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        "Delivered Panel by Project",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.black,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    _buildToggleButtons(
-                      currentView: currentView,
-                      onToggle: onToggle,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: _buildChartFilterDropdowns(currentView: currentView),
-                ),
-                const SizedBox(height: 16),
-                _buildProjectBarChartItself(chartData: chartData),
-                const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 16),
-                _buildDeliveredSummaryTable(summaryData),
-              ],
-            );
-          }
-        },
-      ),
-    );
-  }
 
+//   // Siapkan palet warna untuk project
+//   final List<Color> colorPalette = [
+//     const Color(0xFF1D20E4), const Color(0xFFED1B3A), const Color(0xFFFEB019),
+//     const Color(0xFF09AF77), const Color(0xFF008FFB), const Color(0xFFFF5DD1),
+//     const Color.fromARGB(255, 130, 132, 255), const Color(0xFFC83CFF),
+//      const Color.fromARGB(255, 6, 149, 80), const Color.fromARGB(255, 6, 92, 149),const Color.fromARGB(255, 149, 6, 68),
+//      const Color.fromARGB(255, 104, 255, 200), const Color.fromARGB(255, 149, 130, 6),const Color.fromARGB(255, 6, 147, 149),
+//   ];
+//   final Map<String, Color> projectColors = {
+//     for (int i = 0; i < projects.length; i++)
+//       projects[i]: colorPalette[i % colorPalette.length],
+//   };  
+  
+
+//   // Widget legenda bersama untuk kedua chart
+//   Widget legendWidget = projects.isNotEmpty
+//       ? Wrap(
+//           spacing: 16,
+//           runSpacing: 8,
+//           children: projects.map((project) {
+//             return Row(
+//               mainAxisSize: MainAxisSize.min,
+//               children: [
+//                 Container(
+//                   width: 12,
+//                   height: 12,
+//                   decoration: BoxDecoration(
+//                     color: projectColors[project],
+//                     borderRadius: BorderRadius.circular(4),
+//                   ),
+//                 ),
+//                 const SizedBox(width: 4),
+//                 Flexible(
+//                   child: Text(
+//                     project,
+//                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
+//                     overflow: TextOverflow.ellipsis,
+//                   ),
+//                 ),
+//               ],
+//             );
+//           }).toList(),
+//         )
+//       : const SizedBox.shrink();
+
+//   return Container(
+//     padding: const EdgeInsets.all(16),
+//     decoration: BoxDecoration(
+//       color: Colors.white,
+//       borderRadius: BorderRadius.circular(12),
+//       border: Border.all(color: AppColors.grayLight),
+//     ),
+//     child: Column(
+//       crossAxisAlignment: CrossAxisAlignment.stretch,
+//       children: [
+//         // --- BAGIAN HEADER (Title, Filter, Toggle) ---
+//         LayoutBuilder(
+//           builder: (context, constraints) {
+//             const double breakpoint = 850.0;
+//             // Layout header responsif (Desktop vs Mobile)
+//             if (constraints.maxWidth > breakpoint) {
+//               return Row(
+//                 crossAxisAlignment: CrossAxisAlignment.center,
+//                 children: [
+//                   const Expanded(
+//                     child: Text(
+//                       "Panel Progress by Project",
+//                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: AppColors.black),
+//                     ),
+//                   ),
+//                   _buildChartFilterDropdowns(currentView: currentView),
+//                   const SizedBox(width: 8),
+//                   _buildToggleButtons(currentView: currentView, onToggle: onToggle),
+//                 ],
+//               );
+//             } else {
+//               return Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   Row(
+//                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                     crossAxisAlignment: CrossAxisAlignment.start,
+//                     children: [
+//                       const Expanded(
+//                         child: Text(
+//                           "Panel Progress by Project",
+//                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: AppColors.black),
+//                         ),
+//                       ),
+//                       _buildToggleButtons(currentView: currentView, onToggle: onToggle),
+//                     ],
+//                   ),
+//                   const SizedBox(height: 12),
+//                   _buildChartFilterDropdowns(currentView: currentView),
+//                 ],
+//               );
+//             }
+//           },
+//         ),
+//         const SizedBox(height: 16),
+//         legendWidget,
+//         const SizedBox(height: 24),
+
+//         // --- CHART ATAS (CLOSED) ---
+//         const Text(
+//           "Jumlah Panel Closed by Project",
+//           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+//         ),
+//         const SizedBox(height: 8),
+//         _buildBarChartItself(
+//           chartData: closedChartData,
+//           colorMap: projectColors,
+//           currentView: currentView,
+//         ),
+        
+//         const SizedBox(height: 24),
+
+//         // --- CHART BAWAH (WORK IN PROGRESS) ---
+//         const Text(
+//           "Jumlah Panel Work In Progress by Project",
+//           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+//         ),
+//         const SizedBox(height: 8),
+//         _buildBarChartItself(
+//           chartData: wipChartData,
+//           colorMap: projectColors,
+//           currentView: currentView,
+//         ),
+
+//         const SizedBox(height: 24),
+//         const Divider(),
+//         const SizedBox(height: 16),
+        
+//         // --- TABEL SUMMARY (TETAP SAMA) ---
+//         const Text(
+//           "Rincian Delivered Panel",
+//           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+//         ),
+//         const SizedBox(height: 12),
+//         _buildDeliveredSummaryTable(summaryData),
+//       ],
+//     ),
+//   );
+// }
   // --- FIX 2: Widget tabel diganti untuk mendukung merge cells ---
   Widget _buildDeliveredSummaryTable(List<_ProjectWbsSummary> summaryData) {
     if (summaryData.isEmpty) {
@@ -2855,370 +3575,301 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ],
     );
   }
+/// ### BARU: Widget helper untuk merender satu instance Bar Chart ###
+/// Digunakan untuk menampilkan chart "Closed" dan "Work in Progress" secara terpisah.
+Widget _buildBarChartItself({
+  required Map<String, dynamic> chartData,
+  required Map<String, Color> colorMap,
+  required ChartTimeView currentView,
+}) {
+  // Ekstrak data dan nama series (bisa vendor atau project)
+  final Map<String, Map<String, int>> data =
+      (chartData['data'] as Map<String, Map<String, int>>? ?? {});
+  final List<String> seriesNames =
+      (chartData['vendors'] as List<String>? ?? chartData['projects'] as List<String>? ?? []);
 
-  // --- WIDGET INI TELAH DIUBAH UNTUK RESPONSIVE LAYOUT ---
-  Widget _buildGroupedBarChartCard({
-    required String title,
-    required Map<String, dynamic> chartData,
-    required ChartTimeView currentView,
-    required ValueChanged<ChartTimeView> onToggle,
-  }) {
-    final Map<String, Map<String, int>> data =
-        (chartData['data'] as Map<String, Map<String, int>>? ?? {});
-    final List<String> vendors = (chartData['vendors'] as List<String>? ?? []);
-    final List<Color> colorPalette = [
-      const Color(0xFF1D20E4),
-      const Color(0xFFED1B3A),
-      const Color(0xFFFEB019),
-      const Color(0xFF09AF77),
-      const Color(0xFF008FFB),
-      const Color(0xFFFF5DD1),
-      const Color(0xFF5D5FFF),
-      const Color(0xFFC83CFF),
-    ];
-    final Map<String, Color> vendorColors = {
-      for (int i = 0; i < vendors.length; i++)
-        vendors[i]: colorPalette[i % colorPalette.length],
-    };
+  // Hitung nilai Y maksimum untuk skala chart
+  double maxValue = 0;
+  data.values.forEach((seriesMap) {
+    double groupTotal = seriesMap.values.fold(0, (sum, item) => sum + item);
+    if (groupTotal > maxValue) {
+      maxValue = groupTotal;
+    }
+  });
+  if (maxValue == 0) maxValue = 10; // Nilai minimum agar chart tidak flat
 
-    double maxValue = 0;
-    data.values.forEach((vendorMap) {
-      double groupTotal = 0;
-      vendorMap.values.forEach((count) {
-        groupTotal += count;
-      });
-      if (groupTotal > maxValue) {
-        maxValue = groupTotal;
-      }
-    });
-    if (maxValue == 0) maxValue = 50;
+  // Kalkulasi lebar dinamis untuk bar group
+  const double barWidth = 24.0;
+  const double barsSpace = 4.0;
+  const double groupsSpace = 24.0;
+  final double widthPerGroup = seriesNames.isEmpty
+      ? barWidth
+      : (seriesNames.length * barWidth) + ((seriesNames.length - 1) * barsSpace);
 
-    Widget legendWidget = vendors.isNotEmpty
-        ? Wrap(
-            spacing: 16,
-            runSpacing: 8,
-            children: vendors.map((vendor) {
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: vendorColors[vendor],
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    vendor,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w300,
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
+  return SizedBox(
+    height: 200, // Tinggi untuk satu chart
+    child: data.isEmpty || data.values.every((map) => map.values.every((v) => v == 0))
+        ? const Center(
+            child: Text(
+              "Tidak ada data untuk periode ini.",
+              style: TextStyle(color: AppColors.gray, fontSize: 12),
+            ),
           )
-        : const SizedBox.shrink();
+        : LayoutBuilder(
+            builder: (context, constraints) {
+              final double calculatedWidth = (data.keys.length * widthPerGroup) +
+                  ((data.keys.length - 1) * groupsSpace);
+              final double availableWidth = constraints.maxWidth;
+              final double finalChartWidth = math.max(availableWidth, calculatedWidth);
 
-    Widget chartItself = SizedBox(
-      height: 250,
-      child: data.isEmpty
-          ? const Center(
-              child: Text(
-                "Tidak ada data delivery\nyang sesuai filter.",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.gray,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            )
-          : LayoutBuilder(
-              builder: (context, constraints) {
-                const double barWidth = 24.0;
-                const double barsSpace = 6.0;
-                const double groupsSpace = 32.0;
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: finalChartWidth,
+                  child: BarChart(
+                    BarChartData(
+                      alignment: calculatedWidth < availableWidth
+                          ? BarChartAlignment.spaceAround
+                          : BarChartAlignment.start,
+                      groupsSpace: groupsSpace,
+                      maxY: maxValue * 1.25,
 
-                final double widthPerGroup = vendors.isEmpty
-                    ? barWidth
-                    : (vendors.length * barWidth) +
-                        ((vendors.length - 1) * barsSpace);
-                final double calculatedWidth =
-                    (data.keys.length * widthPerGroup) +
-                        ((data.keys.length - 1) * groupsSpace);
-                final double availableWidth = constraints.maxWidth;
-                final double finalChartWidth = math.max(
-                  availableWidth,
-                  calculatedWidth,
-                );
-
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: SizedBox(
-                    width: finalChartWidth,
-                    child: BarChart(
-                      BarChartData(
-                        alignment: calculatedWidth < availableWidth
-                            ? BarChartAlignment.spaceAround
-                            : BarChartAlignment.start,
-                        groupsSpace: groupsSpace,
-                        maxY: maxValue * 1.25,
-                        barTouchData: BarTouchData(
-                          handleBuiltInTouches: false,
-                          touchTooltipData: BarTouchTooltipData(
-                            getTooltipColor: (_) => Colors.transparent,
-                            tooltipPadding: EdgeInsets.zero,
-                            tooltipMargin: 8,
-                            getTooltipItem:
-                                (group, groupIndex, rod, rodIndex) {
-                              if (rod.toY == 0) return null;
-                              return BarTooltipItem(
-                                rod.toY.round().toString(),
-                                const TextStyle(
-                                  color: AppColors.black,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 14,
+                      // ================== PERUBAHAN DIMULAI DI SINI ==================
+                      barTouchData: BarTouchData(
+                        // 1. Nonaktifkan interaksi hover/sentuh bawaan
+                        handleBuiltInTouches: false,
+                        touchTooltipData: BarTouchTooltipData(
+                          // 2. Buat background tooltip menjadi transparan
+                          getTooltipColor: (_) => Colors.transparent,
+                          tooltipPadding: EdgeInsets.zero,
+                          // 3. Atur jarak tulisan dari atas bar
+                          tooltipMargin: 4,
+                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                            // Jangan tampilkan nilai jika 0
+                            if (rod.toY.round() == 0) return null;
+                            
+                            // 4. Tampilkan nilai bar sebagai teks biasa
+                            return BarTooltipItem(
+                              rod.toY.round().toString(),
+                              const TextStyle(
+                                color: AppColors.gray,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 10,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      // ================== PERUBAHAN SELESAI DI SINI ==================
+                      
+                      titlesData: FlTitlesData(
+                        show: true,
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: (double value, TitleMeta meta) {
+                              final index = value.toInt();
+                              if (index >= data.keys.length) return const SizedBox.shrink();
+                              final key = data.keys.elementAt(index);
+                              final title = currentView == ChartTimeView.monthly
+                                  ? key.split(' ')[0]
+                                  : currentView == ChartTimeView.daily
+                                      ? key.replaceAll(', ', '\n')
+                                      : key;
+                              return SideTitleWidget(
+                                axisSide: meta.axisSide,
+                                space: 8.0,
+                                child: Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, color: AppColors.gray)),
+                              );
+                            },
+                            reservedSize: 38,
+                          ),
+                        ),
+                        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        topTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 26,
+                            getTitlesWidget: (double value, TitleMeta meta) {
+                              final index = value.toInt();
+                              if (index >= data.keys.length) return const SizedBox.shrink();
+                              final groupKey = data.keys.elementAt(index);
+                              final total = data[groupKey]!.values.fold(0, (sum, item) => sum + item);
+                              if (total == 0) return const SizedBox.shrink();
+                              return SideTitleWidget(
+                                axisSide: meta.axisSide,
+                                space: 4.0,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(total.toString(), style: const TextStyle(color: AppColors.gray, fontSize: 11, fontWeight: FontWeight.w500)),
+                                    const SizedBox(height: 2),
+                                    Container(height: 4, width: widthPerGroup, color: AppColors.grayNeutral),
+                                  ],
                                 ),
                               );
                             },
                           ),
                         ),
-                        titlesData: FlTitlesData(
-                          show: true,
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget:
-                                  (double value, TitleMeta meta) {
-                                final index = value.toInt();
-                                if (index >= data.keys.length) {
-                                  return const SizedBox.shrink();
-                                }
-                                final key = data.keys.elementAt(
-                                  index,
-                                );
-                                final title =
-                                    currentView == ChartTimeView.monthly
-                                        ? key.split(' ')[0]
-                                        : currentView == ChartTimeView.daily
-                                            ? key.replaceAll(', ', '\n')
-                                            : key;
-                                return SideTitleWidget(
-                                  axisSide: meta.axisSide,
-                                  space: 8.0,
-                                  child: Text(
-                                    title,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      color: AppColors.gray,
-                                    ),
-                                  ),
-                                );
-                              },
-                              reservedSize: 38,
-                            ),
-                          ),
-                          leftTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                          // === PERUBAHAN DIMULAI DI SINI ===
-                          topTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              reservedSize: 26, // Beri ruang lebih untuk garis
-                              getTitlesWidget: (double value, TitleMeta meta) {
-                                final index = value.toInt();
-                                if (index >= data.keys.length) {
-                                  return const SizedBox.shrink();
-                                }
-                                final groupKey = data.keys.elementAt(index);
-                                final vendorCounts = data[groupKey]!;
-
-                                // Hitung total untuk grup ini
-                                final total = vendorCounts.values.fold(0, (sum, item) => sum + item);
-
-                                // Jangan tampilkan total jika nilainya 0
-                                if (total == 0) {
-                                  return const SizedBox.shrink();
-                                }
-
-                                return SideTitleWidget(
-                                  axisSide: meta.axisSide,
-                                  space: 4.0, // Jarak di atas bar
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        total.toString(),
-                                        style: const TextStyle(
-                                          color: AppColors.gray,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Container(
-                                        height: 4,
-                                        width: widthPerGroup, // ### FIX DI SINI ###
-                                        color: AppColors.grayNeutral,
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          // === PERUBAHAN BERAKHIR DI SINI ===
-                          rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                        ),
-                        borderData: FlBorderData(show: false),
-                        gridData: const FlGridData(show: false),
-                        barGroups: List.generate(data.keys.length, (
-                          index,
-                        ) {
-                          final monthKey = data.keys.elementAt(index);
-                          final vendorCounts = data[monthKey]!;
-                          return BarChartGroupData(
-                            x: index,
-                            barsSpace: barsSpace,
-                            showingTooltipIndicators: List.generate(
-                              vendors.length,
-                              (i) => i,
-                            ),
-                            barRods: List.generate(vendors.length, (
-                              vendorIndex,
-                            ) {
-                              final vendorName = vendors[vendorIndex];
-                              final count =
-                                  vendorCounts[vendorName]?.toDouble() ?? 0;
-                              final bool isZero = count == 0;
-                              final Color barColor =
-                                  vendorColors[vendorName] ?? Colors.grey;
-
-                              return BarChartRodData(
-                                toY: isZero ? 0.1 : count,
-                                color: barColor.withOpacity(
-                                  isZero ? 1.0 : 1.0,
-                                ),
-                                width: barWidth,
-                                borderRadius: isZero
-                                    ? BorderRadius.circular(2)
-                                    : BorderRadius.circular(6),
-                              );
-                            }),
-                          );
-                        }),
+                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                       ),
+                      borderData: FlBorderData(show: false),
+                      gridData: const FlGridData(show: false),
+                      barGroups: List.generate(data.keys.length, (index) {
+                        final key = data.keys.elementAt(index);
+                        final seriesCounts = data[key]!;
+                        return BarChartGroupData(
+                          x: index,
+                          barsSpace: barsSpace,
+                          
+                          // ================== PERUBAHAN TAMBAHAN DI SINI ==================
+                          // 5. Perintahkan untuk selalu menampilkan tooltip untuk semua bar
+                          showingTooltipIndicators: List.generate(seriesNames.length, (i) => i),
+                          // ================================================================
+
+                          barRods: List.generate(seriesNames.length, (seriesIndex) {
+                            final seriesName = seriesNames[seriesIndex];
+                            final count = seriesCounts[seriesName]?.toDouble() ?? 0;
+                            return BarChartRodData(
+                              toY: count,
+                              color: colorMap[seriesName] ?? Colors.grey,
+                              width: barWidth,
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                            );
+                          }),
+                        );
+                      }),
                     ),
                   ),
-                );
-              },
-            ),
-    );
+                ),
+              );
+            },
+          ),
+  );
+}
+Widget _buildGroupedBarChartCard({
+  required String title,
+  required String itemType, // Parameter untuk membuat judul dinamis
+  required Map<String, dynamic> closedChartData,
+  required Map<String, dynamic> wipChartData,
+  required ChartTimeView currentView,
+  required ValueChanged<ChartTimeView> onToggle,
+}) {
+  // Ambil nama vendor dari salah satu dataset (keduanya seharusnya sama)
+  final List<String> vendors = (closedChartData['vendors'] as List<String>? ?? []);
+  
+  // Siapkan palet warna
+  final List<Color> colorPalette = [
+    const Color(0xFF1D20E4), const Color(0xFFED1B3A), const Color(0xFFFEB019),
+    const Color(0xFF09AF77), const Color(0xFF008FFB), const Color(0xFFFF5DD1),
+    const Color(0xFF5D5FFF), const Color(0xFFC83CFF),
+  ];
+  final Map<String, Color> vendorColors = {
+    for (int i = 0; i < vendors.length; i++)
+      vendors[i]: colorPalette[i % colorPalette.length],
+  };
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.grayLight),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          const double breakpoint = 850.0;
-          if (constraints.maxWidth > breakpoint) {
-            // DESKTOP LAYOUT
+  // Widget legenda bersama untuk kedua chart
+  Widget legendWidget = vendors.isNotEmpty
+      ? Wrap(
+          spacing: 16,
+          runSpacing: 8,
+          children: vendors.map((vendor) {
             return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  flex: 5,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      chartItself,
-                    ],
-                  ),
+                Container(
+                  width: 12, height: 12,
+                  decoration: BoxDecoration(color: vendorColors[vendor], borderRadius: BorderRadius.circular(4)),
                 ),
-                const SizedBox(width: 24),
-                Expanded(
-                  flex: 4,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          _buildChartFilterDropdowns(currentView: currentView),
-                          const SizedBox(width: 8),
-                          _buildToggleButtons(
-                              currentView: currentView, onToggle: onToggle),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      legendWidget,
-                    ],
-                  ),
-                ),
+                const SizedBox(width: 4),
+                Text(vendor, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300)),
               ],
             );
-          } else {
-            // MOBILE LAYOUT
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.black,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    _buildToggleButtons(
-                        currentView: currentView, onToggle: onToggle),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft, // Disamakan dengan Project
-                  child: _buildChartFilterDropdowns(currentView: currentView),
-                ),
-                const SizedBox(height: 16),
-                legendWidget,
-                const SizedBox(height: 24),
-                chartItself,
-              ],
-            );
-          }
-        },
-      ),
-    );
-  }
+          }).toList(),
+        )
+      : const SizedBox.shrink();
 
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: AppColors.grayLight),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // --- BAGIAN HEADER (Title, Filter, Toggle) ---
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const double breakpoint = 850.0;
+            // Layout header responsif (Desktop vs Mobile)
+            if (constraints.maxWidth > breakpoint) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: AppColors.black)),
+                  ),
+                  _buildChartFilterDropdowns(currentView: currentView),
+                  const SizedBox(width: 8),
+                  _buildToggleButtons(currentView: currentView, onToggle: onToggle),
+                ],
+              );
+            } else {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: AppColors.black)),
+                      ),
+                      _buildToggleButtons(currentView: currentView, onToggle: onToggle),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildChartFilterDropdowns(currentView: currentView),
+                ],
+              );
+            }
+          },
+        ),
+        const SizedBox(height: 16),
+        legendWidget,
+        const SizedBox(height: 24),
+
+        // --- CHART ATAS (CLOSED) ---
+        Text(
+          "Jumlah $itemType Closed",
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.black),
+        ),
+        const SizedBox(height: 8),
+        _buildBarChartItself(
+          chartData: closedChartData,
+          colorMap: vendorColors,
+          currentView: currentView,
+        ),
+        
+        const SizedBox(height: 24),
+
+        // --- CHART BAWAH (WORK IN PROGRESS) ---
+        Text(
+          "Jumlah $itemType Work In Progress",
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.black),
+        ),
+        const SizedBox(height: 8),
+        _buildBarChartItself(
+          chartData: wipChartData,
+          colorMap: vendorColors,
+          currentView: currentView,
+        ),
+      ],
+    ),
+  );
+}
   // --- Widget Skeleton (tidak ada perubahan) ---
   Widget _buildSkeletonView() {
     return SingleChildScrollView(
