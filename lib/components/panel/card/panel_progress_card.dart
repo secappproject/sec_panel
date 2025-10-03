@@ -297,7 +297,9 @@ class PanelProgressCard extends StatelessWidget {
     switch (status) {
       case 'Production':
         // Jika di produksi, tampilkan juga nomor slotnya
-        positionText = 'Production (${productionSlot ?? 'N/A'})';
+        positionText = 'Production (${RegExp(r'Cell\s+\d+')
+                                    .firstMatch(productionSlot!)
+                                    ?.group(0) ?? productionSlot! ?? 'N/A'})';
         iconPath = 'assets/images/production.png';
         break;
       case 'FAT':
