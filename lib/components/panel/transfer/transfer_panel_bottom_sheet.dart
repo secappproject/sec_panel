@@ -173,110 +173,126 @@ Widget _buildSlotSelectionView() {
   final Map<int, List<ProductionSlot>> slotsByRow = {};
   for (var slot in _productionSlots) {
     final nameParts = slot.positionCode.split(' ');
-    if (nameParts.length < 2) {
-      debugPrint('Slot positionCode format salah, dilewati: ${slot.positionCode}');
-      continue;
-    }
-
+    if (nameParts.length < 2) continue;
     final detailParts = nameParts[1].split('-');
-    if (detailParts.isEmpty) {
-      debugPrint('Slot positionCode format detail salah, dilewati: ${slot.positionCode}');
-      continue;
-    }
-
+    if (detailParts.isEmpty) continue;
     final rowNum = int.tryParse(detailParts[0]);
     if (rowNum != null) {
       (slotsByRow[rowNum] ??= []).add(slot);
-    } else {
-      debugPrint('Gagal parse nomor baris dari slot: ${slot.positionCode}');
     }
   }
 
-  // Widget untuk merender satu baris Cell (tidak berubah)
+ 
   Widget buildCellRowItem(int rowNum, List<ProductionSlot> slotsInRow) {
-    final availableSlots = slotsInRow.where((s) => !s.isOccupied).toList();
-    final occupiedSlots = slotsInRow.where((s) => s.isOccupied).toList();
-    final bool canSelect = availableSlots.isNotEmpty;
-    final bool isSelected =
-        _selectedSlot != null && _selectedSlot!.startsWith('Cell $rowNum');
+  // --- Kalkulasi Status Cell ---
+  const int baselineCapacity = 8;
+  final occupiedSlots = slotsInRow.where((s) => s.isOccupied).toList();
+  final int occupiedCount = occupiedSlots.length;
 
-    final occupiedPanelNames = occupiedSlots
-        .map((s) => s.panelNoPanel ?? s.panelNoPp ?? 'Unknown')
-        .join(', ');
+  // [PERBAIKAN DI SINI]
+  // Hapus .clamp() agar hasilnya bisa negatif (misal: 8 - 9 = -1)
+  final int availableInBaseline = baselineCapacity - occupiedCount;
 
-    return GestureDetector(
-      onTap: canSelect
-          ? () {
-              setState(() {
-                if (isSelected) {
-                  _selectedSlot = null;
-                } else {
-                  _selectedSlot = availableSlots.first.positionCode;
-                }
-              });
-            }
-          : null,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.schneiderGreen.withOpacity(0.1)
-              : (canSelect
-                  ? Colors.white
-                  : AppColors.grayLight.withOpacity(0.5)),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppColors.schneiderGreen : AppColors.grayLight,
-            width: 1.5,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Production Cell $rowNum',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w400,
-                      fontSize: 14,
-                      color: isSelected
-                          ? AppColors.schneiderGreen
-                          : (canSelect ? AppColors.black : AppColors.gray),
-                    ),
-                  ),
-                ),
-                Text(
-                  '${availableSlots.length}/8 Available',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w300,
-                    fontSize: 12,
-                    color:
-                        isSelected ? AppColors.schneiderGreen : AppColors.gray,
-                  ),
-                ),
-              ],
-            ),
-            if (occupiedSlots.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Panel in Production: $occupiedPanelNames',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.gray,
-                  fontWeight: FontWeight.w300
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ]
-          ],
+  // Tentukan apakah sudah melebihi baseline 8
+  final bool isOverBaseline = occupiedCount >= baselineCapacity;
+
+  final bool isSelected =
+      _selectedSlot != null && _selectedSlot!.startsWith('Cell $rowNum');
+
+  final occupiedPanelNames = occupiedSlots
+      .map((s) => s.panelNoPanel ?? s.panelNoPp ?? 'Unknown')
+      .join(', ');
+
+  return GestureDetector(
+    onTap: () {
+      setState(() {
+        if (isSelected) {
+          _selectedSlot = null;
+        } else {
+          _selectedSlot = slotsInRow.first.positionCode;
+        }
+      });
+    },
+    child: Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? AppColors.schneiderGreen.withOpacity(0.1)
+            : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected ? AppColors.schneiderGreen : AppColors.grayLight,
+          width: 1.5,
         ),
       ),
-    );
-  }
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Production Cell $rowNum',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w400,
+                    fontSize: 14,
+                    color: isSelected ? AppColors.schneiderGreen : AppColors.black,
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  if (isOverBaseline)
+                    
+                    Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 255, 246, 246),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Over Capacity',
+                        style: TextStyle(
+                          color: AppColors.red,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  
+                  Text(
+                    // Teks ini sekarang akan menampilkan angka negatif jika 'availableInBaseline' negatif
+                    '$availableInBaseline/$baselineCapacity Available',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w300,
+                      fontSize: 12,
+                      color:
+                          isSelected ? AppColors.schneiderGreen : AppColors.gray,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          if (occupiedSlots.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Panel in Production: $occupiedPanelNames',
+              style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.gray,
+                  fontWeight: FontWeight.w300),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ]
+        ],
+      ),
+    ),
+  );
+}
 
   // --- PERBAIKAN UTAMA ADA DI SINI ---
   // 1. Ambil keys (nomor baris) dan ubah menjadi List
@@ -285,8 +301,8 @@ Widget _buildSlotSelectionView() {
   sortedKeys.sort();
   // --- AKHIR PERBAIKAN ---
 
-  final int totalRemainingCount =
-      _productionSlots.where((s) => !s.isOccupied).length;
+  final int totalOccupiedCount =
+      _productionSlots.where((s) => s.isOccupied).length;
 
   return Padding(
     padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
@@ -317,8 +333,9 @@ Widget _buildSlotSelectionView() {
                 color: const Color(0xFFF5F5F5),
                 borderRadius: BorderRadius.circular(12),
               ),
+              // [MODIFIKASI 2: Ubah teks untuk menampilkan jumlah panel di produksi]
               child: Text(
-                '$totalRemainingCount/${_productionSlots.length} Available',
+                '$totalOccupiedCount Panel in Production',
                 style: const TextStyle(
                     fontWeight: FontWeight.w400,
                     fontSize: 12,
@@ -333,7 +350,6 @@ Widget _buildSlotSelectionView() {
           children: [
             Expanded(
               child: Column(
-                // 3. Gunakan list yang sudah diurutkan untuk membuat widget
                 children: sortedKeys
                     .map((rowNum) =>
                         buildCellRowItem(rowNum, slotsByRow[rowNum]!))
@@ -385,7 +401,6 @@ Widget _buildSlotSelectionView() {
     ),
   );
 }
-
   Widget _buildStatusDisplayView() {
     final status =
         _currentPanelData.panel.statusPenyelesaian ?? 'VendorWarehouse';
