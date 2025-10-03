@@ -30,7 +30,6 @@ enum PanelFilterStatus {
 
 enum DateFilterType { notSet, set, any }
 
-// [BARU] Enum untuk filter isu
 enum IssueFilter { any, withIssues, withoutIssues }
 enum SrFilter { any, withSr, withoutSr }
 
@@ -51,23 +50,24 @@ class PanelFilterBottomSheet extends StatefulWidget {
   final List<String> selectedPaletVendors;
   final List<String> selectedCorepartVendors;
   final List<String> selectedPanelTypes;
-  final IssueFilter selectedIssueStatus; 
-
+  final IssueFilter selectedIssueStatus;
   final SrFilter selectedSrStatus;
-  final Function(SrFilter) onSrStatusChanged;
+  
+  // [BARU] Properti untuk filter Position
+  final List<String> selectedPositions;
+  final Function(List<String>) onPositionsChanged;
 
+  final Function(SrFilter) onSrStatusChanged;
   final DateTimeRange? startDateRange;
   final DateTimeRange? deliveryDateRange;
   final DateTimeRange? closedDateRange;
   final DateTimeRange? pccClosedDateRange;
   final DateTimeRange? mccClosedDateRange;
-
   final DateFilterType startDateStatus;
   final DateFilterType deliveryDateStatus;
   final DateFilterType closedDateStatus;
   final DateFilterType pccClosedDateStatus;
   final DateFilterType mccClosedDateStatus;
-
   final Function(List<String>) onStatusesChanged;
   final Function(List<String>) onComponentsChanged;
   final Function(List<String>) onPaletChanged;
@@ -81,20 +81,17 @@ class PanelFilterBottomSheet extends StatefulWidget {
   final Function(List<String>) onPaletVendorsChanged;
   final Function(List<String>) onCorepartVendorsChanged;
   final Function(List<String>) onPanelTypesChanged;
-  final Function(IssueFilter) onIssueStatusChanged; // [BARU]
-
+  final Function(IssueFilter) onIssueStatusChanged;
   final Function(DateTimeRange?) onStartDateRangeChanged;
   final Function(DateTimeRange?) onDeliveryDateRangeChanged;
   final Function(DateTimeRange?) onClosedDateRangeChanged;
   final Function(DateTimeRange?) onPccClosedDateRangeChanged;
   final Function(DateTimeRange?) onMccClosedDateRangeChanged;
-
   final Function(DateFilterType) onStartDateStatusChanged;
   final Function(DateFilterType) onDeliveryDateStatusChanged;
   final Function(DateFilterType) onClosedDateStatusChanged;
   final Function(DateFilterType) onPccClosedDateStatusChanged;
   final Function(DateFilterType) onMccClosedDateStatusChanged;
-
   final VoidCallback onReset;
 
   const PanelFilterBottomSheet({
@@ -128,10 +125,15 @@ class PanelFilterBottomSheet extends StatefulWidget {
     required this.onCorepartVendorsChanged,
     required this.selectedPanelTypes,
     required this.onPanelTypesChanged,
-    required this.selectedIssueStatus, // [BARU]
-    required this.onIssueStatusChanged, // [BARU]
+    required this.selectedIssueStatus,
+    required this.onIssueStatusChanged,
     required this.selectedSrStatus,
     required this.onSrStatusChanged,
+    
+    // [BARU] Tambahkan di constructor
+    required this.selectedPositions,
+    required this.onPositionsChanged,
+
     required this.startDateRange,
     required this.deliveryDateRange,
     required this.closedDateRange,
@@ -173,21 +175,28 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
   late List<String> _selectedPaletVendors;
   late List<String> _selectedCorepartVendors;
   late List<String> _selectedPanelTypes;
-  late IssueFilter _selectedIssueStatus; // [BARU]
+  late IssueFilter _selectedIssueStatus;
+  late SrFilter _selectedSrStatus;
+
+  // [BARU] State lokal untuk Position
+  late List<String> _selectedPositions;
 
   late DateTimeRange? _startDateRange;
   late DateTimeRange? _deliveryDateRange;
   late DateTimeRange? _closedDateRange;
-
-  // Variabel baru untuk Busbar Closed
   late DateTimeRange? _busbarClosedDateRange;
   late DateFilterType _busbarClosedDateStatus;
-
-  // Variabel yang hilang
   late DateFilterType _startDateStatus;
   late DateFilterType _deliveryDateStatus;
   late DateFilterType _closedDateStatus;
-  late SrFilter _selectedSrStatus; 
+
+  // [BARU] Opsi untuk filter Position
+  final List<String> positionOptions = [
+    "Warehouse",
+    "Production",
+    "FAT",
+    "Done",
+  ];
 
   final List<String> busbarStatusOptions = [
     "Open",
@@ -216,16 +225,18 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
     _selectedPaletVendors = List.from(widget.selectedPaletVendors);
     _selectedCorepartVendors = List.from(widget.selectedCorepartVendors);
     _selectedPanelTypes = List.from(widget.selectedPanelTypes);
-    _selectedIssueStatus = widget.selectedIssueStatus; // [BARU]
+    _selectedIssueStatus = widget.selectedIssueStatus;
+    _selectedSrStatus = widget.selectedSrStatus;
+
+    // [BARU] Inisialisasi state Position
+    _selectedPositions = List.from(widget.selectedPositions);
 
     _startDateRange = widget.startDateRange;
     _deliveryDateRange = widget.deliveryDateRange;
     _closedDateRange = widget.closedDateRange;
-
     _startDateStatus = widget.startDateStatus;
     _deliveryDateStatus = widget.deliveryDateStatus;
     _closedDateStatus = widget.closedDateStatus;
-
     _busbarClosedDateRange =
         widget.pccClosedDateRange ?? widget.mccClosedDateRange;
     if (widget.pccClosedDateRange != null &&
@@ -238,8 +249,6 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
         _busbarClosedDateRange = widget.mccClosedDateRange;
       }
     }
-    _selectedSrStatus = widget.selectedSrStatus;
-
     _busbarClosedDateStatus =
         widget.pccClosedDateStatus == DateFilterType.notSet ||
                 widget.mccClosedDateStatus == DateFilterType.notSet
@@ -261,22 +270,22 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
     widget.onPaletVendorsChanged(_selectedPaletVendors);
     widget.onCorepartVendorsChanged(_selectedCorepartVendors);
     widget.onPanelTypesChanged(_selectedPanelTypes);
-    widget.onIssueStatusChanged(_selectedIssueStatus); // [BARU]
+    widget.onIssueStatusChanged(_selectedIssueStatus);
+    widget.onSrStatusChanged(_selectedSrStatus);
+    
+    // [BARU] Panggil callback untuk Position
+    widget.onPositionsChanged(_selectedPositions);
 
     widget.onStartDateRangeChanged(_startDateRange);
     widget.onDeliveryDateRangeChanged(_deliveryDateRange);
     widget.onClosedDateRangeChanged(_closedDateRange);
-
     widget.onPccClosedDateRangeChanged(_busbarClosedDateRange);
     widget.onMccClosedDateRangeChanged(_busbarClosedDateRange);
     widget.onPccClosedDateStatusChanged(_busbarClosedDateStatus);
     widget.onMccClosedDateStatusChanged(_busbarClosedDateStatus);
-
     widget.onStartDateStatusChanged(_startDateStatus);
     widget.onDeliveryDateStatusChanged(_deliveryDateStatus);
     widget.onClosedDateStatusChanged(_closedDateStatus);
-    widget.onSrStatusChanged(_selectedSrStatus); 
-
     Navigator.pop(context);
   }
 
@@ -295,7 +304,6 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
     });
   }
 
-  // ... (fungsi _buildOptionButton dan _buildDateField tidak perlu diubah) ...
   Widget _buildOptionButton({
     required String label,
     required bool selected,
@@ -398,8 +406,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
               ),
               yearStyle: const TextStyle(fontFamily: 'Lexend'),
               rangePickerHeaderHelpStyle: const TextStyle(fontFamily: 'Lexend'),
-              rangeSelectionBackgroundColor: AppColors.schneiderGreen
-                  .withOpacity(0.1),
+              rangeSelectionBackgroundColor:
+                  AppColors.schneiderGreen.withOpacity(0.1),
               todayBorder: const BorderSide(color: AppColors.schneiderGreen),
               todayForegroundColor: MaterialStateProperty.all(
                 AppColors.schneiderGreen,
@@ -557,8 +565,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ... (Widget arsip dan tanggal tidak berubah) ...
-                   Container(
+                  Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 8,
@@ -622,26 +629,39 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                         setState(() => _busbarClosedDateStatus = status),
                   ),
                   const SizedBox(height: 24),
-                  // [BARU] UI untuk Filter Isu
+                  
+                  // [BARU] UI untuk filter Position
+                  const Text(
+                    "Position",
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    children: positionOptions
+                        .map(
+                          (position) => _buildOptionButton(
+                            label: position,
+                            selected: _selectedPositions.contains(position),
+                            onTap: () =>
+                                _toggleSelection(_selectedPositions, position),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 24),
+
                   const Text("Status Isu",
                       style: TextStyle(fontWeight: FontWeight.w500)),
                   const SizedBox(height: 12),
                   Wrap(
                     children: [
-                      // _buildOptionButton(
-                      //   label: "Semua",
-                      //   selected: _selectedIssueStatus == IssueFilter.any,
-                      //   onTap: () =>
-                      //       setState(() => _selectedIssueStatus = IssueFilter.any),
-                      // ),
                       _buildOptionButton(
                         label: "Ada Isu",
                         selected: _selectedIssueStatus == IssueFilter.withIssues,
                         onTap: () => setState(() => _selectedIssueStatus =
                             _selectedIssueStatus == IssueFilter.withIssues
-                                ? IssueFilter.any 
-                                : IssueFilter.withIssues 
-                        ),
+                                ? IssueFilter.any
+                                : IssueFilter.withIssues),
                       ),
                       _buildOptionButton(
                         label: "Tidak Ada Isu",
@@ -649,33 +669,36 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                             _selectedIssueStatus == IssueFilter.withoutIssues,
                         onTap: () => setState(() => _selectedIssueStatus =
                             _selectedIssueStatus == IssueFilter.withoutIssues
-                                ? IssueFilter.any 
-                                : IssueFilter.withoutIssues 
-                        ),
+                                ? IssueFilter.any
+                                : IssueFilter.withoutIssues),
                       ),
                     ],
-                  ),const SizedBox(height: 24),
-                    const Text("Status SR", style: TextStyle(fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      children: [
-                        _buildOptionButton(
-                          label: "Ada SR",
-                          selected: _selectedSrStatus == SrFilter.withSr,
-                          onTap: () => setState(() => _selectedSrStatus =
-                              _selectedSrStatus == SrFilter.withSr ? SrFilter.any : SrFilter.withSr),
-                        ),
-                        _buildOptionButton(
-                          label: "Tidak Ada SR",
-                          selected: _selectedSrStatus == SrFilter.withoutSr,
-                          onTap: () => setState(() => _selectedSrStatus =
-                              _selectedSrStatus == SrFilter.withoutSr ? SrFilter.any : SrFilter.withoutSr),
-                        ),
-                      ],
-                    ),
+                  ),
                   const SizedBox(height: 24),
-                  
-                  // --- Widget lainnya tetap sama ---
+                  const Text("Status SR",
+                      style: TextStyle(fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    children: [
+                      _buildOptionButton(
+                        label: "Ada SR",
+                        selected: _selectedSrStatus == SrFilter.withSr,
+                        onTap: () => setState(() => _selectedSrStatus =
+                            _selectedSrStatus == SrFilter.withSr
+                                ? SrFilter.any
+                                : SrFilter.withSr),
+                      ),
+                      _buildOptionButton(
+                        label: "Tidak Ada SR",
+                        selected: _selectedSrStatus == SrFilter.withoutSr,
+                        onTap: () => setState(() => _selectedSrStatus =
+                            _selectedSrStatus == SrFilter.withoutSr
+                                ? SrFilter.any
+                                : SrFilter.withoutSr),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
                   const Text(
                     "Status Panel (% Progres)",
                     style: TextStyle(fontWeight: FontWeight.w500),
@@ -689,9 +712,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                           backgroundColor: AppColors.red,
                           radius: 7,
                         ),
-                        selected: _selectedPanelStatuses.contains(
-                          PanelFilterStatus.progressGrey,
-                        ),
+                        selected: _selectedPanelStatuses
+                            .contains(PanelFilterStatus.progressGrey),
                         onTap: () => _toggleSelection(
                           _selectedPanelStatuses,
                           PanelFilterStatus.progressGrey,
@@ -703,9 +725,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                           backgroundColor: AppColors.red,
                           radius: 7,
                         ),
-                        selected: _selectedPanelStatuses.contains(
-                          PanelFilterStatus.progressRed,
-                        ),
+                        selected: _selectedPanelStatuses
+                            .contains(PanelFilterStatus.progressRed),
                         onTap: () => _toggleSelection(
                           _selectedPanelStatuses,
                           PanelFilterStatus.progressRed,
@@ -717,9 +738,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                           backgroundColor: AppColors.orange,
                           radius: 7,
                         ),
-                        selected: _selectedPanelStatuses.contains(
-                          PanelFilterStatus.progressOrange,
-                        ),
+                        selected: _selectedPanelStatuses
+                            .contains(PanelFilterStatus.progressOrange),
                         onTap: () => _toggleSelection(
                           _selectedPanelStatuses,
                           PanelFilterStatus.progressOrange,
@@ -731,9 +751,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                           backgroundColor: AppColors.blue,
                           radius: 7,
                         ),
-                        selected: _selectedPanelStatuses.contains(
-                          PanelFilterStatus.progressBlue,
-                        ),
+                        selected: _selectedPanelStatuses
+                            .contains(PanelFilterStatus.progressBlue),
                         onTap: () => _toggleSelection(
                           _selectedPanelStatuses,
                           PanelFilterStatus.progressBlue,
@@ -745,9 +764,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                           backgroundColor: AppColors.blue,
                           radius: 7,
                         ),
-                        selected: _selectedPanelStatuses.contains(
-                          PanelFilterStatus.readyToDelivery,
-                        ),
+                        selected: _selectedPanelStatuses
+                            .contains(PanelFilterStatus.readyToDelivery),
                         onTap: () => _toggleSelection(
                           _selectedPanelStatuses,
                           PanelFilterStatus.readyToDelivery,
@@ -759,9 +777,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                           backgroundColor: AppColors.schneiderGreen,
                           radius: 7,
                         ),
-                        selected: _selectedPanelStatuses.contains(
-                          PanelFilterStatus.closed,
-                        ),
+                        selected: _selectedPanelStatuses
+                            .contains(PanelFilterStatus.closed),
                         onTap: () => _toggleSelection(
                           _selectedPanelStatuses,
                           PanelFilterStatus.closed,
@@ -929,8 +946,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                         onTap: () => setState(
                           () => _selectedSort =
                               _selectedSort == SortOption.durationDesc
-                              ? null
-                              : SortOption.durationDesc,
+                                  ? null
+                                  : SortOption.durationDesc,
                         ),
                       ),
                       _buildOptionButton(
@@ -939,8 +956,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                         onTap: () => setState(
                           () => _selectedSort =
                               _selectedSort == SortOption.durationAsc
-                              ? null
-                              : SortOption.durationAsc,
+                                  ? null
+                                  : SortOption.durationAsc,
                         ),
                       ),
                       _buildOptionButton(
@@ -949,8 +966,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                         onTap: () => setState(
                           () => _selectedSort =
                               _selectedSort == SortOption.percentageDesc
-                              ? null
-                              : SortOption.percentageDesc,
+                                  ? null
+                                  : SortOption.percentageDesc,
                         ),
                       ),
                       _buildOptionButton(
@@ -959,8 +976,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                         onTap: () => setState(
                           () => _selectedSort =
                               _selectedSort == SortOption.percentageAsc
-                              ? null
-                              : SortOption.percentageAsc,
+                                  ? null
+                                  : SortOption.percentageAsc,
                         ),
                       ),
                       _buildOptionButton(
@@ -969,8 +986,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                         onTap: () => setState(
                           () => _selectedSort =
                               _selectedSort == SortOption.panelNoAZ
-                              ? null
-                              : SortOption.panelNoAZ,
+                                  ? null
+                                  : SortOption.panelNoAZ,
                         ),
                       ),
                       _buildOptionButton(
@@ -979,28 +996,28 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                         onTap: () => setState(
                           () => _selectedSort =
                               _selectedSort == SortOption.panelNoZA
-                              ? null
-                              : SortOption.panelNoZA,
+                                  ? null
+                                  : SortOption.panelNoZA,
                         ),
                       ),
                       _buildOptionButton(
                         label: "No. PP A-Z",
                         selected: _selectedSort == SortOption.ppNoAZ,
                         onTap: () => setState(
-                          () =>
-                              _selectedSort = _selectedSort == SortOption.ppNoAZ
-                              ? null
-                              : SortOption.ppNoAZ,
+                          () => _selectedSort =
+                              _selectedSort == SortOption.ppNoAZ
+                                  ? null
+                                  : SortOption.ppNoAZ,
                         ),
                       ),
                       _buildOptionButton(
                         label: "No. PP Z-A",
                         selected: _selectedSort == SortOption.ppNoZA,
                         onTap: () => setState(
-                          () =>
-                              _selectedSort = _selectedSort == SortOption.ppNoZA
-                              ? null
-                              : SortOption.ppNoZA,
+                          () => _selectedSort =
+                              _selectedSort == SortOption.ppNoZA
+                                  ? null
+                                  : SortOption.ppNoZA,
                         ),
                       ),
                       _buildOptionButton(
@@ -1009,8 +1026,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                         onTap: () => setState(
                           () => _selectedSort =
                               _selectedSort == SortOption.wbsNoAZ
-                              ? null
-                              : SortOption.wbsNoAZ,
+                                  ? null
+                                  : SortOption.wbsNoAZ,
                         ),
                       ),
                       _buildOptionButton(
@@ -1019,8 +1036,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                         onTap: () => setState(
                           () => _selectedSort =
                               _selectedSort == SortOption.wbsNoZA
-                              ? null
-                              : SortOption.wbsNoZA,
+                                  ? null
+                                  : SortOption.wbsNoZA,
                         ),
                       ),
                       _buildOptionButton(
@@ -1029,8 +1046,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                         onTap: () => setState(
                           () => _selectedSort =
                               _selectedSort == SortOption.projectNoAZ
-                              ? null
-                              : SortOption.projectNoAZ,
+                                  ? null
+                                  : SortOption.projectNoAZ,
                         ),
                       ),
                       _buildOptionButton(
@@ -1039,8 +1056,8 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                         onTap: () => setState(
                           () => _selectedSort =
                               _selectedSort == SortOption.projectNoZA
-                              ? null
-                              : SortOption.projectNoZA,
+                                  ? null
+                                  : SortOption.projectNoZA,
                         ),
                       ),
                     ],

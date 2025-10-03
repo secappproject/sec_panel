@@ -73,7 +73,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late final TabController _chartTabController; // ### BARU: Controller untuk Chart Tab
   final TextEditingController _searchController = TextEditingController();
 
-
+  List<String> selectedPositions = [];
   List<PanelDisplayData> _allPanelsData = [];
   List<Company> _allK3Vendors = [];
   List<Company> _allK5Vendors = [];
@@ -290,6 +290,8 @@ void _prepareChartData() {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) => PanelFilterBottomSheet(
+        selectedPositions: selectedPositions,
+        onPositionsChanged: (value) => setState(() => selectedPositions = value),
         selectedSrStatus: selectedSrStatus,
         selectedIssueStatus: selectedIssueStatus,
         selectedStatuses: selectedStatuses,
@@ -536,6 +538,7 @@ void _prepareChartData() {
         final displayCorepartVendors = (data.corepartVendorNames ?? '').isEmpty
             ? 'no vendor'
             : data.corepartVendorNames!.toLowerCase();
+
         return (panel.noPanel ?? '').toLowerCase().contains(q) ||
             panel.noPp.toLowerCase().contains(q) ||
             (panel.noWbs ?? '').toLowerCase().contains(q) ||
@@ -695,6 +698,8 @@ void _prepareChartData() {
           matchSrStatus = true;
           break;
       }
+      final bool matchPosition = selectedPositions.isEmpty ||
+        selectedPositions.contains(panel.statusPenyelesaian);
 
       final panelStatus = _getPanelFilterStatus(panel);
       final bool matchStatusAndArchive;
@@ -706,7 +711,8 @@ void _prepareChartData() {
             selectedPanelStatuses.contains(panelStatus);
       }
 
-      return matchSearch &&
+      return matchSearch &&  
+          matchPosition &&
           matchPanelType &&
           matchIssueStatus &&
           matchSrStatus &&
@@ -1391,6 +1397,8 @@ void _prepareChartData() {
             final data = panelsToDisplay[index];
             final panel = data.panel;
             return PanelProgressCard(
+              productionSlot: panel.productionSlot,
+              statusPenyelesaian: panel.statusPenyelesaian,
               additionalSrCount: data.additionalSrCount ?? 0,
               issueCount: data.issueCount ?? 0,
               currentUserRole: widget.currentCompany.role,
@@ -1464,6 +1472,8 @@ void _prepareChartData() {
           final data = panelsToDisplay[index];
           final panel = data.panel;
           return PanelProgressCard(
+            productionSlot: panel.productionSlot,
+            statusPenyelesaian: panel.statusPenyelesaian,
             additionalSrCount: data.additionalSrCount ?? 0,
             issueCount: data.issueCount ?? 0,
             currentUserRole: widget.currentCompany.role,
