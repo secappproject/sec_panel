@@ -7,12 +7,14 @@ import 'package:secpanel/models/company.dart';
 import 'package:secpanel/theme/colors.dart';
 
 class AdditionalSrBottomSheet extends StatefulWidget {
+  final Company currentCompany;
   final String poNumber;
   final String panelNoPp;
   final String panelTitle;
 
   const AdditionalSrBottomSheet({
     super.key,
+    required this.currentCompany,
     required this.poNumber,
     required this.panelNoPp,
     required this.panelTitle,
@@ -25,7 +27,8 @@ class AdditionalSrBottomSheet extends StatefulWidget {
 
 class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
   List<AdditionalSR> _srs = [];
-  bool _isLoading = true;
+  bool _isLoading = true;  
+  bool get _isViewer => widget.currentCompany.role == AppRole.viewer;
 
   @override
   void initState() {
@@ -119,6 +122,7 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                       ],
                     ),
                   ),
+                  (!_isViewer) ?
                   ElevatedButton.icon(
                     onPressed: () => _showEditSRDialog(),
                     icon: const Icon(Icons.add, size: 16),
@@ -134,7 +138,8 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(6)),
                     ),
-                  )
+                  ) 
+                  : SizedBox()
                 ],
               ),
               const SizedBox(height: 16),
@@ -289,6 +294,7 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                     ],
                   ),
                 ),
+                (!_isViewer) ?
                 PopupMenuButton<String>(
                   color: const Color(0XFFFFFFFF),
                   shape: RoundedRectangleBorder(
@@ -422,7 +428,7 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                       ),
                     ),
                   ],
-                ),
+                ): SizedBox(),
               ],
             ),
           ),

@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:secpanel/helpers/db_helper.dart';
+import 'package:secpanel/models/approles.dart';
+import 'package:secpanel/models/company.dart';
 import 'package:secpanel/models/paneldisplaydata.dart';
 import 'package:secpanel/models/productionslot.dart';
 import 'package:secpanel/theme/colors.dart';
@@ -17,12 +19,15 @@ enum _TransferFlowStep {
 
 class TransferPanelBottomSheet extends StatefulWidget {
   final PanelDisplayData panelData;
+  final Company currentCompany;
+
   final Function(PanelDisplayData) onSuccess;
 
   const TransferPanelBottomSheet({
     super.key,
     required this.panelData,
     required this.onSuccess,
+    required this.currentCompany
   });
 
   @override
@@ -34,6 +39,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
   late PanelDisplayData _currentPanelData;
   bool _isLoading = false;
   _TransferFlowStep _currentStep = _TransferFlowStep.displayStatus;
+  bool get _isViewer => widget.currentCompany.role == AppRole.viewer;
 
   List<ProductionSlot> _productionSlots = [];
   String? _selectedSlot;
@@ -387,7 +393,7 @@ Widget _buildSlotSelectionView() {
           ],
         ),
         const SizedBox(height: 16),
-        _buildFooterButtons(
+        (!_isViewer) ? _buildFooterButtons(
           secondaryText: 'Kembali',
           secondaryAction: () =>
               setState(() => _currentStep = _TransferFlowStep.displayStatus),
@@ -396,7 +402,7 @@ Widget _buildSlotSelectionView() {
               ? null
               : () => setState(
                   () => _currentStep = _TransferFlowStep.confirmToProduction),
-        ),
+        ) : SizedBox(),
       ],
     ),
   );
@@ -570,10 +576,10 @@ Widget _buildSlotSelectionView() {
             ),
           ),
           const SizedBox(height: 24),
-          _buildActionButtons(
+          (!_isViewer) ?_buildActionButtons(
             primaryButton: actionButton,
             secondaryAction: rollbackAction,
-          ),
+          ): SizedBox(),
         ],
       ),
     );

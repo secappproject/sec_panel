@@ -7,6 +7,8 @@ import 'package:secpanel/components/issue/issue_detail/issue_detail_card_skeleto
 import 'package:secpanel/components/issue/issue_detail/issue_form_bottom_sheet.dart';
 import 'package:secpanel/components/issue/panel_issue_screen.dart';
 import 'package:secpanel/helpers/db_helper.dart';
+import 'package:secpanel/models/approles.dart';
+import 'package:secpanel/models/company.dart';
 import 'package:secpanel/models/issue.dart';
 import 'package:secpanel/theme/colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,12 +17,14 @@ class IssueDetailCard extends StatefulWidget {
   final int issueId;
   final VoidCallback onUpdate;
   final BuildContext scaffoldContext;
+  final Company currentCompany;
 
   const IssueDetailCard({
     super.key,
     required this.issueId,
     required this.onUpdate,
     required this.scaffoldContext,
+    required this.currentCompany,
   });
 
   @override
@@ -32,6 +36,7 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
   bool _isLoading = true;
   String? _errorMessage;
   late bool _isSolved;
+  bool get _isViewer => widget.currentCompany.role == AppRole.viewer;
 
   @override
   void initState() {
@@ -144,7 +149,8 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
         children: [
           _buildHeader(),
           const SizedBox(height: 16),
-          _buildActionButtons(),
+          (!_isViewer) ?
+          _buildActionButtons(): SizedBox(),
           const SizedBox(height: 24),
           _buildDetails(),
           if (_issue!.photos.isNotEmpty) const SizedBox(height: 16),
@@ -236,7 +242,7 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
         Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            GestureDetector(
+            (!_isViewer) ? GestureDetector(
               onTap: _toggleSolvedStatus,
               child: Image.asset(
                 _isSolved
@@ -244,7 +250,12 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
                     : 'assets/images/uncheck.png',
                 height: 40,
               ),
-            ),
+            ) : Image.asset(
+                _isSolved
+                    ? 'assets/images/check.png'
+                    : 'assets/images/uncheck.png',
+                height: 40,
+              ),
             const SizedBox(height: 4),
             Text(
               _isSolved ? 'Solved' : '',
@@ -288,6 +299,7 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
           ),
         ),
         const SizedBox(width: 12),
+      
         Expanded(
           child: _buildStyledButton(
             onPressed: _showDeleteConfirmation,
@@ -418,6 +430,7 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w400,
+                    fontFamily: 'Lexend',
                     fontSize: 12,
                   ),
                 ),
@@ -444,7 +457,7 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
                   style: const TextStyle(
                     color: AppColors.black,
                     fontSize: 11,
-                    fontFamily: 'Poppins',
+                    fontFamily: 'Lexend',
                   ),
                   children: [
                     TextSpan(
@@ -453,7 +466,7 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
                     ),
                     TextSpan(
                       text: log.action.toLowerCase(),
-                      style: const TextStyle(color: AppColors.gray),
+                      style: TextStyle(color: AppColors.gray, fontWeight: FontWeight.w300),
                     ),
                   ],
                 ),

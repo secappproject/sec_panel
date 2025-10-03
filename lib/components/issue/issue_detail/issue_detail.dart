@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:secpanel/components/issue/issue_detail/issue_detail_card.dart';
+import 'package:secpanel/models/company.dart';
 import 'package:secpanel/theme/colors.dart';
 
 class IssueDetailBottomSheet extends StatelessWidget {
   final int issueId;
   final VoidCallback onUpdate;
+  final Company currentCompany;
 
   const IssueDetailBottomSheet({
     super.key,
     required this.issueId,
     required this.onUpdate,
+    required this.currentCompany
   });
 
   @override
@@ -46,6 +49,7 @@ class IssueDetailBottomSheet extends StatelessWidget {
                   children: [
                     // FIX: Pass the required arguments to IssueDetailCard
                     IssueDetailCard(
+                      currentCompany: currentCompany,
                       issueId: issueId,
                       onUpdate: onUpdate,
                       scaffoldContext: context,

@@ -4,6 +4,8 @@ import 'package:secpanel/components/issue/issue_card.dart';
 import 'package:secpanel/components/issue/issue_card_skeleton.dart';
 import 'package:secpanel/components/issue/issue_chat/ask_ai.dart';
 import 'package:secpanel/helpers/db_helper.dart';
+import 'package:secpanel/models/approles.dart';
+import 'package:secpanel/models/company.dart';
 import 'package:secpanel/theme/colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
@@ -20,6 +22,7 @@ class PanelIssuesScreen extends StatefulWidget {
   final String panelNoWBS;
   final String busbarVendor;
   final int issueCount;
+  final Company currentCompany;
 
   const PanelIssuesScreen({
     super.key,
@@ -28,7 +31,8 @@ class PanelIssuesScreen extends StatefulWidget {
     required this.busbarVendor,
     required this.panelNoPanel,
     required this.panelNoWBS,
-    required this.issueCount
+    required this.issueCount,
+    required this.currentCompany
   });
 
   static void showSnackBar(String message, {bool isError = false}) {
@@ -55,6 +59,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
   List<IssueWithPhotos> _filteredAllIssues = [];
   List<IssueWithPhotos> _filteredUnsolvedIssues = [];
   List<IssueWithPhotos> _filteredSolvedIssues = [];
+  bool get _isViewer => widget.currentCompany.role == AppRole.viewer;
 
   List<String> _allRootCauses = [];
   List<String> _selectedRootCauses = [];
@@ -625,6 +630,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
         child: ListView(
           children: [
             AddIssuePostBox(
+              currentCompany: widget.currentCompany,
               onIssueAdded: () => _loadIssues(showLoading: false),
               panelNoPp: widget.panelNoPp,
             ),
@@ -649,6 +655,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
         child: ListView(
           children: [
             AddIssuePostBox(
+              currentCompany: widget.currentCompany,
               onIssueAdded: () => _loadIssues(showLoading: false),
               panelNoPp: widget.panelNoPp,
             ),
@@ -680,11 +687,13 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
               itemBuilder: (context, index) {
                 if (index == 0) {
                   return AddIssuePostBox(
+                    currentCompany: widget.currentCompany,
                     onIssueAdded: () => _loadIssues(showLoading: false),
                     panelNoPp: widget.panelNoPp,
                   );
                 }
                 return IssueCard(
+                  currentCompany: widget.currentCompany,
                   panelNoPp: widget.panelNoPp,
                   issue: issues[index - 1],
                   onUpdate: () => _loadIssues(showLoading: false),
@@ -728,10 +737,12 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 
 class AddIssuePostBox extends StatefulWidget {
   final VoidCallback onIssueAdded;
+  final Company currentCompany;
   final String panelNoPp;
   const AddIssuePostBox({
     super.key,
     required this.onIssueAdded,
+    required this.currentCompany,
     required this.panelNoPp,
   });
 
@@ -742,6 +753,7 @@ class AddIssuePostBox extends StatefulWidget {
 class _AddIssuePostBoxState extends State<AddIssuePostBox> {
   String _initials = 'US';
   Color _avatarColor = AppColors.gray;
+  bool get _isViewer => widget.currentCompany.role == AppRole.viewer;
 
   @override
   void initState() {
@@ -786,7 +798,8 @@ class _AddIssuePostBoxState extends State<AddIssuePostBox> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+
+    return (!_isViewer) ? Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Container(
         decoration: BoxDecoration(
@@ -842,6 +855,6 @@ class _AddIssuePostBoxState extends State<AddIssuePostBox> {
           ),
         ),
       ),
-    );
+    ) : SizedBox();
   }
 }

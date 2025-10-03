@@ -9,6 +9,7 @@ import 'package:secpanel/components/issue/panel_issue_screen.dart';
 import 'package:secpanel/components/panel/card/remarks_bottom_sheet.dart';
 import 'package:secpanel/models/approles.dart';
 import 'package:secpanel/models/busbarremark.dart';
+import 'package:secpanel/models/company.dart';
 import 'package:secpanel/theme/colors.dart';
 
 class AlertInfo {
@@ -31,6 +32,7 @@ class AlertInfo {
 
 class PanelProgressCard extends StatelessWidget {
   final AppRole currentUserRole;
+  final Company currentCompany;
   final String? statusPenyelesaian;
   final String? productionSlot;
   final String duration;
@@ -66,6 +68,7 @@ class PanelProgressCard extends StatelessWidget {
     required this.currentUserRole,
     this.statusPenyelesaian,
     this.productionSlot,
+    required this.currentCompany,
     required this.duration,
     required this.targetDelivery,
     required this.progress,
@@ -783,7 +786,6 @@ class PanelProgressCard extends StatelessWidget {
   }
 
   Widget _buildCycleButton() {
-    if (currentUserRole == AppRole.viewer) return const SizedBox.shrink();
     return InkWell(
       onTap: onTransfer,
       borderRadius: BorderRadius.circular(8),
@@ -803,9 +805,12 @@ class PanelProgressCard extends StatelessWidget {
     );
   }
   Widget _buildEditButton() {
-    if (currentUserRole == AppRole.viewer) return const SizedBox.shrink();
+    // Tombol tetap muncul untuk Viewer, tapi dengan tampilan "view-only"
+    bool isViewer = currentUserRole == AppRole.viewer;
+
     return InkWell(
-      onTap: onEdit,
+      // Untuk viewer, onTap tetap berfungsi untuk membuka halaman edit
+      onTap: onEdit, 
       borderRadius: BorderRadius.circular(8),
       child: Container(
         alignment: Alignment.center,
@@ -814,16 +819,30 @@ class PanelProgressCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Image.asset('assets/images/edit-green.png', height: 20, color: AppColors.gray,),
+            Image.asset(
+              'assets/images/edit-green.png', 
+              height: 20, 
+              // Beri warna abu-abu jika hanya viewer
+              color: AppColors.gray,
+            ),
             SizedBox(width: 8,),
-            Text("Edit", style: TextStyle(fontSize: 11, color: AppColors.black, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
+            Text(
+              isViewer ? "Detail" : "Edit", 
+              style: TextStyle(
+                fontSize: 11, 
+                // Beri warna abu-abu jika hanya viewer
+                color:  AppColors.black, 
+                fontWeight: FontWeight.w300,
+                overflow: TextOverflow.ellipsis
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+
 Widget _buildAdditionalSRButton(BuildContext context) {
-  if (currentUserRole == AppRole.viewer) return const SizedBox.shrink();
   return InkWell(
     onTap: () {
       showModalBottomSheet(
@@ -831,6 +850,7 @@ Widget _buildAdditionalSRButton(BuildContext context) {
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         builder: (_) => AdditionalSrBottomSheet(
+          currentCompany: currentCompany,
           panelNoPp: ppNumber,
           poNumber: panelTitle,
           panelTitle: panelTitle,
@@ -891,13 +911,13 @@ Widget _buildAdditionalSRButton(BuildContext context) {
 }
 
   Widget _buildIssueButton(BuildContext context) {
-    if (currentUserRole == AppRole.viewer) return const SizedBox.shrink();
     return InkWell(
       onTap: () => {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => PanelIssuesScreen(
+              currentCompany: currentCompany,
               issueCount: issueCount,
               panelNoPp: ppNumber,
               panelNoWBS: wbsNumber,

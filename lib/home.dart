@@ -409,6 +409,7 @@ void _prepareChartData() {
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         builder: (_) => TransferPanelBottomSheet(
+          currentCompany: widget.currentCompany,
           panelData: panelData,
           onSuccess: (updatedPanelData) {
             Navigator.of(context).pop();
@@ -1397,6 +1398,7 @@ void _prepareChartData() {
             final data = panelsToDisplay[index];
             final panel = data.panel;
             return PanelProgressCard(
+              currentCompany: widget.currentCompany,
               productionSlot: panel.productionSlot,
               statusPenyelesaian: panel.statusPenyelesaian,
               additionalSrCount: data.additionalSrCount ?? 0,
@@ -1419,7 +1421,7 @@ void _prepareChartData() {
               project: panel.project ?? "",
               onEdit: () {
                 final role = widget.currentCompany.role;
-                if (role == AppRole.admin || role == AppRole.k3) {
+                if (role == AppRole.admin || role == AppRole.k3 || role == AppRole.viewer) {
                   _openEditPanelBottomSheet(data);
                 } else if (role == AppRole.k5 || role == AppRole.warehouse) {
                   _openEditStatusBottomSheet(data);
@@ -1472,6 +1474,7 @@ void _prepareChartData() {
           final data = panelsToDisplay[index];
           final panel = data.panel;
           return PanelProgressCard(
+            currentCompany: widget.currentCompany,
             productionSlot: panel.productionSlot,
             statusPenyelesaian: panel.statusPenyelesaian,
             additionalSrCount: data.additionalSrCount ?? 0,
@@ -1494,7 +1497,7 @@ void _prepareChartData() {
             project: panel.project ?? "",
             onEdit: () {
               final role = widget.currentCompany.role;
-              if (role == AppRole.admin || role == AppRole.k3) {
+                if (role == AppRole.admin || role == AppRole.k3 || role == AppRole.viewer) {
                 _openEditPanelBottomSheet(data);
               } else if (role == AppRole.k5 || role == AppRole.warehouse) {
                 _openEditStatusBottomSheet(data);

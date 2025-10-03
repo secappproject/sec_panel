@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:rich_text_controller/rich_text_controller.dart';
 import 'package:secpanel/components/issue/issue_chat/mention_text_editing_controller.dart';
 import 'package:secpanel/helpers/db_helper.dart';
+import 'package:secpanel/models/approles.dart';
+import 'package:secpanel/models/company.dart';
 import 'package:secpanel/models/issue.dart';
 import 'package:secpanel/theme/colors.dart';
 
@@ -13,12 +15,14 @@ class IssueCommentSheet extends StatefulWidget {
   final IssueWithPhotos issue;
   final VoidCallback onUpdate;
   final User currentUser; // Parameter yang diperlukan
+  final Company currentCompany;
 
   const IssueCommentSheet({
     super.key,
     required this.issue,
     required this.onUpdate,
     required this.currentUser, // Dibuat menjadi required
+    required this.currentCompany,
   });
 
   @override
@@ -28,6 +32,7 @@ class IssueCommentSheet extends StatefulWidget {
 class _IssueCommentSheetState extends State<IssueCommentSheet> {
   late final MentionTextEditingController _textController;
   final ScrollController _scrollController = ScrollController();
+  bool get _isViewer => widget.currentCompany.role == AppRole.viewer;
 
   final List<File> _newDraftImages = [];
   final List<String> _existingImageUrls = [];
@@ -377,7 +382,7 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
                   padding: EdgeInsets.all(8.0),
                   child: Center(child: LinearProgressIndicator()),
                 ),
-              _buildMessageComposer(),
+              (!_isViewer) ? _buildMessageComposer() : SizedBox(),
             ],
           ),
         );
@@ -610,7 +615,8 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildActionButton('Balas', () => _startReply(comment)),
+        (!_isViewer) ? 
+        _buildActionButton('Balas', () => _startReply(comment)): SizedBox(),
         if (isCurrentUser) ...[
           _buildActionSeparator(),
           _buildActionButton('Hapus', () => _deleteComment(comment.id)),

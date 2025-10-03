@@ -7,6 +7,8 @@ import 'package:secpanel/components/issue/issue_detail/issue_detail.dart';
 import 'package:secpanel/components/issue/panel_issue_screen.dart';
 import 'package:secpanel/components/issue/photo_viewer.dart';
 import 'package:secpanel/helpers/db_helper.dart';
+import 'package:secpanel/models/approles.dart';
+import 'package:secpanel/models/company.dart';
 import 'package:secpanel/models/issue.dart';
 import 'package:secpanel/theme/colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,12 +18,14 @@ class IssueCard extends StatefulWidget {
   final IssueWithPhotos issue;
   final String panelNoPp; // ▼▼▼ [PERBAIKAN] Tambahkan properti ini
   final VoidCallback onUpdate;
+  final Company currentCompany;
 
   const IssueCard({
     super.key,
     required this.issue,
     required this.panelNoPp, // ▼▼▼ [PERBAIKAN] Jadikan required
     required this.onUpdate,
+    required this.currentCompany,
   });
 
   @override
@@ -30,6 +34,7 @@ class IssueCard extends StatefulWidget {
 
 class _IssueCardState extends State<IssueCard> {
   late bool _isSolved;
+  bool get _isViewer => widget.currentCompany.role == AppRole.viewer;
 
   static const List<Color> _userAvatarColors = [
     Color(0xFFFF5DD1),
@@ -83,6 +88,7 @@ class _IssueCardState extends State<IssueCard> {
 
     // ▼▼▼ [PERBAIKAN] Teruskan panelNoPp ke ManageNotificationsSheet ▼▼▼
     final manageSheetWidget = ManageNotificationsSheet(
+      currentCompany: widget.currentCompany,
       issue: widget.issue,
       initialEmails: emails,
       onUpdate: widget.onUpdate,
@@ -485,6 +491,7 @@ class _IssueCardState extends State<IssueCard> {
                         isScrollControlled: true,
                         backgroundColor: Colors.transparent,
                         builder: (context) => IssueCommentSheet(
+                            currentCompany: widget.currentCompany,
                             issue: widget.issue,
                             onUpdate: widget.onUpdate,
                             currentUser: currentUser),
@@ -506,6 +513,7 @@ class _IssueCardState extends State<IssueCard> {
                       isScrollControlled: true,
                       backgroundColor: Colors.transparent,
                       builder: (context) => IssueDetailBottomSheet(
+                          currentCompany: widget.currentCompany,
                           issueId: widget.issue.id, onUpdate: widget.onUpdate),
                     );
                   },
@@ -519,7 +527,7 @@ class _IssueCardState extends State<IssueCard> {
 
   Widget _buildStatusIcon() {
     return GestureDetector(
-      onTap: _toggleSolvedStatus,
+      onTap: (!_isViewer) ? _toggleSolvedStatus : (){},
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -580,14 +588,16 @@ class _IssueCardState extends State<IssueCard> {
 
 class ManageNotificationsSheet extends StatefulWidget {
   final IssueWithPhotos issue;
-  final String panelNoPp; // ▼▼▼ [PERBAIKAN] Tambahkan properti ini
+  final String panelNoPp;
+  final Company currentCompany;
   final List<String> initialEmails;
   final VoidCallback onUpdate;
 
   const ManageNotificationsSheet(
       {super.key,
+      required this.currentCompany,
       required this.issue,
-      required this.panelNoPp, // ▼▼▼ [PERBAIKAN] Jadikan required
+      required this.panelNoPp, 
       required this.initialEmails,
       required this.onUpdate});
 
@@ -600,6 +610,7 @@ class _ManageNotificationsSheetState extends State<ManageNotificationsSheet> {
   late List<String> _notifyEmails;
   final _emailInputController = TextEditingController();
   final _emailFocusNode = FocusNode();
+  bool get _isViewer => widget.currentCompany.role == AppRole.viewer;
 
   List<String> _recommendedEmails = [];
   bool _isLoadingRecommendations = true;
@@ -740,7 +751,8 @@ class _ManageNotificationsSheetState extends State<ManageNotificationsSheet> {
             ],
           ),
           const SizedBox(height: 16),
-          _buildEmailInviteField(),
+          (!_isViewer )? 
+          _buildEmailInviteField() : SizedBox(),
           _buildEmailRecommendations(),
           Flexible(
             child: SingleChildScrollView(
@@ -847,6 +859,7 @@ class _ManageNotificationsSheetState extends State<ManageNotificationsSheet> {
                               style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w300))),
+                                  (!_isViewer) ?
                       TextButton(
                         onPressed: () => _removeEmail(index),
                         style: TextButton.styleFrom(
@@ -857,7 +870,7 @@ class _ManageNotificationsSheetState extends State<ManageNotificationsSheet> {
                         child: const Text("Remove",
                             style: TextStyle(
                                 fontSize: 11, fontWeight: FontWeight.w400)),
-                      ),
+                      ) : SizedBox(),
                     ],
                   ),
                 );
