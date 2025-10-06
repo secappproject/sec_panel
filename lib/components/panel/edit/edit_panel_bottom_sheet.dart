@@ -414,6 +414,14 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                   ),
                 ),
 
+                if (_isK3) ...[
+                  const SizedBox(height: 12),
+                  _buildPaletSection(),
+                  if (_selectedPanelType == 'MCCW') ...[
+                  const SizedBox(height: 12),
+                  _buildCorepartSection(),
+                  ]
+                ],
                 if (_isAdmin || _isViewer) ...[
                   const SizedBox(height: 12),
                   _buildBusbarSection(),
