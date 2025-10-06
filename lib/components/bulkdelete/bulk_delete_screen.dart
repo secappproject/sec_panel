@@ -17,16 +17,23 @@ class BulkDeleteResult {
   });
 }
 
+
 class BulkDeleteBottomSheet extends StatefulWidget {
-  const BulkDeleteBottomSheet({super.key});
+  final List<PanelDisplayData> panelsToDisplay; 
+
+  const BulkDeleteBottomSheet({
+    super.key,
+    required this.panelsToDisplay,
+  });
 
   @override
+  // Ganti State
   State<BulkDeleteBottomSheet> createState() => _BulkDeleteBottomSheetState();
 }
 
 class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
-  List<PanelDisplayData> _panels = [];
-  bool _isLoading = true;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchText = ''; 
   bool _isDeleting = false;
   final Set<String> _selectedPanelPks = {};
   bool _dataHasChanged = false;
@@ -34,46 +41,44 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _loadPanels();
+  }
+  
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
-  Future<void> _loadPanels() async {
-    setState(() => _isLoading = true);
-    try {
-      final panelsData = await DatabaseHelper.instance.getAllPanelsForDisplay(
-        currentUser: null, // Tetap null untuk mengambil semua data
-        rawIds: true, // Ini akan meminta No. PP yang asli (TEMP_PP_...)
-      );
-      if (mounted) {
-        setState(() {
-          _panels = panelsData;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        // [PERBAIKAN] Langsung tutup bottom sheet dengan hasil error
-        Navigator.of(context).pop(
-          BulkDeleteResult(
-            success: false,
-            message: 'Gagal memuat data panel: $e',
-            dataHasChanged: false,
-          ),
-        );
-      }
+ List<PanelDisplayData> get _filteredAndSearchedPanels {
+    final List<PanelDisplayData> baseList = widget.panelsToDisplay;
+
+    if (_searchText.isEmpty) {
+      return baseList;
     }
+
+    final lowerCaseSearch = _searchText.toLowerCase();
+    
+    return baseList.where((data) {
+      final panel = data.panel;
+      return (panel.noPanel?.toLowerCase().contains(lowerCaseSearch) ?? false) ||
+             (panel.noPp.toLowerCase().contains(lowerCaseSearch)) ||
+             (panel.project?.toLowerCase().contains(lowerCaseSearch) ?? false) ||
+             (data.panelVendorName.toLowerCase().contains(lowerCaseSearch));
+    }).toList();
   }
 
   void _onSelectAll(bool? selected) {
     setState(() {
+      final currentList = _filteredAndSearchedPanels; 
       if (selected == true) {
-        _selectedPanelPks.addAll(_panels.map((p) => p.panel.noPp));
+        _selectedPanelPks.addAll(currentList.map((p) => p.panel.noPp));
       } else {
-        _selectedPanelPks.clear();
+        for (var panel in currentList) {
+          _selectedPanelPks.remove(panel.panel.noPp);
+        }
       }
     });
   }
-
   Future<bool> _showConfirmationBottomSheet({
     required String title,
     required String content,
@@ -170,8 +175,7 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
     );
     return result ?? false;
   }
-
-  Future<void> _deleteSinglePanel(String noPp, String? noPanel) async {
+ Future<void> _deleteSinglePanel(String noPp, String? noPanel) async {
     final confirm = await _showConfirmationBottomSheet(
       title: 'Hapus Panel?',
       content:
@@ -182,9 +186,29 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
       try {
         await DatabaseHelper.instance.deletePanel(noPp);
         _dataHasChanged = true;
-        _selectedPanelPks.remove(noPp);
-        // Refresh list secara lokal tanpa menutup bottom sheet
-        await _loadPanels();
+        
+        // Hapus dari daftar terpilih dan perbarui UI lokal
+        setState(() {
+          _selectedPanelPks.remove(noPp);
+          // Karena kita tidak memuat ulang data dari DB di sini,
+          // user harus menutup sheet untuk melihat perubahan di HomeScreen.
+          // Untuk menghilangkan panel dari tampilan BulkDelete, 
+          // kita perlu mengubah cara BulkDeleteBottomSheet mendapatkan datanya.
+          // Saat ini kita tidak akan menghapus secara lokal di sini, 
+          // hanya memperbarui _selectedPanelPks dan mengandalkan refresh HomeScreen.
+        });
+        
+        // Cukup tutup bottom sheet dengan pesan sukses
+        if (mounted) {
+            Navigator.of(context).pop(
+                BulkDeleteResult(
+                    success: true,
+                    message: 'Panel "$noPanel" berhasil dihapus.',
+                    dataHasChanged: _dataHasChanged,
+                ),
+            );
+        }
+
       } catch (e) {
         if (mounted) {
           Navigator.of(context).pop(
@@ -200,7 +224,8 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
   }
 
   Future<void> _deleteSelectedPanels() async {
-    final count = _selectedPanelPks.length;
+    final List<String> panelsToDelete = _selectedPanelPks.toList();
+    final count = panelsToDelete.length;
     final confirm = await _showConfirmationBottomSheet(
       title: 'Konfirmasi Hapus Massal',
       content:
@@ -210,9 +235,8 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
     if (confirm && mounted) {
       setState(() => _isDeleting = true);
       try {
-        await DatabaseHelper.instance.deletePanels(_selectedPanelPks.toList());
+        await DatabaseHelper.instance.deletePanels(panelsToDelete);
 
-        // [PERBAIKAN] Sekarang API request berhasil, tutup bottom sheet dengan hasil sukses.
         Navigator.of(context).pop(
           BulkDeleteResult(
             success: true,
@@ -221,13 +245,10 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
           ),
         );
       } catch (e) {
-        // [PERBAIKAN] Jika API request (yang sudah diperbaiki) tetap gagal,
-        // tutup bottom sheet dengan hasil error.
         Navigator.of(context).pop(
           BulkDeleteResult(
             success: false,
             message: 'Gagal menghapus panel: $e',
-            // _dataHasChanged bisa jadi true jika beberapa operasi single delete berhasil sebelumnya
             dataHasChanged: _dataHasChanged,
           ),
         );
@@ -241,19 +262,22 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final panelsToDisplay = _filteredAndSearchedPanels; // Gunakan getter baru
     final isSelectionEmpty = _selectedPanelPks.isEmpty;
-
-    // [PERBAIKAN] Menyederhanakan PopScope.
-    // onPopInvoked tidak perlu memanggil Navigator.pop() lagi karena itu menyebabkan error.
-    // Cukup kembalikan result saat tombol 'Tutup' ditekan.
+    final isListEmpty = panelsToDisplay.isEmpty;
+    
     return PopScope(
       canPop: !_isDeleting,
       onPopInvoked: (didPop) {
         if (!didPop) return;
-        // Ketika pop terjadi (misal via gesture), kita perlu mengembalikan hasil.
-        // Navigator.pop(context) yang dipanggil oleh framework tidak membawa nilai.
-        // Solusinya adalah membiarkan `then` di main_screen menangani nilai null dan
-        // menganggapnya sebagai penutupan manual.
+        // Kembalikan status dataHasChanged saat ditutup secara manual
+        // Navigator.of(context).pop(
+        //       BulkDeleteResult(
+        //           success: true,
+        //           message: '',
+        //           dataHasChanged: _dataHasChanged,
+        //       ),
+        //   );
       },
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.85,
@@ -284,20 +308,41 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  TextField(
+                    style: TextStyle(color: AppColors.black, fontSize: 12, fontWeight: FontWeight.w300),
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.schneiderGreen, ), borderRadius: BorderRadius.all(Radius.circular(12))),
+                      enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.grayLight, ), borderRadius: BorderRadius.all(Radius.circular(12))),
+                      hintText: 'Cari No. Panel, No. PP, Project, atau Vendor...',
+                      hintStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w300, color: AppColors.gray),
+                      prefixIcon: const Icon(Icons.search, color: AppColors.gray),
+                      suffixIcon: _searchText.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, color: AppColors.gray, size: 12,),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchText = '');
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.grayLight),
+                      ),
+                    ),
+                    onChanged: (value) => setState(() => _searchText = value),
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
             Expanded(
-              child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.schneiderGreen,
-                      ),
-                    )
-                  : _panels.isEmpty
+              child: isListEmpty
                   ? const Center(
                       child: Text(
-                        "Tidak ada data panel.",
+                        "Tidak ada data panel yang sesuai dengan filter atau pencarian.",
+                        textAlign: TextAlign.center,
                         style: TextStyle(color: AppColors.gray),
                       ),
                     )
@@ -309,11 +354,11 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
                                 MaterialStateProperty.resolveWith<Color?>((
                                   Set<MaterialState> states,
                                 ) {
-                                  if (states.contains(MaterialState.selected)) {
-                                    return AppColors.schneiderGreen;
-                                  }
-                                  return null;
-                                }),
+                              if (states.contains(MaterialState.selected)) {
+                                return AppColors.schneiderGreen;
+                              }
+                              return null;
+                            }),
                             checkColor: MaterialStateProperty.all(Colors.white),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(4),
@@ -323,18 +368,18 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
                         child: SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: DataTable(
-                            onSelectAll: _onSelectAll,
+                            onSelectAll: panelsToDisplay.isEmpty || _isDeleting ? null : _onSelectAll, 
                             headingRowColor: MaterialStateProperty.all(
-                              AppColors.grayLight.withOpacity(0.4),
+                              AppColors.white,
                             ),
                             columns: const [
-                              DataColumn(label: Text('No. Panel')),
-                              DataColumn(label: Text('No. PP')),
-                              DataColumn(label: Text('Project')),
-                              DataColumn(label: Text('Vendor Panel')),
-                              DataColumn(label: Text('Aksi')),
+                              DataColumn(label: Text('No. Panel', style: TextStyle(fontWeight: FontWeight.w300),)),
+                              DataColumn(label: Text('No. PP', style: TextStyle(fontWeight: FontWeight.w300),)),
+                              DataColumn(label: Text('Project', style: TextStyle(fontWeight: FontWeight.w300),)),
+                              DataColumn(label: Text('Vendor Panel', style: TextStyle(fontWeight: FontWeight.w300),)),
+                              DataColumn(label: Text('Aksi', style: TextStyle(fontWeight: FontWeight.w300),)),
                             ],
-                            rows: _panels.map((data) {
+                            rows: panelsToDisplay.map((data) {
                               final panel = data.panel;
                               final isSelected = _selectedPanelPks.contains(
                                 panel.noPp,
@@ -355,16 +400,19 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
                                         });
                                       },
                                 cells: [
-                                  DataCell(Text(panel.noPanel ?? '-')),
+                                  DataCell(Text(panel.noPanel ?? '-', style: TextStyle(fontWeight: FontWeight.w300),)),
                                   DataCell(
                                     Text(
                                       panel.noPp.startsWith("TEMP_PP_")
                                           ? ''
                                           : panel.noPp,
+                                          style: TextStyle(fontWeight: FontWeight.w300),
                                     ),
                                   ),
-                                  DataCell(Text(panel.project ?? '-')),
-                                  DataCell(Text(data.panelVendorName)),
+                                  DataCell(Text(panel.project ?? '-',
+                                          style: TextStyle(fontWeight: FontWeight.w300),)),
+                                  DataCell(Text(data.panelVendorName,
+                                          style: TextStyle(fontWeight: FontWeight.w300),)),
                                   DataCell(
                                     IconButton(
                                       icon: const Icon(
@@ -374,9 +422,9 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
                                       onPressed: _isDeleting
                                           ? null
                                           : () => _deleteSinglePanel(
-                                              panel.noPp,
-                                              panel.noPanel,
-                                            ),
+                                                panel.noPp,
+                                                panel.noPanel,
+                                              ),
                                     ),
                                   ),
                                 ],
@@ -397,13 +445,13 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
                       onPressed: _isDeleting
                           ? null
                           : () => Navigator.of(context).pop(
-                              BulkDeleteResult(
-                                success:
-                                    true, // Dianggap sukses karena tidak ada error
-                                message: '', // Tidak ada pesan
-                                dataHasChanged: _dataHasChanged,
+                                BulkDeleteResult(
+                                  success:
+                                      true, // Dianggap sukses karena tidak ada error
+                                  message: '', // Tidak ada pesan
+                                  dataHasChanged: _dataHasChanged,
+                                ),
                               ),
-                            ),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         side: const BorderSide(color: AppColors.schneiderGreen),

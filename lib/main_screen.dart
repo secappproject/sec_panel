@@ -540,16 +540,30 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  void _showBulkDeleteBottomSheet() {
-    showModalBottomSheet<BulkDeleteResult>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+void _showBulkDeleteBottomSheet() {
+  final homeScreenState = homeScreenKey.currentState;
+  if (homeScreenState == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Tidak bisa memuat data panel untuk Bulk Delete."),
       ),
-      builder: (context) => const BulkDeleteBottomSheet(),
-    ).then((result) {
+    );
+    return;
+  }
+  
+  // Perubahan: Ambil data panel yang sudah terfilter dari HomeScreenState
+  final List<PanelDisplayData> filteredPanelsForDelete = homeScreenState.filteredPanelsForDisplay; 
+
+  showModalBottomSheet<BulkDeleteResult>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    // Perubahan: Teruskan data panel yang sudah terfilter ke BulkDeleteBottomSheet
+    builder: (context) => BulkDeleteBottomSheet(panelsToDisplay: filteredPanelsForDelete), 
+  ).then((result) {
       if (result != null && mounted) {
         if (result.message.isNotEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
