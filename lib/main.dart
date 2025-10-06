@@ -110,7 +110,7 @@ class _MyAppState extends State<MyApp> {
           ),
           useMaterial3: true,
         ),
-        initialRoute: widget.isLoggedIn ? '/home' : '/login',
+        initialRoute:  '/login',
         routes: {
           '/login': (context) => const LoginPage(),
           '/login-change-password': (context) =>

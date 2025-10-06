@@ -197,20 +197,272 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     super.dispose();
   }
 
+
   void _updateCanMarkAsSent() {
-    // ... (fungsi ini tidak berubah)
+    final progress = int.tryParse(_progressController.text) ?? 0;
+    final paletReady = _selectedPaletStatus == 'Close';
+    final corepartReady = _selectedCorepartStatus == 'Close';
+    // final busbarMccReady = _selectedBusbarMccStatus == 'Close';
+
+    bool allConditionsMet;
+    switch (_selectedPanelType) {
+      case 'MCCW':
+        allConditionsMet =
+            progress == 100 && paletReady && corepartReady ;
+            // progress == 100 && paletReady && corepartReady && busbarMccReady;
+        break;
+      case 'PCC':
+      case 'MCCF':
+        allConditionsMet = progress == 100 && paletReady;
+        break;
+      default:
+        allConditionsMet = false;
+    }
+
+    if (mounted && _canMarkAsSent != allConditionsMet) {
+      setState(() {
+        _canMarkAsSent = allConditionsMet;
+        if (!_canMarkAsSent) {
+          _isClosed = false;
+          _closedDate = null;
+        }
+      });
+    }
   }
 
   Future<void> _handleClosePanelToggle(bool isClosing) async {
-    // ... (fungsi ini tidak berubah)
+    if (isClosing) {
+      final selectedDate = await showDialog<DateTime>(
+        context: context,
+        builder: (BuildContext context) {
+          return _CloseConfirmationDialog(
+            initialDate: _closedDate ?? DateTime.now(),
+          );
+        },
+      );
+
+      if (selectedDate == null) return;
+
+      setState(() {
+        _isClosed = true;
+        _closedDate = selectedDate;
+      });
+    } else {
+      setState(() {
+        _isClosed = false;
+        _closedDate = null;
+      });
+    }
   }
 
   Future<void> _saveChanges() async {
-    // ... (fungsi ini tidak berubah)
+    if (_isLoading || _isSuccess) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final panelToSave = Panel.fromMap(_panel.toMap());
+      panelToSave.noPanel = _noPanelController.text.trim();
+      panelToSave.noWbs = _noWbsController.text.trim();
+      panelToSave.project = _projectController.text.trim();
+      final String noPpFromInput = _noPpController.text.trim();
+      if (noPpFromInput == 'Belum Diatur') {
+        panelToSave.noPp = _originalNoPp;
+      } else {
+        panelToSave.noPp = noPpFromInput;
+      }
+      panelToSave.remarks = _panelRemarkController.text.trim();
+
+      panelToSave.percentProgress =
+          double.tryParse(_progressController.text.trim()) ?? 0.0;
+      panelToSave.startDate = _selectedDate;
+      panelToSave.targetDelivery = _selectedTargetDeliveryDate;
+      if (_isK3 &&
+          (_selectedK3VendorId == null || _selectedK3VendorId!.isEmpty)) {
+        panelToSave.vendorId = widget.currentCompany.id;
+      } else {
+        panelToSave.vendorId = _selectedK3VendorId;
+      }
+      panelToSave.panelType = _selectedPanelType;
+      panelToSave.isClosed = _isClosed;
+      panelToSave.closedDate = _closedDate;
+      panelToSave.statusBusbarPcc = _selectedBusbarStatus;
+      panelToSave.statusBusbarMcc = _selectedBusbarStatus;
+      panelToSave.statusComponent = _selectedComponentStatus;
+      panelToSave.statusPalet = _selectedPaletStatus;
+      panelToSave.statusCorepart = _selectedCorepartStatus;
+      panelToSave.aoBusbarPcc = _aoBusbar;
+      panelToSave.aoBusbarMcc = _aoBusbar;
+      // ▼▼▼ [BARU] Menyertakan tanggal close busbar saat menyimpan ▼▼▼
+      panelToSave.closeDateBusbarPcc = _closeDateBusbar;
+      panelToSave.closeDateBusbarMcc = _closeDateBusbar;
+
+      final Panel finalPanel = await DatabaseHelper.instance.changePanelNoPp(
+        _originalNoPp,
+        panelToSave,
+      );
+
+      final oldVendorIds = Set<String>.from(widget.panelData.busbarVendorIds);
+      final newVendorIds = Set<String>.from(_selectedBusbarVendorIds);
+
+      final vendorsToDelete = oldVendorIds.difference(newVendorIds);
+      for (final vendorId in vendorsToDelete) {
+        await DatabaseHelper.instance.deleteBusbar(finalPanel.noPp, vendorId);
+      }
+
+      final vendorsToAdd = newVendorIds.difference(oldVendorIds);
+      for (final vendorId in vendorsToAdd) {
+        await DatabaseHelper.instance.upsertBusbar(
+          Busbar(panelNoPp: finalPanel.noPp, vendor: vendorId),
+        );
+      }
+      final oldK3VendorId = widget.panelData.paletVendorIds.isNotEmpty
+          ? widget.panelData.paletVendorIds.first
+          : null;
+      final newK3VendorId = _selectedK3VendorId;
+
+      if (oldK3VendorId != newK3VendorId) {
+        if (oldK3VendorId != null && oldK3VendorId.isNotEmpty) {
+          await DatabaseHelper.instance.deletePalet(
+            finalPanel.noPp,
+            oldK3VendorId,
+          );
+          await DatabaseHelper.instance.deleteCorepart(
+            finalPanel.noPp,
+            oldK3VendorId,
+          );
+        }
+
+        if (newK3VendorId != null && newK3VendorId.isNotEmpty) {
+          await DatabaseHelper.instance.upsertPalet(
+            Palet(panelNoPp: finalPanel.noPp, vendor: newK3VendorId),
+          );
+          await DatabaseHelper.instance.upsertCorepart(
+            Corepart(panelNoPp: finalPanel.noPp, vendor: newK3VendorId),
+          );
+        }
+      }
+
+      await DatabaseHelper.instance.upsertComponent(
+        Component(panelNoPp: finalPanel.noPp, vendor: 'warehouse'),
+      );
+
+      setState(() {
+        _isLoading = false;
+        _isSuccess = true;
+      });
+      await Future.delayed(const Duration(milliseconds: 1500));
+
+      if (mounted) {
+        widget.onSave(finalPanel);
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menyimpan: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showDeleteConfirmation() {
-    // ... (fungsi ini tidak berubah)
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext innerContext) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                height: 5,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.grayLight,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: AppColors.red,
+                size: 50,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Hapus Panel?',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Anda yakin ingin menghapus panel "${_panel.noPanel}"? Tindakan ini tidak dapat dibatalkan.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, color: AppColors.gray),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(innerContext),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: const BorderSide(color: AppColors.schneiderGreen),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      child: const Text(
+                        "Batal",
+                        style: TextStyle(
+                          color: AppColors.schneiderGreen,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(innerContext);
+                        widget.onDelete();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: AppColors.red,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      child: const Text(
+                        "Ya, Hapus",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
