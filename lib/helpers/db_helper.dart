@@ -774,6 +774,7 @@ Future<Company?> getCompanyByUsername(String username) async {
     String? formatDate(DateTime? date) =>
         date != null ? DateFormat('dd-MMM-yyyy').format(date) : null;
 
+  
     if (includePanelData) {
       final panelSheet = excel['Panel'];
       final panelHeaders = [
@@ -795,8 +796,8 @@ Future<Company?> getCompanyByUsername(String username) async {
         'Status Busbar',
         'Close Date Busbar',
         'AO Busbar',
-        'Production Cell',
-        'Production Date',
+        'Current Position',
+        'Production/Subcon. Date',
         'FAT Date',
         'All Done Date',
       ];
@@ -821,6 +822,34 @@ Future<Company?> getCompanyByUsername(String username) async {
             ? panel.closeDateBusbarPcc
             : panel.closeDateBusbarMcc;
 
+        final status = panel.statusPenyelesaian ?? 'Warehouse';
+        String? positionText;
+
+        switch (status) {
+          case 'Production':
+            // Jika di produksi, tampilkan juga nomor slotnya
+            positionText = 'Production (${RegExp(r'Cell\s+\d+')
+                                        .firstMatch(panel.productionSlot!)
+                                        ?.group(0) ?? panel.productionSlot! ?? 'N/A'})';
+            break;
+          case 'FAT':
+            positionText = 'FAT';
+            break;
+          case 'Done':
+            positionText = 'Done';
+            break;
+          case 'VendorWarehouse':
+          default:
+            // Gabungkan nama vendor dan warehouse
+            // List<String> locations = [];
+            // if (panelVendorName.isNotEmpty) locations.add(panelVendorName);
+            // if (componentVendorName.isNotEmpty) locations.add(componentVendorName);
+
+            // positionText = locations.isEmpty ? 'Vendor/WHS' : locations.join(' & ');
+
+            positionText = 'Warehouse';
+            break;
+        }
         panelSheet.appendRow([
           TextCellValue(
             panel.noPp.startsWith('TEMP_') ? 'Belum Diatur' : panel.noPp,
@@ -842,6 +871,7 @@ Future<Company?> getCompanyByUsername(String username) async {
           TextCellValue(panel.statusBusbarPcc ?? ''),
           TextCellValue(formatDate(latestAoBusbar) ?? ''),
           TextCellValue(formatDate(latestCloseDateBusbar) ?? ''),
+          TextCellValue(positionText),
           TextCellValue(formatDate(panelData.productionDate) ?? ''),
           TextCellValue(formatDate(panelData.fatDate) ?? ''),
           TextCellValue(formatDate(panelData.allDoneDate) ?? ''),
