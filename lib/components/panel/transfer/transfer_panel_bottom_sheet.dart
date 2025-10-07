@@ -5,17 +5,15 @@ import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/models/approles.dart';
 import 'package:secpanel/models/company.dart';
 import 'package:secpanel/models/paneldisplaydata.dart';
-import 'package:secpanel/models/panels.dart';
 import 'package:secpanel/models/productionslot.dart';
 import 'package:secpanel/theme/colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// [MODIFIKASI] Menambahkan step baru untuk alur pemilihan
 enum _TransferFlowStep {
   displayStatus,
-  selectProductionOrSubcontractor, // <-- LANGKAH BARU
+  selectProductionOrSubcontractor,
   selectSlot,
-  selectSubcontractorVendor, // <-- LANGKAH BARU
+  selectSubcontractorVendor,
   confirmToProduction,
   confirmToFat,
   confirmToDone,
@@ -47,9 +45,11 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
   List<ProductionSlot> _productionSlots = [];
   String? _selectedSlot;
 
-  // [MODIFIKASI] State baru untuk pemilihan subkontraktor
+  // [MODIFIKASI] State untuk pemilihan subkontraktor, termasuk input manual
+  late TextEditingController _manualVendorController;
+  bool _showManualVendorInput = false;
   List<Company> _subcontractorVendors = [];
-  String? _selectedSubcontractorVendorId;
+  String? _selectedSubcontractor; // Bisa berisi ID vendor atau string "Lainnya..."
 
   late DateTime _selectedStartDate;
   late DateTime _selectedProductionDate;
@@ -70,6 +70,8 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
   void initState() {
     super.initState();
     _currentPanelData = widget.panelData;
+    _manualVendorController = TextEditingController(); // Inisialisasi controller
+
     if (_currentPanelData.panel.statusPenyelesaian == 'Production') {
       _selectedSlot = _currentPanelData.panel.productionSlot;
     }
@@ -79,6 +81,12 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
         _currentPanelData.productionDate ?? DateTime.now();
     _selectedFatDate = _currentPanelData.fatDate ?? DateTime.now();
     _selectedAllDoneDate = _currentPanelData.allDoneDate ?? DateTime.now();
+  }
+
+  @override
+  void dispose() {
+    _manualVendorController.dispose(); // Jangan lupa dispose controller
+    super.dispose();
   }
 
   Future<void> _fetchProductionSlots() async {
@@ -95,8 +103,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-  
-  // [MODIFIKASI] Fungsi baru untuk mengambil data vendor K3 & K5
+
   Future<void> _fetchSubcontractorVendors() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
@@ -123,7 +130,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
     DateTime? productionDate,
     DateTime? fatDate,
     DateTime? allDoneDate,
-    String? subcontractorVendorId, // <-- [MODIFIKASI] Parameter baru
+    String? subcontractorVendorValue, // Nama parameter diubah agar lebih jelas
   }) async {
     if (_isLoading) return;
     setState(() => _isLoading = true);
@@ -140,7 +147,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
         productionDate: productionDate,
         fatDate: fatDate,
         allDoneDate: allDoneDate,
-        vendorId: subcontractorVendorId, // <-- [MODIFIKASI] Kirim vendorId ke helper
+        vendorId: subcontractorVendorValue, // Kirim nilai vendor (bisa ID atau nama)
       );
       widget.onSuccess(updatedPanelData);
 
@@ -163,7 +170,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
       }
     }
   }
-  
+
   Future<void> _handleDateUpdate({
       DateTime? newStartDate,
       DateTime? newProductionDate,
@@ -356,7 +363,12 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
     );
   }
 
+  // [MODIFIKASI] Widget untuk memilih vendor, sekarang dengan opsi "Lainnya..."
   Widget _buildSelectSubcontractorVendorView() {
+    final bool isOtherSelected = _selectedSubcontractor == 'Lainnya...';
+    final bool canConfirm = _selectedSubcontractor != null && 
+                          (!isOtherSelected || (isOtherSelected && _manualVendorController.text.trim().isNotEmpty));
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
       child: Column(
@@ -366,45 +378,147 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
         children: [
           _buildHeader('Select Subcontractor',
               isSubPage: true,
-              onBack: () => setState(() => _currentStep =
-                  _TransferFlowStep.selectProductionOrSubcontractor)),
+              onBack: () => setState(() => _currentStep = _TransferFlowStep.selectProductionOrSubcontractor)),
           const SizedBox(height: 24),
-          const Text('Pilih Vendor',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+          const Text('Pilih Vendor', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
           const SizedBox(height: 16),
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : Wrap(
                   spacing: 8,
                   runSpacing: 12,
-                  children: _subcontractorVendors.map((vendor) {
-                    final isSelected = _selectedSubcontractorVendorId == vendor.id;
-                    return _buildVendorOptionButton(
-                      company: vendor,
-                      selected: isSelected,
+                  children: [
+                    ..._subcontractorVendors.map((vendor) {
+                      final isSelected = _selectedSubcontractor == vendor.id;
+                      return _buildVendorOptionButton(
+                        company: vendor,
+                        selected: isSelected,
+                        onTap: () {
+                          setState(() {
+                            _selectedSubcontractor = isSelected ? null : vendor.id;
+                            _showManualVendorInput = false;
+                            _manualVendorController.clear();
+                          });
+                        },
+                      );
+                    }),
+                    _buildOtherButton(
+                      selected: isOtherSelected,
                       onTap: () {
                         setState(() {
-                          _selectedSubcontractorVendorId = isSelected ? null : vendor.id;
+                          _selectedSubcontractor = 'Lainnya...';
+                          _showManualVendorInput = true;
                         });
                       },
-                    );
-                  }).toList(),
+                    ),
+                  ],
                 ),
+          if (_showManualVendorInput) ...[
+            const SizedBox(height: 16),
+            _buildTextField(
+              controller: _manualVendorController,
+              label: "Nama Vendor Lainnya",
+              onChanged: (_) => setState(() {}), // Untuk re-render tombol konfirmasi
+            ),
+          ],
           const SizedBox(height: 32),
           _buildFooterButtons(
             secondaryText: 'Kembali',
-            secondaryAction: () => setState(() =>
-                _currentStep = _TransferFlowStep.selectProductionOrSubcontractor),
+            secondaryAction: () => setState(() => _currentStep = _TransferFlowStep.selectProductionOrSubcontractor),
             primaryText: 'Konfirmasi Transfer',
-            primaryAction: _selectedSubcontractorVendorId == null
+            primaryAction: !canConfirm
                 ? null
-                : () => _handleTransferAction(
+                : () {
+                    String finalVendorValue;
+                    if (_selectedSubcontractor == 'Lainnya...') {
+                      finalVendorValue = _manualVendorController.text.trim();
+                    } else {
+                      finalVendorValue = _selectedSubcontractor ?? '';
+                    }
+
+                    _handleTransferAction(
                       'to_subcontractor',
-                      subcontractorVendorId: _selectedSubcontractorVendorId,
-                    ),
+                      subcontractorVendorValue: finalVendorValue,
+                    );
+                  },
           ),
         ],
       ),
+    );
+  }
+
+  // [BARU] Helper widget dari AdditionalSR
+  Widget _buildOtherButton({required bool selected, required VoidCallback onTap}) {
+    final Color borderColor = selected ? AppColors.schneiderGreen : AppColors.grayLight;
+    final Color color = selected ? AppColors.schneiderGreen.withOpacity(0.08) : Colors.white;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: color,
+          border: Border.all(color: borderColor),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Text(
+          "Lainnya...",
+          style: TextStyle(
+            fontWeight: FontWeight.w400,
+            fontSize: 12,
+            color: AppColors.gray,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // [BARU] Helper widget dari AdditionalSR
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    Function(String)? onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: AppColors.black,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          onChanged: onChanged,
+          cursorColor: AppColors.schneiderGreen,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
+          decoration: InputDecoration(
+            hintText: 'Masukkan $label',
+            helperStyle: const TextStyle(
+              fontSize: 11,
+              color: AppColors.gray,
+              fontWeight: FontWeight.w300,
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.grayLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.grayLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.schneiderGreen),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -458,7 +572,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
       ),
     );
   }
-
+  
   Widget _buildSlotSelectionView() {
     final Map<int, List<ProductionSlot>> slotsByRow = {};
     for (var slot in _productionSlots) {
@@ -900,11 +1014,30 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
       DateTime? newAllDoneDate,
     }) async {
         if (_isViewer) return;
+
         final newDate = await showDatePicker(
-            context: context,
-            initialDate: initialDate,
-            firstDate: DateTime(2020),
-            lastDate: DateTime(2100),
+          context: context,
+          initialDate: initialDate,
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2100),
+          helpText: 'Pilih Tanggal',
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: const ColorScheme.light(
+                  primary: AppColors.schneiderGreen,
+                  onPrimary: Colors.white,
+                  onSurface: AppColors.black,
+                ),
+                textButtonTheme: TextButtonThemeData(
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.schneiderGreen,
+                  ),
+                ),
+              ),
+              child: child!,
+            );
+          },
         );
         if (newDate != null) {
             await _handleDateUpdate(
