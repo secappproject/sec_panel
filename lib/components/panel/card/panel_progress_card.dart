@@ -305,6 +305,10 @@ class PanelProgressCard extends StatelessWidget {
                                     ?.group(0) ?? productionSlot! ?? 'N/A'})';
         iconPath = 'assets/images/production.png';
         break;
+      case 'Subcontractor':
+        positionText = 'Subcon $panelVendorName';
+        iconPath = 'assets/images/production.png'; 
+        break;
       case 'FAT':
         positionText = 'FAT';
         iconPath = 'assets/images/fat.png';

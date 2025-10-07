@@ -193,6 +193,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
   // [BARU] Opsi untuk filter Position
   final List<String> positionOptions = [
     "Warehouse",
+    "Subcontractor",
     "Production",
     "FAT",
     "Done",

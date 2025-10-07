@@ -1414,21 +1414,40 @@ Future<Company?> getCompanyByUsername(String username) async {
     }
     return data.map((json) => ProductionSlot.fromJson(json)).toList();
   }
-
-  Future<PanelDisplayData> transferPanelAction({
+Future<PanelDisplayData> transferPanelAction({
     required String panelNoPp,
     required String action,
-    required String actor, 
+    required String actor,
     String? slot,
+    DateTime? startDate,
+    DateTime? productionDate,
+    DateTime? fatDate,
+    DateTime? allDoneDate,
+    String? vendorId, 
   }) async {
-    final url = '$_baseUrl/panels/$panelNoPp/transfer'; 
+    final url = '$_baseUrl/panels/$panelNoPp/transfer';
 
     final Map<String, dynamic> body = {
       'action': action,
-      'actor': actor, 
+      'actor': actor,
     };
     if (slot != null) {
       body['slot'] = slot;
+    }
+    if (startDate != null) {
+      body['start_date'] = startDate.toUtc().toIso8601String();
+    }
+    if (productionDate != null) {
+      body['production_date'] = productionDate.toUtc().toIso8601String();
+    }
+    if (fatDate != null) {
+      body['fat_date'] = fatDate.toUtc().toIso8601String();
+    }
+    if (allDoneDate != null) {
+      body['all_done_date'] = allDoneDate.toUtc().toIso8601String();
+    }
+    if (vendorId != null) {
+      body['vendor_id'] = vendorId;
     }
 
     try {
@@ -1439,15 +1458,16 @@ Future<Company?> getCompanyByUsername(String username) async {
       );
 
       if (responseData != null) {
-        final updatedPanel = PanelDisplayData.fromJson(responseData);
-        return updatedPanel;
+        // [PERBAIKAN] Langsung gunakan factory dari PanelDisplayData
+        return PanelDisplayData.fromJson(responseData);
       } else {
         throw Exception('Failed to transfer panel: No data received from server');
       }
     } catch (e) {
-        rethrow;
+      rethrow;
     }
   }
+
 Future<void> registerDeviceToken({
     required String username,
     required String token,

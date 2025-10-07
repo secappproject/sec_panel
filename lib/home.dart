@@ -699,9 +699,23 @@ void _prepareChartData() {
           matchSrStatus = true;
           break;
       }
-      final bool matchPosition = selectedPositions.isEmpty ||
-        selectedPositions.contains(panel.statusPenyelesaian);
+      // [PERBAIKAN] Logika untuk filter Position
+      final bool matchPosition;
+      if (selectedPositions.isEmpty) {
+        matchPosition = true; // Jika tidak ada filter, tampilkan semua
+      } else {
+        // Ambil status panel, jika null anggap sebagai "VendorWarehouse" agar konsisten
+        final currentPosition = panel.statusPenyelesaian ?? 'VendorWarehouse';
 
+        // Cek apakah filter "Warehouse" dipilih
+        if (selectedPositions.contains("Warehouse")) {
+          // Jika ya, panel akan lolos jika statusnya adalah salah satu dari ini
+          matchPosition = (currentPosition == 'Warehouse' || currentPosition == 'VendorWarehouse');
+        } else {
+          // Jika filter lain yang dipilih (misal "Production"), lakukan pengecekan biasa
+          matchPosition = selectedPositions.contains(currentPosition);
+        }
+      }
       final panelStatus = _getPanelFilterStatus(panel);
       final bool matchStatusAndArchive;
       if (panelStatus == PanelFilterStatus.closedArchived) {
