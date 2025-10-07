@@ -21,9 +21,12 @@ class PreviewBottomSheet extends StatefulWidget {
 }
 
 class _PreviewBottomSheetState extends State<PreviewBottomSheet> {
-  bool _exportPanelData = true;
+ bool _exportPanelData = true;
   bool _exportUserData = true;
+  bool _exportIssueData = false; 
+  bool _exportSrData = false;   
   String _selectedFormat = 'Excel';
+
 
   Widget _buildSectionTitle(String title, {String? subtitle}) {
     return Padding(
@@ -120,7 +123,7 @@ class _PreviewBottomSheetState extends State<PreviewBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isAnyDataSelected = _exportPanelData || _exportUserData;
+    final bool isAnyDataSelected = _exportPanelData || _exportUserData || _exportIssueData || _exportSrData;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -175,6 +178,18 @@ class _PreviewBottomSheetState extends State<PreviewBottomSheet> {
                         onTap: () =>
                             setState(() => _exportUserData = !_exportUserData),
                       ),
+                      _buildToggleOption(
+                        label: "Issue",
+                        isSelected: _exportIssueData,
+                        onTap: () =>
+                            setState(() => _exportIssueData = !_exportIssueData),
+                      ),
+                      _buildToggleOption(
+                        label: "Additional SR",
+                        isSelected: _exportSrData,
+                        onTap: () =>
+                            setState(() => _exportSrData = !_exportSrData),
+                      ),
                     ],
                   ),
                   _buildSectionTitle("Pilih Format File"),
@@ -227,6 +242,8 @@ class _PreviewBottomSheetState extends State<PreviewBottomSheet> {
                       : () => Navigator.of(context).pop({
                           'exportPanel': _exportPanelData,
                           'exportUser': _exportUserData,
+                          'exportIssue': _exportIssueData,
+                          'exportSr': _exportSrData,
                           'format': _selectedFormat,
                         }),
                   child: const Text('Extract', style: TextStyle(fontSize: 12)),

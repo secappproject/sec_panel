@@ -689,7 +689,6 @@ Future<Company?> getCompanyByUsername(String username) async {
     ).replace(queryParameters: queryParams);
     final endpoint = uri.toString().substring(_baseUrl.length);
     final dynamic responseData = await _apiRequest('GET', endpoint);
-
     if (responseData == null || responseData is! Map<String, dynamic>) {
       return {
         'companies': [],
@@ -699,10 +698,14 @@ Future<Company?> getCompanyByUsername(String username) async {
         'components': [],
         'palet': [],
         'corepart': [],
+        'issues': [],
+        'comments': [],
+        'additional_srs': [],
       };
     }
-    // ... (sisa fungsi parsing tidak berubah)
+    
     final Map<String, dynamic> data = responseData;
+    
     return {
       'companies': ((data['companies'] as List<dynamic>?) ?? [])
           .map((c) => Company.fromMap(c as Map<String, dynamic>))
@@ -725,6 +728,9 @@ Future<Company?> getCompanyByUsername(String username) async {
       'corepart': ((data['corepart'] as List<dynamic>?) ?? [])
           .map((c) => Corepart.fromMap(c as Map<String, dynamic>))
           .toList(),
+      'issues': data['issues'] as List<dynamic>? ?? [],
+      'comments': data['comments'] as List<dynamic>? ?? [],
+      'additional_srs': data['additional_srs'] as List<dynamic>? ?? [],
     };
   }
 
@@ -745,12 +751,14 @@ Future<Company?> getCompanyByUsername(String username) async {
     }
   }
 
-  Future<Excel> generateCustomExportExcel({
+Future<Excel> generateCustomExportExcel({
     required bool includePanelData,
     required bool includeUserData,
+    // [MODIFIKASI] Tambahkan opsi export baru
+    required bool includeIssueData,
+    required bool includeSrData,
     required Company currentUser,
-    required List<PanelDisplayData> filteredPanels, // Data dari UI
-    // ▼▼▼ TAMBAHKAN SEMUA PARAMETER FILTER INI ▼▼▼
+    required List<PanelDisplayData> filteredPanels,
     DateTimeRange? startDateRange,
     DateTimeRange? deliveryDateRange,
     DateTimeRange? closedDateRange,
@@ -767,14 +775,32 @@ Future<Company?> getCompanyByUsername(String username) async {
     List<PanelFilterStatus>? selectedPanelStatuses,
     bool? includeArchived,
   }) async {
+
     final excel = Excel.createExcel();
     excel.delete('Sheet1');
     final allCompanies = await getAllCompanies();
     final companyMap = {for (var c in allCompanies) c.id: c};
-    String? formatDate(DateTime? date) =>
-        date != null ? DateFormat('dd-MMM-yyyy').format(date) : null;
+    String? formatDate(DateTime? date) => date != null ? DateFormat('dd-MMM-yyyy').format(date) : null;
 
-  
+    final data = await getFilteredDataForExport(
+      currentUser: currentUser,
+      startDateRange: startDateRange,
+      deliveryDateRange: deliveryDateRange,
+      closedDateRange: closedDateRange,
+      selectedPanelTypes: selectedPanelTypes,
+      selectedPanelVendors: selectedPanelVendors,
+      selectedBusbarVendors: selectedBusbarVendors,
+      selectedComponentVendors: selectedComponentVendors,
+      selectedPaletVendors: selectedPaletVendors,
+      selectedCorepartVendors: selectedCorepartVendors,
+      selectedStatuses: selectedStatuses,
+      selectedComponents: selectedComponents,
+      selectedPalet: selectedPalet,
+      selectedCorepart: selectedCorepart,
+      selectedPanelStatuses: selectedPanelStatuses,
+      includeArchived: includeArchived,
+    );
+
     if (includePanelData) {
       final panelSheet = excel['Panel'];
       final panelHeaders = [
@@ -916,14 +942,87 @@ Future<Company?> getCompanyByUsername(String username) async {
         ]);
       }
     }
+ // [MODIFIKASI BARU] Logika untuk membuat sheet "Issues"
+    if (includeIssueData) {
+      final issueSheet = excel['Issues'];
+      issueSheet.appendRow([
+        'PP Panel', 'WBS', 'Panel No', 'Issue ID', 'Judul', 'Deskripsi', 'Status', 'Dibuat Oleh', 'Tanggal Dibuat', 'Komentar'
+      ].map((h) => TextCellValue(h)).toList());
+
+      final List<IssueForExport> issues = ((data['issues'] as List<dynamic>?) ?? []).map((i) => IssueForExport.fromMap(i)).toList();
+      final List<CommentForExport> comments = ((data['comments'] as List<dynamic>?) ?? []).map((c) => CommentForExport.fromMap(c)).toList();
+      
+      final Map<int, List<CommentForExport>> commentsByIssue = {};
+      for (var comment in comments) {
+        (commentsByIssue[comment.issueId] ??= []).add(comment);
+      }
+
+      for (final issue in issues) {
+        String formattedComments = '';
+        int rootCommentCount = 1;
+        final issueComments = commentsByIssue[issue.issueId] ?? [];
+        
+        final rootComments = issueComments.where((c) => c.replyToCommentId == null).toList();
+        final replyComments = issueComments.where((c) => c.replyToCommentId != null).toList();
+
+        for (var root in rootComments) {
+            formattedComments += '${rootCommentCount}. ${root.senderId}: ${root.text}\n';
+            final replies = replyComments.where((r) => r.replyToCommentId == root.text).toList();
+            for (var reply in replies) {
+                formattedComments += '   - ${reply.senderId}: ${reply.text}\n';
+            }
+            rootCommentCount++;
+        }
+
+        issueSheet.appendRow([
+          TextCellValue(issue.panelNoPp),
+          TextCellValue(issue.panelNoWbs ?? ''),
+          TextCellValue(issue.panelNoPanel ?? ''),
+          TextCellValue(issue.issueId.toString()),
+          TextCellValue(issue.title),
+          TextCellValue(issue.description),
+          TextCellValue(issue.status),
+          TextCellValue(issue.createdBy),
+          TextCellValue(formatDate(issue.createdAt) ?? ''),
+          TextCellValue(formattedComments.trim()),
+        ]);
+      }
+    }
+    
+    // [MODIFIKASI BARU] Logika untuk membuat sheet "Additional SR"
+    if (includeSrData) {
+      final srSheet = excel['Additional SR'];
+      srSheet.appendRow([
+        'PP Panel', 'WBS', 'Panel No', 'No. PO', 'Item', 'Qty', 'Supplier', 'Status', 'Remarks (No. DO)'
+      ].map((h) => TextCellValue(h)).toList());
+
+      final List<AdditionalSRForExport> srs = ((data['additional_srs'] as List<dynamic>?) ?? []).map((s) => AdditionalSRForExport.fromMap(s)).toList();
+
+      for (final sr in srs) {
+        srSheet.appendRow([
+          TextCellValue(sr.panelNoPp),
+          TextCellValue(sr.panelNoWbs ?? ''),
+          TextCellValue(sr.panelNoPanel ?? ''),
+          TextCellValue(sr.poNumber),
+          TextCellValue(sr.item),
+          TextCellValue(sr.quantity.toString()),
+          TextCellValue(sr.supplier ?? ''),
+          TextCellValue(sr.status),
+          TextCellValue(sr.remarks),
+        ]);
+      }
+    }
+
     return excel;
+  
   }
 
   Future<String> generateCustomExportJson({
     required bool includePanelData,
     required bool includeUserData,
+    required bool includeIssueData,
+    required bool includeSrData,
     required Company currentUser,
-    // Semua state filter dari HomeScreen/PanelFilterBottomSheet
     DateTimeRange? startDateRange,
     DateTimeRange? deliveryDateRange,
     DateTimeRange? closedDateRange,
@@ -943,6 +1042,8 @@ Future<Company?> getCompanyByUsername(String username) async {
     Map<String, String> queryParams = {
       'panels': includePanelData.toString(),
       'users': includeUserData.toString(),
+      'issues': includeIssueData.toString(),
+      'srs': includeSrData.toString(),
       'role': currentUser.role.name,
       'company_id': currentUser.id,
     };

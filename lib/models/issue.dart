@@ -233,3 +233,37 @@ class IssueComment {
     );
   }
 }
+
+class IssueForExport {
+  final String panelNoPp;
+  final String? panelNoWbs;
+  final String? panelNoPanel;
+  final int issueId;
+  final String title;
+  final String description;
+  final String status;
+  final String createdBy;
+  final DateTime createdAt;
+  IssueForExport.fromMap(Map<String, dynamic> map)
+      : panelNoPp = map['PanelNoPp'],
+        panelNoWbs = map['PanelNoWbs']?['String'],
+        panelNoPanel = map['PanelNoPanel']?['String'],
+        issueId = map['IssueID'],
+        title = map['Title'],
+        description = map['Description'],
+        status = map['Status'],
+        createdBy = map['CreatedBy'],
+        createdAt = DateTime.parse(map['CreatedAt']);
+}
+
+class CommentForExport {
+  final int issueId;
+  final String text;
+  final String senderId;
+  final String? replyToCommentId;
+  CommentForExport.fromMap(Map<String, dynamic> map)
+      : issueId = map['IssueID'],
+        text = map['Text'],
+        senderId = map['SenderID'],
+        replyToCommentId = map['ReplyToCommentID']?['String'];
+}

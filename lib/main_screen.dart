@@ -20,7 +20,7 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:secpanel/theme/colors.dart';
 
-// --- WIDGET SIDEBAR (Perbaikan Layout Saat Collapsed) ---
+// --- WIDGET SIDEBAR ---
 class AppSidebar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onPageSelected;
@@ -37,7 +37,6 @@ class AppSidebar extends StatelessWidget {
     required this.onAddPanel,
     required this.canAddPanel,
     required this.isExpanded,
-    // onToggle sudah tidak ada lagi di sini, karena tombolnya pindah
   });
 
   @override
@@ -60,14 +59,10 @@ class AppSidebar extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- PERUBAHAN DIMULAI DI SINI ---
-            // Header dan SizedBox hanya ditampilkan saat sidebar 'expanded'
             if (isExpanded) ...[
               _buildHeader(textColor),
               const SizedBox(height: 16),
             ],
-            // --- PERUBAHAN BERAKHIR DI SINI ---
-            
             Expanded(
               child: ListView(
                 padding: EdgeInsets.zero,
@@ -85,11 +80,10 @@ class AppSidebar extends StatelessWidget {
       ),
     );
   }
-  
-  // --- PERUBAHAN KECIL: Menghapus tinggi tetap dari Container ---
+
   Widget _buildHeader(Color textColor) {
     final userName = currentUser?.name ?? 'Pengguna';
-    return Container( // height: 72 dihapus dari sini
+    return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       alignment: Alignment.centerLeft,
       child: Text.rich(
@@ -118,7 +112,6 @@ class AppSidebar extends StatelessWidget {
     );
   }
 
-  // --- Widget helper lainnya tidak berubah ---
   Widget _buildNavTile(String title, String imagePath, int index, bool isSelected, Color hoverColor, Color iconColor, Color iconActiveColor, Color textColor, Color textActiveColor) {
     return Material(
       color: Colors.transparent,
@@ -283,7 +276,6 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  // --- Semua fungsi logika lainnya tetap sama ---
   Future<void> _loadCompanyDataAndInitializePages() async {
     setState(() => _isLoading = true);
     final prefs = await SharedPreferences.getInstance();
@@ -323,6 +315,7 @@ class _MainScreenState extends State<MainScreen> {
     }
     final List<PanelDisplayData> filteredPanelsForPreview =
         homeScreenState.filteredPanelsForDisplay;
+    
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
@@ -337,6 +330,7 @@ class _MainScreenState extends State<MainScreen> {
         );
       },
     );
+
     if (result != null && mounted) {
       await _processExport(result);
     }
@@ -352,10 +346,14 @@ class _MainScreenState extends State<MainScreen> {
       }
       return;
     }
+    
     final bool exportPanel = exportData['exportPanel'] as bool? ?? false;
     final bool exportUser = exportData['exportUser'] as bool? ?? false;
+    final bool exportIssue = exportData['exportIssue'] as bool? ?? false;
+    final bool exportSr = exportData['exportSr'] as bool? ?? false;
     final format = exportData['format'] as String;
-    if (!exportPanel && !exportUser) {
+
+    if (!exportPanel && !exportUser && !exportIssue && !exportSr) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -366,6 +364,7 @@ class _MainScreenState extends State<MainScreen> {
       }
       return;
     }
+    
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -385,23 +384,24 @@ class _MainScreenState extends State<MainScreen> {
         );
       },
     );
+    
     String? successMessage;
     String? errorMessage;
     try {
       final timestamp = DateFormat('ddMMyy_HHmmss').format(DateTime.now());
       String extension;
       List<int>? fileBytes;
-      final Company currentUser = _currentCompany!;
-      final List<PanelDisplayData> panelsToExport =
-          homeScreenState.filteredPanelsForDisplay;
+      
       switch (format) {
         case 'Excel':
           extension = 'xlsx';
           final excel = await DatabaseHelper.instance.generateCustomExportExcel(
             includePanelData: exportPanel,
             includeUserData: exportUser,
-            currentUser: currentUser,
-            filteredPanels: panelsToExport,
+            includeIssueData: exportIssue,
+            includeSrData: exportSr,
+            currentUser: _currentCompany!,
+            filteredPanels: homeScreenState.filteredPanelsForDisplay,
             startDateRange: homeScreenState.startDateRange,
             deliveryDateRange: homeScreenState.deliveryDateRange,
             closedDateRange: homeScreenState.closedDateRange,
@@ -425,7 +425,9 @@ class _MainScreenState extends State<MainScreen> {
           final jsonString = await DatabaseHelper.instance.generateCustomExportJson(
             includePanelData: exportPanel,
             includeUserData: exportUser,
-            currentUser: currentUser,
+            includeIssueData: exportIssue, 
+            includeSrData: exportSr,
+            currentUser: _currentCompany!,
             startDateRange: homeScreenState.startDateRange,
             deliveryDateRange: homeScreenState.deliveryDateRange,
             closedDateRange: homeScreenState.closedDateRange,
@@ -447,18 +449,18 @@ class _MainScreenState extends State<MainScreen> {
         default:
           throw Exception("Format tidak dikenal");
       }
+      
       final fileName = "ExportDataPanel_$timestamp.$extension";
+      
       if (kIsWeb) {
-        MimeType mimeType = MimeType.other;
-        if (format == 'Excel') mimeType = MimeType.microsoftExcel;
-        if (format == 'JSON') mimeType = MimeType.json;
+        MimeType mimeType = (format == 'Excel') ? MimeType.microsoftExcel : MimeType.json;
         await FileSaver.instance.saveFile(
           name: fileName,
           bytes: Uint8List.fromList(fileBytes ?? []),
           ext: extension,
           mimeType: mimeType,
         );
-        successMessage = "File $fileName berhasil diunduh dan tersimpan otomatis di folder Download.";
+        successMessage = "File $fileName berhasil diunduh ke folder Download.";
       } else {
         final selectedPath = await FilePicker.platform.getDirectoryPath();
         if (selectedPath != null) {
@@ -478,6 +480,7 @@ class _MainScreenState extends State<MainScreen> {
     } finally {
       if (mounted) Navigator.of(context).pop();
     }
+    
     if (mounted) {
       if (successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -540,43 +543,41 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-void _showBulkDeleteBottomSheet() {
-  final homeScreenState = homeScreenKey.currentState;
-  if (homeScreenState == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Tidak bisa memuat data panel untuk Bulk Delete."),
-      ),
-    );
-    return;
-  }
-  
-  // Perubahan: Ambil data panel yang sudah terfilter dari HomeScreenState
-  final List<PanelDisplayData> filteredPanelsForDelete = homeScreenState.filteredPanelsForDisplay; 
+  void _showBulkDeleteBottomSheet() {
+    final homeScreenState = homeScreenKey.currentState;
+    if (homeScreenState == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Tidak bisa memuat data panel untuk Bulk Delete."),
+        ),
+      );
+      return;
+    }
+    
+    final List<PanelDisplayData> filteredPanelsForDelete = homeScreenState.filteredPanelsForDisplay; 
 
-  showModalBottomSheet<BulkDeleteResult>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.white,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
-    // Perubahan: Teruskan data panel yang sudah terfilter ke BulkDeleteBottomSheet
-    builder: (context) => BulkDeleteBottomSheet(panelsToDisplay: filteredPanelsForDelete), 
-  ).then((result) {
-      if (result != null && mounted) {
-        if (result.message.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result.message),
-              backgroundColor: result.success ? AppColors.schneiderGreen : Colors.red,
-            ),
-          );
+    showModalBottomSheet<BulkDeleteResult>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => BulkDeleteBottomSheet(panelsToDisplay: filteredPanelsForDelete), 
+    ).then((result) {
+        if (result != null && mounted) {
+          if (result.message.isNotEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result.message),
+                backgroundColor: result.success ? AppColors.schneiderGreen : Colors.red,
+              ),
+            );
+          }
+          if (result.dataHasChanged) _refreshHomeScreen();
         }
-        if (result.dataHasChanged) _refreshHomeScreen();
-      }
-    });
-  }
+      });
+    }
 
   Widget _buildMassDataFab() {
     final bool canImportData = _currentCompany?.role == AppRole.admin || _currentCompany?.role == AppRole.k3;
@@ -653,30 +654,25 @@ void _showBulkDeleteBottomSheet() {
     );
   }
 
-  // --- WIDGET BARU: Header untuk area konten utama ---
   Widget _buildContentHeader() {
-    // Tentukan judul berdasarkan halaman yang aktif
     final String currentPage = _selectedIndex == 0 ? "Panel" : "Profil";
 
     return Container(
-      color: AppColors.white, // Pastikan ada latar belakang
+      color: AppColors.white,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Tombol Toggle Sidebar
           IconButton(
             icon: Image.asset(
-              // Memilih gambar berdasarkan state _isSidebarExpanded
               _isSidebarExpanded ? 'assets/images/menu-open.png' : 'assets/images/menu-close.png',
-              width: 24,  // Atur lebar ikon
+              width: 24,
               height: 24, 
             ),
             onPressed: _toggleSidebar,
             tooltip: _isSidebarExpanded ? 'Tutup sidebar' : 'Buka sidebar',
           ),
           const SizedBox(width: 16),
-          // Breadcrumb
           Text(
             "Halaman Utama",
             style: TextStyle(
@@ -718,7 +714,6 @@ void _showBulkDeleteBottomSheet() {
         final bool isDesktop = constraints.maxWidth > 840;
 
         if (isDesktop) {
-          // TAMPILAN DESKTOP DENGAN HEADER KONTEN
           return Scaffold(
             backgroundColor: AppColors.white,
             body: Row(
@@ -730,7 +725,6 @@ void _showBulkDeleteBottomSheet() {
                   onAddPanel: _openAddPanelSheet,
                   canAddPanel: canAddPanel,
                   isExpanded: _isSidebarExpanded,
-                  // onToggle dihapus dari sini
                 ),
                 Expanded(
                   child: Scaffold(
@@ -738,10 +732,8 @@ void _showBulkDeleteBottomSheet() {
                     body: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header baru ditambahkan di sini
                         _buildContentHeader(),
                         const Divider(height: 1, color: Color(0xFFE5E7EB)),
-                        // Konten halaman utama
                         Expanded(
                           child: IndexedStack(
                             index: _selectedIndex,
@@ -757,7 +749,6 @@ void _showBulkDeleteBottomSheet() {
             ),
           );
         } else {
-          // TAMPILAN MOBILE (TIDAK BERUBAH)
           return Scaffold(
             backgroundColor: AppColors.white,
             body: Stack(
