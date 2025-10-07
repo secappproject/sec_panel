@@ -233,7 +233,6 @@ class IssueComment {
     );
   }
 }
-
 class IssueForExport {
   final String panelNoPp;
   final String? panelNoWbs;
@@ -244,16 +243,34 @@ class IssueForExport {
   final String status;
   final String createdBy;
   final DateTime createdAt;
-  IssueForExport.fromMap(Map<String, dynamic> map)
-      : panelNoPp = map['PanelNoPp'],
-        panelNoWbs = map['PanelNoWbs']?['String'],
-        panelNoPanel = map['PanelNoPanel']?['String'],
-        issueId = map['IssueID'],
-        title = map['Title'],
-        description = map['Description'],
-        status = map['Status'],
-        createdBy = map['CreatedBy'],
-        createdAt = DateTime.parse(map['CreatedAt']);
+
+  // [PERBAIKAN 1] Tambahkan factory constructor ini
+  factory IssueForExport.fromMap(Map<String, dynamic> map) {
+    return IssueForExport(
+      panelNoPp: map['PanelNoPp'] ?? '',
+      panelNoWbs: map['PanelNoWbs']?['String'],
+      panelNoPanel: map['PanelNoPanel']?['String'],
+      issueId: map['IssueID'] ?? 0,
+      title: map['Title'] ?? '',
+      description: map['Description'] ?? '',
+      status: map['Status'] ?? '',
+      createdBy: map['CreatedBy'] ?? '',
+      createdAt: DateTime.parse(map['CreatedAt']),
+    );
+  }
+
+  // Constructor lama Anda mungkin terlihat seperti ini, biarkan saja jika ada
+  IssueForExport({
+    required this.panelNoPp,
+    this.panelNoWbs,
+    this.panelNoPanel,
+    required this.issueId,
+    required this.title,
+    required this.description,
+    required this.status,
+    required this.createdBy,
+    required this.createdAt,
+  });
 }
 
 class CommentForExport {
@@ -261,9 +278,22 @@ class CommentForExport {
   final String text;
   final String senderId;
   final String? replyToCommentId;
-  CommentForExport.fromMap(Map<String, dynamic> map)
-      : issueId = map['IssueID'],
-        text = map['Text'],
-        senderId = map['SenderID'],
-        replyToCommentId = map['ReplyToCommentID']?['String'];
+
+  // [PERBAIKAN 2] Tambahkan factory constructor ini
+  factory CommentForExport.fromMap(Map<String, dynamic> map) {
+    return CommentForExport(
+      issueId: map['IssueID'] ?? 0,
+      text: map['Text'] ?? '',
+      senderId: map['SenderID'] ?? '',
+      replyToCommentId: map['ReplyToCommentID']?['String'],
+    );
+  }
+  
+  // Constructor lama Anda
+  CommentForExport({
+    required this.issueId,
+    required this.text,
+    required this.senderId,
+    this.replyToCommentId,
+  });
 }

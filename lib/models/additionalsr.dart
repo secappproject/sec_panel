@@ -61,7 +61,6 @@ class AdditionalSR {
 
   factory AdditionalSR.fromJson(String source) => AdditionalSR.fromMap(json.decode(source));
 }
-
 class AdditionalSRForExport {
   final String panelNoPp;
   final String? panelNoWbs;
@@ -72,14 +71,31 @@ class AdditionalSRForExport {
   final String? supplier;
   final String status;
   final String remarks;
-  AdditionalSRForExport.fromMap(Map<String, dynamic> map)
-      : panelNoPp = map['PanelNoPp'],
-        panelNoWbs = map['PanelNoWbs']?['String'],
-        panelNoPanel = map['PanelNoPanel']?['String'],
-        poNumber = map['PoNumber'],
-        item = map['Item'],
-        quantity = map['Quantity'],
-        supplier = map['Supplier']?['String'],
-        status = map['Status'],
-        remarks = map['Remarks'];
+
+  factory AdditionalSRForExport.fromMap(Map<String, dynamic> map) {
+    return AdditionalSRForExport(
+      panelNoPp: map['PanelNoPp'] ?? '',
+      panelNoWbs: map['PanelNoWbs']?['String'],
+      panelNoPanel: map['PanelNoPanel']?['String'],
+      poNumber: map['PoNumber'] ?? '',
+      item: map['Item'] ?? '',
+      quantity: map['Quantity'] ?? 0,
+      supplier: map['Supplier']?['String'],
+      status: map['Status'] ?? '',
+      remarks: map['Remarks'] ?? '',
+    );
+  }
+
+  // Constructor lama Anda
+  AdditionalSRForExport({
+    required this.panelNoPp,
+    this.panelNoWbs,
+    this.panelNoPanel,
+    required this.poNumber,
+    required this.item,
+    required this.quantity,
+    this.supplier,
+    required this.status,
+    required this.remarks,
+  });
 }
