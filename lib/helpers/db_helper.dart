@@ -33,12 +33,18 @@ class DatabaseHelper {
 
   String get _baseUrl {
     if (kReleaseMode) {
-      return "https://secpanel-server.onrender.com";
+      // return "https://secpanel-server.onrender.com";
+      return "http://3.27.226.108";
+
     } else {
       if (Platform.isAndroid) {
-      return "https://secpanel-server.onrender.com";
+        return "http://3.27.226.108";
+
+      // return "https://secpanel-server.onrender.com";
       } else {
-      return "https://secpanel-server.onrender.com";
+        return "http://3.27.226.108";
+
+      // return "https://secpanel-server.onrender.com";
       }
     }
   }
@@ -820,6 +826,7 @@ Future<Excel> generateCustomExportExcel({
         'Status Corepart',
         'Status Palet',
         'Status Busbar',
+        'Status Component',
         'Close Date Busbar',
         'AO Busbar',
         'Current Position',
@@ -895,6 +902,7 @@ Future<Excel> generateCustomExportExcel({
           TextCellValue(panel.statusCorepart ?? ''),
           TextCellValue(panel.statusPalet ?? ''),
           TextCellValue(panel.statusBusbarPcc ?? ''),
+          TextCellValue(panel.statusComponent ?? ''),
           TextCellValue(formatDate(latestAoBusbar) ?? ''),
           TextCellValue(formatDate(latestCloseDateBusbar) ?? ''),
           TextCellValue(positionText),
