@@ -1,4 +1,5 @@
-import 'dart:io'; // 1. Tambahkan import ini di bagian atas file
+// 1. TAMBAHKAN IMPORT INI DI BAGIAN ATAS
+import 'dart:io'; 
 
 import 'package:flutter/material.dart';
 import 'package:secpanel/login.dart';
@@ -20,8 +21,22 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Pesan FCM (background): ${message.notification?.title}");
 }
 
+// 2. LETAKKAN KELAS INI DI SINI, DI LUAR FUNGSI main()
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 3. TERAPKAN PENGATURAN GLOBAL DI SINI, SEBELUM runApp()
+  HttpOverrides.global = MyHttpOverrides();
+
   await initializeDateFormatting('id_ID', null);
 
   // Init Firebase
@@ -58,31 +73,23 @@ class _MyAppState extends State<MyApp> {
     _setupFCM();
   }
 
-  // ▼▼▼ GANTI SELURUH FUNGSI INI DENGAN VERSI BARU ▼▼▼
   Future<void> _setupFCM() async {
     final messaging = FirebaseMessaging.instance;
-
-    // Minta izin (penting di iOS)
     await messaging.requestPermission();
 
-    // Blok baru untuk memastikan APNS token ada sebelum meminta FCM token di iOS
     if (Platform.isIOS) {
       String? apnsToken = await messaging.getAPNSToken();
       if (apnsToken == null) {
         print("❌ Gagal mendapatkan APNS token. Notifikasi tidak akan berfungsi di iOS.");
-        return; // Hentikan jika APNS token tidak ada
+        return;
       }
     }
 
-    // Panggilan getToken() sekarang lebih aman
     String? token = await messaging.getToken();
     print("🔑 FCM Token: $token");
 
-    // Listener saat notif diterima ketika app foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print("📩 Notif masuk (foreground): ${message.notification?.title}");
-
-      // Kalau mau tampilkan snackbar di app saat notif masuk
       final ctx = MyApp.navigatorKey.currentContext;
       if (ctx != null) {
         ScaffoldMessenger.of(ctx).showSnackBar(
@@ -91,7 +98,6 @@ class _MyAppState extends State<MyApp> {
       }
     });
   }
-  // ▲▲▲ AKHIR DARI FUNGSI YANG DIGANTI ▲▲▲
 
   @override
   Widget build(BuildContext context) {

@@ -33,18 +33,18 @@ class DatabaseHelper {
 
   String get _baseUrl {
     if (kReleaseMode) {
-      // return "https://secpanel-server.onrender.com";
-      return "http://3.27.226.108";
+      return "https://secpanel-server.onrender.com";
+      // return "https://3.27.226.108";
 
     } else {
       if (Platform.isAndroid) {
-        return "http://3.27.226.108";
+        // return "https://3.27.226.108";
 
-      // return "https://secpanel-server.onrender.com";
+      return "https://secpanel-server.onrender.com";
       } else {
-        return "http://3.27.226.108";
+        // return "https://3.27.226.108";
 
-      // return "https://secpanel-server.onrender.com";
+      return "https://secpanel-server.onrender.com";
       }
     }
   }
