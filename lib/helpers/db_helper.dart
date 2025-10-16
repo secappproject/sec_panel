@@ -33,18 +33,15 @@ class DatabaseHelper {
 
   String get _baseUrl {
     if (kReleaseMode) {
-      return "https://presence-pirates-runtime-style.trycloudflare.com";
-      // return "https://3.27.226.108";
+      return "https://secpanel-server.onrender.com";
 
     } else {
       if (Platform.isAndroid) {
-        // return "https://3.27.226.108";
 
-      return "https://presence-pirates-runtime-style.trycloudflare.com";
+      return "https://secpanel-server.onrender.com";
       } else {
-        // return "https://3.27.226.108";
 
-      return "https://presence-pirates-runtime-style.trycloudflare.com";
+      return "https://secpanel-server.onrender.com";
       }
     }
   }

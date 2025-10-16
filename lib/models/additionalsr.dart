@@ -72,21 +72,21 @@ class AdditionalSRForExport {
   final String status;
   final String remarks;
 
+  // ▼▼▼ UBAH KEY DARI PascalCase ke snake_case ▼▼▼
   factory AdditionalSRForExport.fromMap(Map<String, dynamic> map) {
     return AdditionalSRForExport(
-      panelNoPp: map['PanelNoPp'] ?? '',
-      panelNoWbs: map['PanelNoWbs']?['String'],
-      panelNoPanel: map['PanelNoPanel']?['String'],
-      poNumber: map['PoNumber'] ?? '',
-      item: map['Item'] ?? '',
-      quantity: map['Quantity'] ?? 0,
-      supplier: map['Supplier']?['String'],
-      status: map['Status'] ?? '',
-      remarks: map['Remarks'] ?? '',
+      panelNoPp: map['panel_no_pp'] ?? '',
+      panelNoWbs: map['panel_no_wbs']?['String'],
+      panelNoPanel: map['panel_no_panel']?['String'],
+      poNumber: map['po_number'] ?? '',
+      item: map['item'] ?? '',
+      quantity: map['quantity'] ?? 0,
+      supplier: map['supplier']?['String'],
+      status: map['status'] ?? '',
+      remarks: map['remarks'] ?? '',
     );
   }
 
-  // Constructor lama Anda
   AdditionalSRForExport({
     required this.panelNoPp,
     this.panelNoWbs,

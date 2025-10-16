@@ -244,22 +244,21 @@ class IssueForExport {
   final String createdBy;
   final DateTime createdAt;
 
-  // [PERBAIKAN 1] Tambahkan factory constructor ini
+  // ▼▼▼ UBAH KEY DARI PascalCase ke snake_case ▼▼▼
   factory IssueForExport.fromMap(Map<String, dynamic> map) {
     return IssueForExport(
-      panelNoPp: map['PanelNoPp'] ?? '',
-      panelNoWbs: map['PanelNoWbs']?['String'],
-      panelNoPanel: map['PanelNoPanel']?['String'],
-      issueId: map['IssueID'] ?? 0,
-      title: map['Title'] ?? '',
-      description: map['Description'] ?? '',
-      status: map['Status'] ?? '',
-      createdBy: map['CreatedBy'] ?? '',
-      createdAt: DateTime.parse(map['CreatedAt']),
+      panelNoPp: map['panel_no_pp'] ?? '',
+      panelNoWbs: map['panel_no_wbs']?['String'],
+      panelNoPanel: map['panel_no_panel']?['String'],
+      issueId: map['issue_id'] ?? 0,
+      title: map['title'] ?? '',
+      description: map['description'] ?? '',
+      status: map['status'] ?? '',
+      createdBy: map['created_by'] ?? '',
+      createdAt: DateTime.parse(map['created_at']),
     );
   }
 
-  // Constructor lama Anda mungkin terlihat seperti ini, biarkan saja jika ada
   IssueForExport({
     required this.panelNoPp,
     this.panelNoWbs,
@@ -279,17 +278,16 @@ class CommentForExport {
   final String senderId;
   final String? replyToCommentId;
 
-  // [PERBAIKAN 2] Tambahkan factory constructor ini
+  // ▼▼▼ UBAH KEY DARI PascalCase ke snake_case ▼▼▼
   factory CommentForExport.fromMap(Map<String, dynamic> map) {
     return CommentForExport(
-      issueId: map['IssueID'] ?? 0,
-      text: map['Text'] ?? '',
-      senderId: map['SenderID'] ?? '',
-      replyToCommentId: map['ReplyToCommentID']?['String'],
+      issueId: map['issue_id'] ?? 0,
+      text: map['text'] ?? '',
+      senderId: map['sender_id'] ?? '',
+      replyToCommentId: map['reply_to_comment_id']?['String'],
     );
   }
-  
-  // Constructor lama Anda
+
   CommentForExport({
     required this.issueId,
     required this.text,
