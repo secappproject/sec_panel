@@ -70,35 +70,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _setupFCM();
   }
-
-  Future<void> _setupFCM() async {
-    final messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission();
-
-    if (Platform.isIOS) {
-      String? apnsToken = await messaging.getAPNSToken();
-      if (apnsToken == null) {
-        print("❌ Gagal mendapatkan APNS token. Notifikasi tidak akan berfungsi di iOS.");
-        return;
-      }
-    }
-
-    String? token = await messaging.getToken();
-    print("🔑 FCM Token: $token");
-
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("📩 Notif masuk (foreground): ${message.notification?.title}");
-      final ctx = MyApp.navigatorKey.currentContext;
-      if (ctx != null) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          SnackBar(content: Text(message.notification?.title ?? "Notif baru")),
-        );
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return SessionTimeoutManager(

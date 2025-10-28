@@ -605,11 +605,8 @@ Future<Company?> getCompanyByUsername(String username) async {
     return List<Map<String, dynamic>>.from(data);
   }
 
-  // ▼▼▼ FUNGSI 1: getFilteredDataForExport ▼▼▼
-  // Helper serbaguna yang meneruskan SEMUA filter yang ada di UI ke backend.
   Future<Map<String, List<dynamic>>> getFilteredDataForExport({
     required Company currentUser,
-    // Semua state filter dari HomeScreen/PanelFilterBottomSheet
     DateTimeRange? startDateRange,
     DateTimeRange? deliveryDateRange,
     DateTimeRange? closedDateRange,
@@ -642,7 +639,7 @@ Future<Company?> getCompanyByUsername(String username) async {
     // Helper untuk mengubah enum menjadi string
     void addEnumListToParams(String key, List<dynamic>? list) {
       if (list != null && list.isNotEmpty) {
-        queryParams[key] = list.map((e) => e.name).join(',');
+        queryParams[key] = list.map((e) => e.toString().split('.').last).join(',');
       }
     }
 
@@ -708,6 +705,9 @@ Future<Company?> getCompanyByUsername(String username) async {
     }
     
     final Map<String, dynamic> data = responseData;
+    print('DEBUG: Issues from backend: ${data['issues']}'); 
+    print('DEBUG: Comments from backend: ${data['comments']}');
+    print('DEBUG: SRs from backend: ${data['additional_srs']}');
     
     return {
       'companies': ((data['companies'] as List<dynamic>?) ?? [])
@@ -748,20 +748,20 @@ Future<Company?> getCompanyByUsername(String username) async {
             final remarkText = remark.remark;
             return '$vendorName: "$remarkText"';
           })
-          .join('; '); // Pisahkan setiap remark dengan titik koma
+          .join('; '); 
     } catch (e) {
       return 'Error formatting remarks';
     }
   }
+  // ... di dalam file lib/helpers/db_helper.dart
 
-Future<Excel> generateCustomExportExcel({
+  Future<Excel> generateCustomExportExcel({
     required bool includePanelData,
     required bool includeUserData,
-    // [MODIFIKASI] Tambahkan opsi export baru
     required bool includeIssueData,
     required bool includeSrData,
     required Company currentUser,
-    required List<PanelDisplayData> filteredPanels,
+    required List<PanelDisplayData> filteredPanels, // Ini adalah list yang sudah terfilter oleh search
     DateTimeRange? startDateRange,
     DateTimeRange? deliveryDateRange,
     DateTimeRange? closedDateRange,
@@ -804,6 +804,21 @@ Future<Excel> generateCustomExportExcel({
       includeArchived: includeArchived,
     );
 
+    // [PERBAIKAN 1] Buat Set (kumpulan) No. PP dari panel yang sudah terfilter di UI
+    final filteredPanelNoPps = filteredPanels.map((p) => p.panel.noPp).toSet();
+
+    // ### TAMBAHKAN DEBUG PRINT ###
+    print("--- DEBUG EXPORT ---");
+    print("Jumlah panel terfilter di UI: ${filteredPanels.length}");
+    // Batasi print jika listnya terlalu panjang
+    if (filteredPanelNoPps.length > 20) {
+      print("Daftar No. PP terfilter (contoh): ${filteredPanelNoPps.take(20).join(', ')}");
+    } else {
+      print("Daftar No. PP terfilter: $filteredPanelNoPps");
+    }
+    // ### AKHIR DEBUG PRINT ###
+
+
     if (includePanelData) {
       final panelSheet = excel['Panel'];
       final panelHeaders = [
@@ -833,7 +848,6 @@ Future<Excel> generateCustomExportExcel({
       ];
       panelSheet.appendRow(panelHeaders.map((h) => TextCellValue(h)).toList());
 
-      // Bagian ini sudah benar, tidak perlu diubah.
       for (final panelData in filteredPanels) {
         final panel = panelData.panel;
         final latestAoBusbar =
@@ -857,7 +871,6 @@ Future<Excel> generateCustomExportExcel({
 
         switch (status) {
           case 'Production':
-            // Jika di produksi, tampilkan juga nomor slotnya
             positionText = 'Production (${RegExp(r'Cell\s+\d+')
                                         .firstMatch(panel.productionSlot!)
                                         ?.group(0) ?? panel.productionSlot! ?? 'N/A'})';
@@ -870,13 +883,6 @@ Future<Excel> generateCustomExportExcel({
             break;
           case 'VendorWarehouse':
           default:
-            // Gabungkan nama vendor dan warehouse
-            // List<String> locations = [];
-            // if (panelVendorName.isNotEmpty) locations.add(panelVendorName);
-            // if (componentVendorName.isNotEmpty) locations.add(componentVendorName);
-
-            // positionText = locations.isEmpty ? 'Vendor/WHS' : locations.join(' & ');
-
             positionText = 'Warehouse';
             break;
         }
@@ -911,26 +917,6 @@ Future<Excel> generateCustomExportExcel({
     }
 
     if (includeUserData) {
-      final data = await getFilteredDataForExport(
-        currentUser: currentUser,
-        startDateRange: startDateRange,
-        deliveryDateRange: deliveryDateRange,
-        closedDateRange: closedDateRange,
-        selectedPanelTypes: selectedPanelTypes,
-        selectedPanelVendors: selectedPanelVendors,
-        selectedBusbarVendors: selectedBusbarVendors,
-        selectedComponentVendors: selectedComponentVendors,
-        selectedPaletVendors: selectedPaletVendors,
-        selectedCorepartVendors: selectedCorepartVendors,
-        selectedStatuses: selectedStatuses,
-        selectedComponents: selectedComponents,
-        selectedPalet: selectedPalet,
-        selectedCorepart: selectedCorepart,
-        selectedPanelStatuses: selectedPanelStatuses,
-        includeArchived: includeArchived,
-      );
-      // ▲▲▲ AKHIR PERBAIKAN ▲▲▲
-
       final companyAccounts =
           (data['companyAccounts'] as List<dynamic>?)?.cast<CompanyAccount>() ??
           [];
@@ -947,14 +933,14 @@ Future<Excel> generateCustomExportExcel({
         ]);
       }
     }
- // [MODIFIKASI BARU] Logika untuk membuat sheet "Issues"
     if (includeIssueData) {
       final issueSheet = excel['Issues'];
       issueSheet.appendRow([
         'PP Panel', 'WBS', 'Panel No', 'Issue ID', 'Judul', 'Deskripsi', 'Status', 'Dibuat Oleh', 'Tanggal Dibuat', 'Komentar'
       ].map((h) => TextCellValue(h)).toList());
 
-      final List<IssueForExport> issues = ((data['issues'] as List<dynamic>?) ?? []).map((i) => IssueForExport.fromMap(i)).toList();
+      // [PERBAIKAN 2.1] Ambil SEMUA issues dari server (yang cocok filter modal)
+      final List<IssueForExport> allIssues = ((data['issues'] as List<dynamic>?) ?? []).map((i) => IssueForExport.fromMap(i)).toList();
       final List<CommentForExport> comments = ((data['comments'] as List<dynamic>?) ?? []).map((c) => CommentForExport.fromMap(c)).toList();
       
       final Map<int, List<CommentForExport>> commentsByIssue = {};
@@ -962,7 +948,16 @@ Future<Excel> generateCustomExportExcel({
         (commentsByIssue[comment.issueId] ??= []).add(comment);
       }
 
-      for (final issue in issues) {
+      // [PERBAIKAN 2.2] Filter issues secara manual berdasarkan No. PP yang sudah terfilter di UI
+      final filteredIssues = allIssues.where((issue) => filteredPanelNoPps.contains(issue.panelNoPp)).toList();
+
+      // ### TAMBAHKAN DEBUG PRINT ###
+      print("Total issues dari server: ${allIssues.length}");
+      print("Issues setelah difilter: ${filteredIssues.length}");
+      // ### AKHIR DEBUG PRINT ###
+
+      // [PERBAIKAN 2.3] Gunakan list 'filteredIssues' untuk di-loop
+      for (final issue in filteredIssues) {
         String formattedComments = '';
         int rootCommentCount = 1;
         final issueComments = commentsByIssue[issue.issueId] ?? [];
@@ -980,7 +975,9 @@ Future<Excel> generateCustomExportExcel({
         }
 
         issueSheet.appendRow([
-          TextCellValue(issue.panelNoPp),
+          TextCellValue(
+            issue.panelNoPp.startsWith('TEMP_') ? 'Belum Diatur' : issue.panelNoPp
+          ),
           TextCellValue(issue.panelNoWbs ?? ''),
           TextCellValue(issue.panelNoPanel ?? ''),
           TextCellValue(issue.issueId.toString()),
@@ -994,18 +991,30 @@ Future<Excel> generateCustomExportExcel({
       }
     }
     
-    // [MODIFIKASI BARU] Logika untuk membuat sheet "Additional SR"
     if (includeSrData) {
       final srSheet = excel['Additional SR'];
       srSheet.appendRow([
         'PP Panel', 'WBS', 'Panel No', 'No. PO', 'Item', 'Qty', 'Supplier', 'Status', 'Remarks (No. DO)'
       ].map((h) => TextCellValue(h)).toList());
 
-      final List<AdditionalSRForExport> srs = ((data['additional_srs'] as List<dynamic>?) ?? []).map((s) => AdditionalSRForExport.fromMap(s)).toList();
+      // [PERBAIKAN 3.1] Ambil SEMUA SRs dari server (yang cocok filter modal)
+      final List<AdditionalSRForExport> allSrs = ((data['additional_srs'] as List<dynamic>?) ?? []).map((s) => AdditionalSRForExport.fromMap(s)).toList();
 
-      for (final sr in srs) {
+      // [PERBAIKAN 3.2] Filter SRs secara manual berdasarkan No. PP yang sudah terfilter di UI
+      final filteredSrs = allSrs.where((sr) => filteredPanelNoPps.contains(sr.panelNoPp)).toList();
+
+      // ### TAMBAHKAN DEBUG PRINT ###
+      print("Total SRs dari server: ${allSrs.length}");
+      print("SRs setelah difilter: ${filteredSrs.length}");
+      print("--- AKHIR DEBUG EXPORT ---");
+      // ### AKHIR DEBUG PRINT ###
+
+      // [PERBAIKAN 3.3] Gunakan list 'filteredSrs' untuk di-loop
+      for (final sr in filteredSrs) {
         srSheet.appendRow([
-          TextCellValue(sr.panelNoPp),
+          TextCellValue(
+            sr.panelNoPp.startsWith('TEMP_') ? 'Belum Diatur' : sr.panelNoPp 
+          ),
           TextCellValue(sr.panelNoWbs ?? ''),
           TextCellValue(sr.panelNoPanel ?? ''),
           TextCellValue(sr.poNumber),
@@ -1053,14 +1062,13 @@ Future<Excel> generateCustomExportExcel({
       'company_id': currentUser.id,
     };
 
-    // Logika pembangunan parameter sama persis dengan getFilteredDataForExport
     void addListToParams(String key, List<String>? list) {
       if (list != null && list.isNotEmpty) queryParams[key] = list.join(',');
     }
 
     void addEnumListToParams(String key, List<dynamic>? list) {
       if (list != null && list.isNotEmpty)
-        queryParams[key] = list.map((e) => e.name).join(',');
+        queryParams[key] = list.map((e) => e.toString().split('.').last).join(',');
     }
 
     if (startDateRange != null) {
@@ -1111,12 +1119,9 @@ Future<Excel> generateCustomExportExcel({
     return const JsonEncoder.withIndent('  ').convert(data);
   }
 
-  // ▼▼▼ FUNGSI 4: generateFilteredDatabaseJson ▼▼▼
-  // Fungsi ini juga meneruskan SEMUA filter yang ada di UI ke backend.
   Future<String> generateFilteredDatabaseJson({
     required Map<String, bool> tablesToInclude,
     required Company currentUser,
-    // Semua state filter dari HomeScreen/PanelFilterBottomSheet
     DateTimeRange? startDateRange,
     DateTimeRange? deliveryDateRange,
     DateTimeRange? closedDateRange,
@@ -1143,14 +1148,13 @@ Future<Excel> generateCustomExportExcel({
       'company_id': currentUser.id,
     };
 
-    // Gunakan lagi logika penambahan parameter yang sama
     void addListToParams(String key, List<String>? list) {
       if (list != null && list.isNotEmpty) queryParams[key] = list.join(',');
     }
 
     void addEnumListToParams(String key, List<dynamic>? list) {
       if (list != null && list.isNotEmpty)
-        queryParams[key] = list.map((e) => e.name).join(',');
+        queryParams[key] = list.map((e) => e.toString().split('.').last).join(',');
     }
 
     if (startDateRange != null) {
@@ -1161,7 +1165,6 @@ Future<Excel> generateCustomExportExcel({
           .toUtc()
           .toIso8601String();
     }
-    // ... (Tambahkan semua if dan addListToParams lainnya seperti di fungsi pertama) ...
     if (deliveryDateRange != null) {
       queryParams['delivery_date_start'] = deliveryDateRange.start
           .toUtc()

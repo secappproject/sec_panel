@@ -1,7 +1,23 @@
 import 'package:flutter/material.dart';
 
-// --- Helper Functions and Constants ---
-
+String? _parseString(dynamic jsonValue) {
+  if (jsonValue == null) {
+    return null;
+  }
+  
+  if (jsonValue is Map<String, dynamic>) {
+    if (jsonValue['Valid'] == true) {
+      return jsonValue['String'];
+    }
+    return null; 
+  }
+  
+  if (jsonValue is String) {
+    return jsonValue.isEmpty ? null : jsonValue;
+  }
+  
+  return jsonValue.toString();
+}
 const List<Color> _userAvatarColors = [
   Color(0xFFFF5DD1), // Pink
   Color(0xFF0400FF), // Blue
@@ -103,7 +119,6 @@ class Issue {
         timestamp: createdAt,
       );
     }
-    // Sort logs to find the most recent one
     logs.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return logs.first;
   }
@@ -244,17 +259,16 @@ class IssueForExport {
   final String createdBy;
   final DateTime createdAt;
 
-  // ▼▼▼ UBAH KEY DARI PascalCase ke snake_case ▼▼▼
-  factory IssueForExport.fromMap(Map<String, dynamic> map) {
+  factory IssueForExport.fromMap(Map<String, dynamic> map) {    
     return IssueForExport(
       panelNoPp: map['panel_no_pp'] ?? '',
-      panelNoWbs: map['panel_no_wbs']?['String'],
-      panelNoPanel: map['panel_no_panel']?['String'],
+      panelNoWbs: _parseString(map['panel_no_wbs']),
+      panelNoPanel: _parseString(map['panel_no_panel']), 
       issueId: map['issue_id'] ?? 0,
-      title: map['title'] ?? '',
-      description: map['description'] ?? '',
-      status: map['status'] ?? '',
-      createdBy: map['created_by'] ?? '',
+      title: _parseString(map['title']) ?? '', 
+      description: _parseString(map['description']) ?? '',
+      status: _parseString(map['status']) ?? '', 
+      createdBy: _parseString(map['created_by']) ?? '', 
       createdAt: DateTime.parse(map['created_at']),
     );
   }
@@ -278,15 +292,14 @@ class CommentForExport {
   final String senderId;
   final String? replyToCommentId;
 
-  // ▼▼▼ UBAH KEY DARI PascalCase ke snake_case ▼▼▼
-  factory CommentForExport.fromMap(Map<String, dynamic> map) {
-    return CommentForExport(
-      issueId: map['issue_id'] ?? 0,
-      text: map['text'] ?? '',
-      senderId: map['sender_id'] ?? '',
-      replyToCommentId: map['reply_to_comment_id']?['String'],
-    );
-  }
+    factory CommentForExport.fromMap(Map<String, dynamic> map) {
+      return CommentForExport(
+        issueId: map['issue_id'] ?? 0,
+        text: _parseString(map['text']) ?? '',
+        senderId: _parseString(map['sender_id']) ?? '',
+        replyToCommentId: _parseString(map['reply_to_comment_id']), 
+      );
+    }
 
   CommentForExport({
     required this.issueId,

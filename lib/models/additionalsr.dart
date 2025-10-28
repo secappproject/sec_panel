@@ -1,7 +1,24 @@
 // lib/models/additionalsr.dart
 
 import 'dart:convert';
-
+String? _parseString(dynamic jsonValue) {
+  if (jsonValue == null) {
+    return null;
+  }
+  
+  if (jsonValue is Map<String, dynamic>) {
+    if (jsonValue['Valid'] == true) {
+      return jsonValue['String'];
+    }
+    return null; 
+  }
+  
+  if (jsonValue is String) {
+    return jsonValue.isEmpty ? null : jsonValue;
+  }
+  
+  return jsonValue.toString();
+}
 class AdditionalSR {
   final int? id;
   final String panelNoPp;
@@ -72,18 +89,17 @@ class AdditionalSRForExport {
   final String status;
   final String remarks;
 
-  // ▼▼▼ UBAH KEY DARI PascalCase ke snake_case ▼▼▼
   factory AdditionalSRForExport.fromMap(Map<String, dynamic> map) {
     return AdditionalSRForExport(
       panelNoPp: map['panel_no_pp'] ?? '',
-      panelNoWbs: map['panel_no_wbs']?['String'],
-      panelNoPanel: map['panel_no_panel']?['String'],
-      poNumber: map['po_number'] ?? '',
-      item: map['item'] ?? '',
+      panelNoWbs: _parseString(map['panel_no_wbs']), 
+      panelNoPanel: _parseString(map['panel_no_panel']), 
+      poNumber: _parseString(map['po_number']) ?? '', 
+      item: _parseString(map['item']) ?? '', 
       quantity: map['quantity'] ?? 0,
-      supplier: map['supplier']?['String'],
-      status: map['status'] ?? '',
-      remarks: map['remarks'] ?? '',
+      supplier: _parseString(map['supplier']),
+      status: _parseString(map['status']) ?? '', 
+      remarks: _parseString(map['remarks']) ?? '', 
     );
   }
 
