@@ -47,12 +47,15 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
 
   String get _baseUrl {
     if (kReleaseMode) {
-      return "https://secpanel-db.onrender.com";
+      // return "https://secpanel-db.onrender.com"; // <-- URL LAMA ANDA
+      return "https://secpanel-server.onrender.com"; // <-- URL BARU SESUAI DB_HELPER
     } else {
       if (Platform.isAndroid) {
-        return "https://secpanel-db.onrender.com";
+        // return "https://secpanel-db.onrender.com"; // <-- URL LAMA ANDA
+        return "https://secpanel-server.onrender.com"; // <-- URL BARU SESUAI DB_HELPER
       } else {
-        return "https://secpanel-db.onrender.com";
+        // return "https://secpanel-db.onrender.com"; // <-- URL LAMA ANDA
+        return "https://secpanel-server.onrender.com"; // <-- URL BARU SESUAI DB_HELPER
       }
     }
   }
@@ -517,9 +520,78 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
     );
   }
 
-  Widget _buildCommentContent(IssueComment comment) {
-    // Langsung panggil fungsi baru kita
-    return _buildRichTextComment(comment.text, comment.replyTo);
+Widget _buildCommentContent(IssueComment comment) {
+    // [PERBAIKAN] Bungkus dengan Column untuk menumpuk teks dan gambar
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Tampilkan teks komentar seperti biasa
+        _buildRichTextComment(comment.text, comment.replyTo),
+
+        // [PERBAIKAN] Tampilkan gambar jika ada
+        if (comment.imageUrls.isNotEmpty) ...[
+          const SizedBox(height: 8), // Beri jarak antara teks dan gambar
+          Wrap( // Gunakan Wrap agar gambar bisa pindah baris jika banyak
+            spacing: 8.0, // Jarak horizontal antar gambar
+            runSpacing: 8.0, // Jarak vertikal antar baris gambar
+            children: comment.imageUrls.map((relativeUrl) {
+              // Pastikan URL diawali /
+              final urlPath = relativeUrl.startsWith('/') ? relativeUrl : '/$relativeUrl';
+              final fullUrl = _baseUrl + urlPath; // Gabungkan base URL dengan path
+
+              return GestureDetector(
+                onTap: () {
+                  // Navigasi ke full screen viewer saat gambar diklik
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FullScreenImageViewer(imageUrl: fullUrl),
+                    ),
+                  );
+                },
+                child: ClipRRect( // Beri sudut melengkung
+                  borderRadius: BorderRadius.circular(8.0),
+                  child: Image.network(
+                    fullUrl,
+                    width: 60, // Atur ukuran preview
+                    height: 60,
+                    fit: BoxFit.cover,
+                    // Tambahkan indikator loading
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        width: 60,
+                        height: 60,
+                        color: Colors.grey[200],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.0,
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        ),
+                      );
+                    },
+                    // Tambahkan penanganan error
+                    errorBuilder: (context, error, stackTrace) {
+                       print("Error loading image: $fullUrl, Error: $error"); // DEBUG
+                       return Container(
+                        width: 60,
+                        height: 60,
+                        color: Colors.grey[200],
+                        child: Icon(Icons.broken_image, color: Colors.grey[400], size: 30),
+                       );
+                    }
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ],
+    );
   }
 
   Widget _buildRichTextComment(String text, User? replyTo) {
