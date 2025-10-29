@@ -32,6 +32,7 @@ class AlertInfo {
 
 class PanelProgressCard extends StatelessWidget {
   final AppRole currentUserRole;
+  final DateTime? closedPanel;
   final Company currentCompany;
   final String? statusPenyelesaian;
   final String? productionSlot;
@@ -68,6 +69,7 @@ class PanelProgressCard extends StatelessWidget {
     required this.currentUserRole,
     this.statusPenyelesaian,
     this.productionSlot,
+    required this.closedPanel,
     required this.currentCompany,
     required this.duration,
     required this.targetDelivery,
@@ -293,7 +295,11 @@ class PanelProgressCard extends StatelessWidget {
   Widget _buildPanelPosition() {
     // Tentukan status default jika null atau kosong
     // final status = statusPenyelesaian ?? 'VendorWarehouse';
-    final status = statusPenyelesaian ?? 'Warehouse';
+    final status = statusPenyelesaian ??
+    (closedPanel != null
+        ? 'Warehouse ${DateFormat('dd MMM yyyy, HH:mm').format(closedPanel!)}'
+        : 'Warehouse (Not Closed Yet)');
+
     String positionText;
     String iconPath;
 
@@ -326,7 +332,9 @@ class PanelProgressCard extends StatelessWidget {
 
         // positionText = locations.isEmpty ? 'Vendor/WHS' : locations.join(' & ');
 
-        positionText = 'Warehouse';
+        positionText = closedPanel != null
+            ? 'Warehouse (${DateFormat('dd MMM yyyy').format(closedPanel!)})'
+            : 'Warehouse (Not Closed Yet)';
         iconPath = 'assets/images/warehouse.png';
         break;
     }

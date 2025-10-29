@@ -1413,6 +1413,7 @@ void _prepareChartData() {
             final panel = data.panel;
             return PanelProgressCard(
               currentCompany: widget.currentCompany,
+              closedPanel: panel.closedDate,
               productionSlot: panel.productionSlot,
               statusPenyelesaian: panel.statusPenyelesaian,
               additionalSrCount: data.additionalSrCount ?? 0,
@@ -1489,6 +1490,7 @@ void _prepareChartData() {
           final panel = data.panel;
           return PanelProgressCard(
             currentCompany: widget.currentCompany,
+            closedPanel: panel.closedDate,
             productionSlot: panel.productionSlot,
             statusPenyelesaian: panel.statusPenyelesaian,
             additionalSrCount: data.additionalSrCount ?? 0,
