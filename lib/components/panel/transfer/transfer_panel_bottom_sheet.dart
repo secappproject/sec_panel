@@ -928,6 +928,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
                   isVendorDone: _isVendorBranchDone,
                   isWarehouseDone: _isWarehouseBranchDone,
                   panelCreatedDate: _currentPanelData.panel.startDate,
+                  panelClosedDate: _currentPanelData.panel.closedDate,
                   productionDate: _currentPanelData.productionDate,
                   fatDate: _currentPanelData.fatDate,
                   allDoneDate: _currentPanelData.allDoneDate,
@@ -990,6 +991,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
     required bool isVendorDone,
     required bool isWarehouseDone,
     DateTime? panelCreatedDate,
+    DateTime? panelClosedDate,
     DateTime? productionDate,
     DateTime? fatDate,
     DateTime? allDoneDate,
@@ -1086,7 +1088,8 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
                             width: 24),
                         isComplete: warehouseCheck,
                         isActive: !warehouseCheck,
-                        date: panelCreatedDate,
+                        date: panelClosedDate,
+                        datePrefix: 'Closed',
                         onDateTap: () => pickAndUpdateDate(
                           initialDate: _selectedStartDate,
                           newStartDate: _selectedStartDate
