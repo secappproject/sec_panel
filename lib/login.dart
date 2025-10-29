@@ -11,6 +11,7 @@ import 'package:secpanel/models/company.dart';
 import 'package:secpanel/theme/colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -139,6 +140,79 @@ Future<void> _login() async {
   }
 }
 
+Future<void> _launchURL(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        _showErrorSnackBar('Tidak dapat membuka $urlString');
+      }
+    }
+  }
+
+  Widget _buildPortalLinks() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24.0),
+      child: Column(
+        children: [
+          const Text(
+            'Atau akses portal lain:',
+            style: TextStyle(
+              fontFamily: 'Lexend',
+              fontWeight: FontWeight.w300,
+              fontSize: 12,
+              color: AppColors.gray,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 44),
+                  side: const BorderSide(color: AppColors.schneiderGreen),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => _launchURL('https://mvp-fe.vercel.app'),
+                child: const Text(
+                  'MVP',
+                  style: TextStyle(
+                    fontFamily: 'Lexend',
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                    color: AppColors.schneiderGreen,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 44),
+                  side: const BorderSide(color: AppColors.schneiderGreen),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => _launchURL('https://vro-fe.vercel.app'),
+                child: const Text(
+                  'VRO',
+                  style: TextStyle(
+                    fontFamily: 'Lexend',
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                    color: AppColors.schneiderGreen,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isPageLoading) {
@@ -211,6 +285,7 @@ Widget _buildWebAppLayout() {
           _buildFormFields(),
           const SizedBox(height: 32),
           _buildActionButtons(isWebLayout: true),
+          _buildPortalLinks(),
         ],
       ),
     ),
@@ -226,6 +301,7 @@ Widget _buildWebAppLayout() {
           children: [
             Expanded(child: SingleChildScrollView(child: _buildFormFields())),
             _buildActionButtons(isWebLayout: false),
+            _buildPortalLinks(),
           ],
         ),
       ),

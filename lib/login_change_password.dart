@@ -184,7 +184,6 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
     );
   }
 
-  // [PERUBAHAN] Form dibuat menjadi satu widget reusable
   Widget _buildChangePasswordForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
