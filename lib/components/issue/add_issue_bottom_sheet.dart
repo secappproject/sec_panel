@@ -1,7 +1,5 @@
-
-
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:secpanel/components/issue/panel_issue_screen.dart';
@@ -40,7 +38,7 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
   bool _isLoadingTitles = true;
   bool _isAdmin = false;
 
-  final List<File> _selectedImages = [];
+  final List<Uint8List> _selectedImages = [];
   bool _isLoading = false;
   static const List<Color> _userAvatarColors = [
     Color(0xFFFF5DD1),
@@ -58,11 +56,10 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
   Future<void> _initializeData() async {
     await _checkUserRole();
     await _loadIssueTitles();
-    
+
     _loadRecommendedEmails();
   }
 
-  
   Future<void> _loadRecommendedEmails() async {
     if (!mounted) return;
     setState(() => _isLoadingRecommendations = true);
@@ -80,7 +77,6 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
       if (mounted) setState(() => _isLoadingRecommendations = false);
     }
   }
-  
 
   Future<void> _checkUserRole() async {
     final prefs = await SharedPreferences.getInstance();
@@ -149,13 +145,16 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
 
   Future<void> _pickImage() async {
     try {
-      final result = await FilePicker.platform
-          .pickFiles(type: FileType.image, allowMultiple: true);
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: true,
+        withData: true,
+      );
       if (result != null && result.files.isNotEmpty) {
         setState(() {
           for (var platformFile in result.files) {
-            if (platformFile.path != null) {
-              _selectedImages.add(File(platformFile.path!));
+            if (platformFile.bytes != null) {
+              _selectedImages.add(platformFile.bytes!);
             }
           }
         });
@@ -171,7 +170,7 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
   void _removeImage(int index) =>
       setState(() => _selectedImages.removeAt(index));
 
-  void _showFullScreenImage(File imageFile) {
+  void _showFullScreenImage(Uint8List imageBytes) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -184,7 +183,7 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
             boundaryMargin: const EdgeInsets.all(20),
             minScale: 0.5,
             maxScale: 4,
-            child: Image.file(imageFile, fit: BoxFit.contain),
+            child: Image.memory(imageBytes, fit: BoxFit.contain),
           ),
         ),
       ),
@@ -204,9 +203,8 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
     setState(() => _isLoading = true);
     try {
       List<String> imageBase64List = [];
-      for (var imageFile in _selectedImages) {
-        final bytes = await imageFile.readAsBytes();
-        imageBase64List.add(base64Encode(bytes));
+      for (var imageBytes in _selectedImages) {
+        imageBase64List.add(base64Encode(imageBytes));
       }
       final prefs = await SharedPreferences.getInstance();
       final username = prefs.getString('loggedInUsername') ?? 'unknown_user';
@@ -577,7 +575,9 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.schneiderGreen.withOpacity(0.08) : Colors.white,
+          color: selected
+              ? AppColors.schneiderGreen.withOpacity(0.08)
+              : Colors.white,
           border: Border.all(color: borderColor),
           borderRadius: BorderRadius.circular(8),
         ),
@@ -594,7 +594,8 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
                 onTap: onEdit,
                 borderRadius: BorderRadius.circular(20),
                 child: const Padding(
-                  padding: EdgeInsets.only(left: 8.0, top: 4, bottom: 4, right: 2),
+                  padding:
+                      EdgeInsets.only(left: 8.0, top: 4, bottom: 4, right: 2),
                   child: Icon(Icons.edit,
                       size: 16, color: AppColors.schneiderGreen),
                 ),
@@ -640,7 +641,8 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: List.generate(_selectedImages.length, (index) {
+                        children:
+                            List.generate(_selectedImages.length, (index) {
                           return Padding(
                             padding: const EdgeInsets.only(right: 8.0),
                             child: Stack(
@@ -650,8 +652,10 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
                                       _showFullScreenImage(_selectedImages[index]),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
-                                    child: Image.file(_selectedImages[index],
-                                        width: 60, height: 60, fit: BoxFit.cover),
+                                    child: Image.memory(_selectedImages[index],
+                                        width: 60,
+                                        height: 60,
+                                        fit: BoxFit.cover),
                                   ),
                                 ),
                                 Positioned(
@@ -762,7 +766,8 @@ class _AddNewIssueTitleSheetState extends State<_AddNewIssueTitleSheet> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
     try {
-      await DatabaseHelper.instance.createIssueTitle(_titleController.text.trim());
+      await DatabaseHelper.instance
+          .createIssueTitle(_titleController.text.trim());
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('Root cause baru berhasil ditambahkan.'),
@@ -771,8 +776,8 @@ class _AddNewIssueTitleSheetState extends State<_AddNewIssueTitleSheet> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal menyimpan: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Gagal menyimpan: $e'), backgroundColor: Colors.red));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -829,8 +834,8 @@ class _AddNewIssueTitleSheetState extends State<_AddNewIssueTitleSheet> {
                         onPressed: () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            side:
-                                const BorderSide(color: AppColors.schneiderGreen),
+                            side: const BorderSide(
+                                color: AppColors.schneiderGreen),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(6))),
                         child: const Text("Batal",
@@ -906,8 +911,8 @@ class _EditIssueTitleSheetState extends State<_EditIssueTitleSheet> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal menyimpan: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Gagal menyimpan: $e'), backgroundColor: Colors.red));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -918,8 +923,8 @@ class _EditIssueTitleSheetState extends State<_EditIssueTitleSheet> {
     final confirm = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.white,
-      builder: (ctx) =>
-          _DeleteTitleConfirmationSheet(titleName: widget.titleData['title'] as String),
+      builder: (ctx) => _DeleteTitleConfirmationSheet(
+          titleName: widget.titleData['title'] as String),
     );
     if (confirm != true) return;
     try {
@@ -932,8 +937,8 @@ class _EditIssueTitleSheetState extends State<_EditIssueTitleSheet> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal menghapus: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Gagal menghapus: $e'), backgroundColor: Colors.red));
       }
     }
   }
@@ -963,7 +968,8 @@ class _EditIssueTitleSheetState extends State<_EditIssueTitleSheet> {
                     style:
                         TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
                 IconButton(
-                    icon: const Icon(Icons.delete_outline, color: AppColors.red),
+                    icon:
+                        const Icon(Icons.delete_outline, color: AppColors.red),
                     onPressed: _delete,
                     tooltip: 'Hapus Root Cause'),
               ],
@@ -987,8 +993,9 @@ class _EditIssueTitleSheetState extends State<_EditIssueTitleSheet> {
                     borderSide:
                         const BorderSide(color: AppColors.schneiderGreen)),
               ),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Nama tidak boleh kosong' : null,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Nama tidak boleh kosong'
+                  : null,
             ),
             const SizedBox(height: 32),
             Row(
@@ -998,8 +1005,8 @@ class _EditIssueTitleSheetState extends State<_EditIssueTitleSheet> {
                         onPressed: () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            side:
-                                const BorderSide(color: AppColors.schneiderGreen),
+                            side: const BorderSide(
+                                color: AppColors.schneiderGreen),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(6))),
                         child: const Text("Batal",
@@ -1070,8 +1077,8 @@ class _DeleteTitleConfirmationSheet extends StatelessWidget {
                       onPressed: () => Navigator.pop(context, false),
                       style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          side:
-                              const BorderSide(color: AppColors.schneiderGreen),
+                          side: const BorderSide(
+                              color: AppColors.schneiderGreen),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(6))),
                       child: const Text("Batal",
