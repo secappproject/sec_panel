@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data'; 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -14,14 +14,14 @@ import 'package:secpanel/theme/colors.dart';
 class IssueCommentSheet extends StatefulWidget {
   final IssueWithPhotos issue;
   final VoidCallback onUpdate;
-  final User currentUser; 
+  final User currentUser;
   final Company currentCompany;
 
   const IssueCommentSheet({
     super.key,
     required this.issue,
     required this.onUpdate,
-    required this.currentUser, 
+    required this.currentUser,
     required this.currentCompany,
   });
 
@@ -34,7 +34,7 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
   final ScrollController _scrollController = ScrollController();
   bool get _isViewer => widget.currentCompany.role == AppRole.viewer;
 
-  final List<File> _newDraftImages = [];
+  final List<Uint8List> _newDraftImages = []; 
   final List<String> _existingImageUrls = [];
 
   bool _isLoading = true;
@@ -47,23 +47,16 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
 
   String get _baseUrl {
     if (kReleaseMode) {
-      // return "https://secpanel-db.onrender.com"; 
       return "https://secpanel-server.onrender.com";
     } else {
-      if (Platform.isAndroid) {
-        // return "https://secpanel-db.onrender.com";
-        return "https://secpanel-server.onrender.com";
-      } else {
-        // return "https://secpanel-db.onrender.com";
-        return "https://secpanel-server.onrender.com"; 
-      }
+      return "https://secpanel-server.onrender.com";
     }
   }
 
   @override
   void initState() {
     super.initState();
-    
+
     _textController = MentionTextEditingController();
     _fetchComments();
   }
@@ -103,28 +96,23 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
     final commentsById = {for (var c in _comments) c.id: c};
     final grouped = <String?, List<IssueComment>>{
       null: [],
-    }; 
+    };
 
-    
     for (final comment in _comments) {
       String? topLevelParentId = comment.replyToCommentId;
 
-      
       while (topLevelParentId != null &&
           commentsById[topLevelParentId]?.replyToCommentId != null) {
         topLevelParentId = commentsById[topLevelParentId]!.replyToCommentId;
       }
 
       if (topLevelParentId == null) {
-        
         (grouped[null] ??= []).add(comment);
       } else {
-        
         (grouped[topLevelParentId] ??= []).add(comment);
       }
     }
 
-    
     final topLevelComments = grouped[null] ?? [];
     topLevelComments.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
@@ -176,14 +164,15 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.image,
         allowMultiple: true,
+        withData: true, 
       );
       if (result != null && result.files.isNotEmpty) {
         setState(() {
-          _newDraftImages.addAll(
-            result.files
-                .where((file) => file.path != null)
-                .map((file) => File(file.path!)),
-          );
+          for (var platformFile in result.files) {
+            if (platformFile.bytes != null) {
+              _newDraftImages.add(platformFile.bytes!); 
+            }
+          }
         });
       }
     } catch (e) {
@@ -201,7 +190,6 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
       }
     });
   }
-  
 
   Future<void> _submitComment() async {
     final text = _textController.text.trim();
@@ -219,34 +207,31 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
       if (text.startsWith(geminiTrigger) && _editingComment == null) {
         final question = text.substring(geminiTrigger.length).trim();
 
-        
-        final String userCommentId = await DatabaseHelper.instance
-            .createComment(
-              issueId: widget.issue.id,
-              text: text,
-              senderId: widget.currentUser.id,
-              images: _newDraftImages,
-              replyToCommentId: parentId,
-              replyToUserId: replyToUserId,
-            );
+        final String userCommentId =
+            await DatabaseHelper.instance.createComment(
+          issueId: widget.issue.id,
+          text: text,
+          senderId: widget.currentUser.id,
+          images: _newDraftImages, 
+          replyToCommentId: parentId,
+          replyToUserId: replyToUserId,
+        );
 
-        
         if (question.isNotEmpty) {
           await DatabaseHelper.instance.askGemini(
             issueId: widget.issue.id,
             question: question,
             senderId: widget.currentUser.id,
-            replyToCommentId: userCommentId, 
+            replyToCommentId: userCommentId,
           );
         }
       } else {
-        
         if (_editingComment != null) {
           await DatabaseHelper.instance.updateComment(
             commentId: _editingComment!.id,
             text: text,
             existingImageUrls: _existingImageUrls,
-            newImages: _newDraftImages,
+            newImages: _newDraftImages, 
           );
         } else {
           await DatabaseHelper.instance.createComment(
@@ -255,7 +240,7 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
             senderId: widget.currentUser.id,
             replyToCommentId: parentId,
             replyToUserId: replyToUserId,
-            images: _newDraftImages,
+            images: _newDraftImages, 
           );
         }
       }
@@ -357,16 +342,14 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
               _buildSheetHeader(),
               const Divider(height: 1, color: AppColors.grayLight),
               Expanded(
-                
                 child: _isLoading && _comments.isEmpty
-                    ? _buildLoadingSkeleton() 
+                    ? _buildLoadingSkeleton()
                     : ListView.builder(
                         controller: scrollController,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16.0,
                           vertical: 20.0,
                         ),
-                        
                         itemCount: _topLevelComments.length,
                         itemBuilder: (context, index) {
                           final comment = _topLevelComments[index];
@@ -377,9 +360,7 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
                           return _buildCommentThread(comment, replies);
                         },
                       ),
-                
               ),
-              
               if (_isLoading && _comments.isNotEmpty)
                 const Padding(
                   padding: EdgeInsets.all(8.0),
@@ -396,7 +377,7 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
   Widget _buildLoadingSkeleton() {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-      itemCount: 4, 
+      itemCount: 4,
       itemBuilder: (context, index) => const CommentCardSkeleton(),
     );
   }
@@ -520,28 +501,23 @@ class _IssueCommentSheetState extends State<IssueCommentSheet> {
     );
   }
 
-Widget _buildCommentContent(IssueComment comment) {
-    
+  Widget _buildCommentContent(IssueComment comment) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        
         _buildRichTextComment(comment.text, comment.replyTo),
-
-        
         if (comment.imageUrls.isNotEmpty) ...[
-          const SizedBox(height: 8), 
-          Wrap( 
-            spacing: 8.0, 
-            runSpacing: 8.0, 
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8.0,
+            runSpacing: 8.0,
             children: comment.imageUrls.map((relativeUrl) {
-              
-              final urlPath = relativeUrl.startsWith('/') ? relativeUrl : '/$relativeUrl';
-              final fullUrl = _baseUrl + urlPath; 
+              final urlPath =
+                  relativeUrl.startsWith('/') ? relativeUrl : '/$relativeUrl';
+              final fullUrl = _baseUrl + urlPath;
 
               return GestureDetector(
                 onTap: () {
-                  
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -549,14 +525,13 @@ Widget _buildCommentContent(IssueComment comment) {
                     ),
                   );
                 },
-                child: ClipRRect( 
+                child: ClipRRect(
                   borderRadius: BorderRadius.circular(8.0),
                   child: Image.network(
                     fullUrl,
-                    width: 60, 
+                    width: 60,
                     height: 60,
                     fit: BoxFit.cover,
-                    
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return Container(
@@ -574,16 +549,16 @@ Widget _buildCommentContent(IssueComment comment) {
                         ),
                       );
                     },
-                    
                     errorBuilder: (context, error, stackTrace) {
-                       print("Error loading image: $fullUrl, Error: $error"); 
-                       return Container(
+                      print("Error loading image: $fullUrl, Error: $error");
+                      return Container(
                         width: 60,
                         height: 60,
                         color: Colors.grey[200],
-                        child: Icon(Icons.broken_image, color: Colors.grey[400], size: 30),
-                       );
-                    }
+                        child: Icon(Icons.broken_image,
+                            color: Colors.grey[400], size: 30),
+                      );
+                    },
                   ),
                 ),
               );
@@ -597,12 +572,10 @@ Widget _buildCommentContent(IssueComment comment) {
   Widget _buildRichTextComment(String text, User? replyTo) {
     List<InlineSpan> spans = [];
 
-    
     final pattern = RegExp(
       r"(\*\*.*?\*\*)|(\*.*?\*)|(~.*?~)|(`.*?`)|(\B@\w+\b)",
     );
 
-    
     final defaultStyle = const TextStyle(
       fontSize: 12,
       height: 1.5,
@@ -614,13 +587,11 @@ Widget _buildCommentContent(IssueComment comment) {
       fontWeight: FontWeight.w500,
     );
 
-    
     final boldStyle = defaultStyle.copyWith(fontWeight: FontWeight.bold);
     final italicStyle = defaultStyle.copyWith(fontStyle: FontStyle.italic);
     final strikethroughStyle = defaultStyle.copyWith(
       decoration: TextDecoration.lineThrough,
     );
-    
     final codeStyle = const TextStyle(
       fontFamily: 'monospace',
       backgroundColor: Color(0xFFF0F0F0),
@@ -628,12 +599,10 @@ Widget _buildCommentContent(IssueComment comment) {
       fontSize: 11.5,
     );
 
-    
     if (replyTo != null) {
       spans.add(TextSpan(text: '@${replyTo.name} ', style: mentionStyle));
     }
 
-    
     text.splitMapJoin(
       pattern,
       onMatch: (Match match) {
@@ -660,7 +629,6 @@ Widget _buildCommentContent(IssueComment comment) {
             ),
           );
         } else if (matchText.startsWith('`') && matchText.endsWith('`')) {
-          
           spans.add(const TextSpan(text: ' '));
           spans.add(
             TextSpan(
@@ -687,8 +655,9 @@ Widget _buildCommentContent(IssueComment comment) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        (!_isViewer) ? 
-        _buildActionButton('Balas', () => _startReply(comment)): SizedBox(),
+        (!_isViewer)
+            ? _buildActionButton('Balas', () => _startReply(comment))
+            : SizedBox(),
         if (isCurrentUser) ...[
           _buildActionSeparator(),
           _buildActionButton('Hapus', () => _deleteComment(comment.id)),
@@ -863,7 +832,7 @@ Widget _buildCommentContent(IssueComment comment) {
               isNewImage = false;
             } else {
               final fileIndex = index - _existingImageUrls.length;
-              imageWidget = Image.file(
+              imageWidget = Image.memory(
                 _newDraftImages[fileIndex],
                 width: 60,
                 height: 60,
@@ -963,9 +932,9 @@ Widget _buildCommentContent(IssueComment comment) {
 
 class FullScreenImageViewer extends StatelessWidget {
   final String? imageUrl;
-  final File? imageFile;
+  final Uint8List? imageBytes; 
 
-  const FullScreenImageViewer({super.key, this.imageUrl, this.imageFile});
+  const FullScreenImageViewer({super.key, this.imageUrl, this.imageBytes});
 
   @override
   Widget build(BuildContext context) {
@@ -984,8 +953,8 @@ class FullScreenImageViewer extends StatelessWidget {
           panEnabled: true,
           minScale: 0.5,
           maxScale: 4,
-          child: imageFile != null
-              ? Image.file(imageFile!)
+          child: imageBytes != null
+              ? Image.memory(imageBytes!) 
               : Image.network(imageUrl!),
         ),
       ),

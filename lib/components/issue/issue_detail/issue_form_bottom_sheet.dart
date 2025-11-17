@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/models/approles.dart';
@@ -26,12 +25,10 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _descriptionController;
 
-  
   List<Map<String, dynamic>> _issueTitleOptions = [];
   String? _selectedTitle;
   bool _isLoadingTitles = true;
   bool _isAdmin = false;
-  
 
   bool _isLoading = false;
 
@@ -41,14 +38,12 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
     _descriptionController = TextEditingController(
       text: widget.existingIssue.description,
     );
-    
+
     _selectedTitle = widget.existingIssue.title;
 
-    
     _initializeData();
   }
 
-  
   Future<void> _initializeData() async {
     await _checkUserRole();
     await _loadIssueTitles();
@@ -92,7 +87,6 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
       if (mounted) setState(() => _isLoadingTitles = false);
     }
   }
-  
 
   @override
   void dispose() {
@@ -119,7 +113,7 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
       final username = prefs.getString('loggedInUsername') ?? 'unknown_user';
 
       final issueData = {
-        'issue_title': _selectedTitle, 
+        'issue_title': _selectedTitle,
         'issue_description': _descriptionController.text.trim(),
         'issue_status': widget.existingIssue.status,
         'updated_by': username,
@@ -131,7 +125,6 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
       );
 
       if (mounted) {
-        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Issue berhasil diperbarui'),
@@ -139,7 +132,7 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
           ),
         );
         widget.onIssueSaved();
-        Navigator.pop(context); 
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
@@ -157,7 +150,6 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
     }
   }
 
-  
   Future<void> _showAddTitleSheet() async {
     final bool? success = await showModalBottomSheet<bool>(
       context: context,
@@ -193,7 +185,6 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
       _loadIssueTitles();
     }
   }
-  
 
   @override
   Widget build(BuildContext context) {
@@ -227,9 +218,7 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 24),
-              
               _buildIssueTitleSelector(),
-              
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _descriptionController,
@@ -287,7 +276,6 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
     );
   }
 
-  
   Widget _buildIssueTitleSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,8 +321,8 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
           final double width = (index % 3 == 0)
               ? 150
               : (index % 2 == 0)
-              ? 120
-              : 100;
+                  ? 120
+                  : 100;
           return Container(
             width: width,
             height: 42,
@@ -376,9 +364,8 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
     required VoidCallback onTap,
     VoidCallback? onEdit,
   }) {
-    final Color borderColor = selected
-        ? AppColors.schneiderGreen
-        : AppColors.grayLight;
+    final Color borderColor =
+        selected ? AppColors.schneiderGreen : AppColors.grayLight;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -425,7 +412,6 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
       ),
     );
   }
-  
 
   Widget _buildActionButtons() {
     return Row(
@@ -472,9 +458,6 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
     );
   }
 }
-
-
-
 
 class _AddNewIssueTitleSheet extends StatefulWidget {
   const _AddNewIssueTitleSheet();
@@ -632,7 +615,6 @@ class _AddNewIssueTitleSheetState extends State<_AddNewIssueTitleSheet> {
     );
   }
 }
-
 
 class _EditIssueTitleSheet extends StatefulWidget {
   final Map<String, dynamic> titleData;

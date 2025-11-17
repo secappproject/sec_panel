@@ -1353,19 +1353,18 @@ Future<Company?> getCompanyByUsername(String username) async {
     if (data == null) return [];
     return data.map((json) => IssueComment.fromJson(json)).toList();
   }
-
   Future<String> createComment({
     required int issueId,
     required String text,
     required String senderId,
     String? replyToCommentId,
     String? replyToUserId,
-    required List<File> images,
+    required List<Uint8List> images, 
   }) async {
     List<String> base64Images = [];
-    for (var imageFile in images) {
-      final bytes = await imageFile.readAsBytes();
-      final base64String = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+    for (var imageBytes in images) { 
+      
+      final base64String = 'data:image/jpeg;base64,${base64Encode(imageBytes)}';
       base64Images.add(base64String);
     }
 
@@ -1377,32 +1376,29 @@ Future<Company?> getCompanyByUsername(String username) async {
       'images': base64Images,
     };
 
-    
     final responseData = await _apiRequest(
       'POST',
       '/issues/$issueId/comments',
       body: body,
     );
 
-    
     if (responseData != null && responseData['id'] != null) {
       return responseData['id'];
     } else {
       throw Exception('Failed to get comment ID from server');
     }
   }
-
   Future<void> updateComment({
     required String commentId,
     required String text,
-    required List<String> existingImageUrls, 
-    required List<File> newImages, 
+    required List<String> existingImageUrls,
+    required List<Uint8List> newImages, 
   }) async {
     List<String> finalImages = List.from(existingImageUrls);
 
-    for (var imageFile in newImages) {
-      final bytes = await imageFile.readAsBytes();
-      final base64String = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+    for (var imageBytes in newImages) { 
+      
+      final base64String = 'data:image/jpeg;base64,${base64Encode(imageBytes)}';
       finalImages.add(base64String);
     }
 
