@@ -27,7 +27,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   bool _isPageLoading = true;
   bool _isPasswordVisible = false;
-  bool _showForm = false; // 👈 tambahan untuk kontrol kapan form muncul
+  bool _showForm = false; 
 
   @override
   void initState() {
@@ -47,7 +47,7 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-// GANTI FUNGSI INI
+
   Future<void> _handleStartupChecks() async {
     const mobilePlatforms = [TargetPlatform.android, TargetPlatform.iOS];
     if (mobilePlatforms.contains(defaultTargetPlatform)) {
@@ -55,19 +55,19 @@ class _LoginPageState extends State<LoginPage> {
       await _requestBatteryOptimizationExemption();
     }
 
-    // Delay ini bisa dipertahankan untuk memberikan efek loading di web
+    
     if (kIsWeb) await Future.delayed(const Duration(milliseconds: 1200));
 
     if (mounted) {
-      // Hilangkan skeleton dan langsung tampilkan form di mobile
+      
       setState(() {
         _isPageLoading = false;
-        if (!kIsWeb) { // Jika bukan web (artinya mobile)
-          _showForm = true; // Langsung tampilkan form
+        if (!kIsWeb) { 
+          _showForm = true; 
         }
       });
 
-      // Untuk web, tetap berikan delay agar ada efek animasi fade-in
+      
       if (kIsWeb) {
         await Future.delayed(const Duration(milliseconds: 1500));
         if (mounted) {
@@ -80,14 +80,14 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   
-// Ganti seluruh fungsi _login() Anda dengan ini
+
 Future<void> _login() async {
   if (_isLoading || _isPageLoading) return;
   setState(() => _isLoading = true);
 
   try {
-    // Menghapus delay yang tidak perlu agar lebih cepat
-    // await Future.delayed(const Duration(seconds: 1)); 
+    
+    
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -104,13 +104,13 @@ Future<void> _login() async {
 
     if (mounted) {
       if (company != null) {
-        // 1. Simpan semua data sesi terlebih dahulu
+        
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('loggedInUsername', username);
         await prefs.setString('companyId', company.id);
         await prefs.setString('companyRole', company.role.name);
         
-        // 2. Dapatkan token dan daftarkan ke server
+        
         try {
           String? token = await FirebaseMessaging.instance.getToken();
           if (token != null) {
@@ -123,7 +123,7 @@ Future<void> _login() async {
           print('Error saat mendaftarkan token perangkat: $e');
         }
 
-        // 3. Tampilkan pesan sukses dan pindah halaman
+        
         _showSuccessSnackBar('Login berhasil! Mengalihkan...');
         Navigator.pushReplacementNamed(context, '/home');
 
@@ -238,7 +238,7 @@ Future<void> _launchURL(String urlString) async {
         children: [
           const VideoBackground(),
           AnimatedOpacity(
-            opacity: _showForm ? 1.0 : 0.0, // 👈 fade in
+            opacity: _showForm ? 1.0 : 0.0, 
             duration: const Duration(milliseconds: 800),
             child: _showForm
                 ? SafeArea(
@@ -258,7 +258,7 @@ Future<void> _launchURL(String urlString) async {
     );
   }
 Widget _buildWebAppLayout() {
-  // Ganti Center dengan Align
+  
   return SingleChildScrollView(
     child: Container(
       constraints: BoxConstraints(
@@ -542,7 +542,7 @@ Widget _buildWebAppLayout() {
         fontFamily: 'Lexend',
         fontWeight: FontWeight.w300,
         fontSize: 14,
-        color: Colors.black, // warna teks yg diketik
+        color: Colors.black, 
       ),
       controller: _usernameController,
       decoration: _inputDecoration('Username'),
@@ -555,17 +555,17 @@ Widget _buildWebAppLayout() {
         fontFamily: 'Lexend',
         fontWeight: FontWeight.w300,
         fontSize: 14,
-        color: Colors.black, // warna teks yg diketik
+        color: Colors.black, 
       ),
       controller: _passwordController,
       obscureText: !_isPasswordVisible,
       decoration: _inputDecoration('Password').copyWith(
         suffixIcon: 
         IconButton(
-          // icon: Icon(
-          //   _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-          //   color: AppColors.gray,
-          // ),
+          
+          
+          
+          
           icon: _isPasswordVisible ? Image.asset("assets/images/eye-open.png", height: 24,) : Image.asset("assets/images/eye-close.png", height: 24,),
           onPressed: () =>
               setState(() => _isPasswordVisible = !_isPasswordVisible),
@@ -681,7 +681,7 @@ class VideoBackground extends StatefulWidget {
 }
 
 class _VideoBackgroundState extends State<VideoBackground> {
-  // Timer untuk animasi teks slogan
+  
   Timer? _textAnimationTimer;
   int _currentTextIndex = 0;
   double _textOpacity = 0.0;
@@ -692,33 +692,33 @@ class _VideoBackgroundState extends State<VideoBackground> {
     'Catat dan selesaikan setiap kendala dengan mudah.',
   ];
 
-  // ===== PERUBAHAN DIMULAI DI SINI =====
+  
 
-  // Timer untuk animasi background slide
+  
   Timer? _imageSliderTimer;
   int _currentImageIndex = 0;
-  final int _totalImages = 12; // Jumlah total gambar background
+  final int _totalImages = 12; 
 
   @override
   void initState() {
     super.initState();
     _startTextAnimation();
-    _startImageSlider(); // Memulai slideshow background
+    _startImageSlider(); 
   }
 
   void _startImageSlider() {
-    // Timer periodik untuk mengganti gambar setiap 5 detik
+    
     _imageSliderTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) {
         setState(() {
-          // Ganti ke gambar berikutnya, kembali ke 0 jika sudah di akhir
+          
           _currentImageIndex = (_currentImageIndex + 1) % _totalImages;
         });
       }
     });
   }
   
-  // ===== AKHIR DARI PERUBAHAN LOGIKA =====
+  
 
 
   void _startTextAnimation() {
@@ -744,7 +744,7 @@ class _VideoBackgroundState extends State<VideoBackground> {
   @override
   void dispose() {
     _textAnimationTimer?.cancel();
-    _imageSliderTimer?.cancel(); // Pastikan timer gambar juga dihentikan
+    _imageSliderTimer?.cancel(); 
     super.dispose();
   }
 
@@ -754,16 +754,16 @@ class _VideoBackgroundState extends State<VideoBackground> {
       fit: StackFit.expand,
       alignment: Alignment.centerRight,
       children: [
-        // ===== PERUBAHAN PADA TAMPILAN =====
+        
         AnimatedSwitcher(
-          duration: const Duration(milliseconds: 1500), // Durasi fade
+          duration: const Duration(milliseconds: 1500), 
           transitionBuilder: (Widget child, Animation<double> animation) {
             return FadeTransition(opacity: animation, child: child);
           },
           child: Image.asset(
-            // Menggunakan path dinamis sesuai indeks gambar saat ini
+            
             'assets/images/bg-${_currentImageIndex + 1}.png',
-            // Key penting agar AnimatedSwitcher mendeteksi perubahan widget
+            
             key: ValueKey<int>(_currentImageIndex),
             fit: BoxFit.cover,
             height: double.infinity,
@@ -771,7 +771,7 @@ class _VideoBackgroundState extends State<VideoBackground> {
             alignment: Alignment.center,
           ),
         ),
-        // ===== AKHIR DARI PERUBAHAN TAMPILAN =====
+        
         
         Container(
           color: AppColors.schneiderGreen.withOpacity(0.3),

@@ -1,4 +1,4 @@
-// lib/models/additionalsr.dart
+
 
 import 'dart:convert';
 String? _parseString(dynamic jsonValue) {
@@ -29,7 +29,9 @@ class AdditionalSR {
   final String status;
   final String remarks;
   final DateTime? createdAt;
-  final DateTime? receivedDate; // [BARU] Tambahkan field ini
+  final DateTime? receivedDate; 
+  final DateTime? closeDate; 
+
 
   AdditionalSR({
     this.id,
@@ -41,7 +43,10 @@ class AdditionalSR {
     required this.status,
     required this.remarks,
     this.createdAt,
-    this.receivedDate, // [BARU] Tambahkan di constructor
+    this.receivedDate, 
+    this.closeDate, 
+
+    
   });
 
   Map<String, dynamic> toMap() {
@@ -55,7 +60,9 @@ class AdditionalSR {
       'status': status,
       'remarks': remarks,
       'created_at': createdAt?.toIso8601String(),
-      'received_date': receivedDate?.toIso8601String(), // [BARU] Tambahkan ke map
+      'received_date': receivedDate?.toIso8601String(), 
+      'close_date': closeDate?.toIso8601String(), 
+
     };
   }
 
@@ -71,6 +78,8 @@ class AdditionalSR {
       remarks: map['remarks'] ?? '',
       createdAt: map['created_at'] != null ? DateTime.parse(map['created_at']) : null,
       receivedDate: map['received_date'] != null ? DateTime.parse(map['received_date']) : null,
+      closeDate: map['close_date'] != null ? DateTime.parse(map['close_date']) : null,
+
     );
   }
 

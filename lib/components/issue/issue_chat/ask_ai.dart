@@ -4,16 +4,16 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-// [PLACEHOLDER] Ganti dengan path impor proyek Anda yang sebenarnya
+
 import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/models/issue.dart';
 import 'package:secpanel/theme/colors.dart';
 
-// Aset Ikon (Pastikan path ini ada di pubspec.yaml dan file ada di proyek Anda)
+
 const String _addIcon = 'assets/images/plus.png';
 const String _sendIcon = 'assets/images/send.png';
 
-// Model untuk UI Chat
+
 class AiChatMessage {
   final String id;
   final User sender;
@@ -62,12 +62,12 @@ class _AskAiScreenState extends State<AskAiScreen> {
   bool _isSending = false;
   List<String> _currentSuggestions = [];
 
-  // State untuk mengontrol visibilitas menu pesan cepat
+  
   bool _isQuickReplyVisible = false;
 
   static final User geminiAI = User(id: 'gemini_ai', name: 'Gemini AI');
 
-  // Daftar pertanyaan pembuka default
+  
   final List<String> _starterQuestions = [
     'Apa saja isu yang belum selesai?',
     'Ringkas status panel ini.',
@@ -117,7 +117,7 @@ class _AskAiScreenState extends State<AskAiScreen> {
 
     setState(() {
       _isSending = true;
-      _currentSuggestions = []; // Hapus sugesti lama saat pesan baru dikirim
+      _currentSuggestions = []; 
 
       if (imagesToSend.isNotEmpty) {
         for (var imageFile in imagesToSend) {
@@ -192,7 +192,7 @@ class _AskAiScreenState extends State<AskAiScreen> {
         if (aiResponse['action_taken'] == true) {
           widget.onUpdate();
         }
-        // Jika ada sugesti baru, tampilkan menunya
+        
         if (_currentSuggestions.isNotEmpty) {
           _isQuickReplyVisible = true;
         }
@@ -240,10 +240,10 @@ class _AskAiScreenState extends State<AskAiScreen> {
       body: Column(
         children: [
           Expanded(
-            // <-- STRUKTUR BARU MENGGUNAKAN STACK
+            
             child: Stack(
               children: [
-                // Lapisan 1: Daftar Pesan Chat
+                
                 ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.fromLTRB(
@@ -251,7 +251,7 @@ class _AskAiScreenState extends State<AskAiScreen> {
                     16,
                     16,
                     80,
-                  ), // Beri ruang di bawah
+                  ), 
                   itemCount: _messages.length,
                   itemBuilder: (context, index) {
                     final message = _messages[index];
@@ -263,7 +263,7 @@ class _AskAiScreenState extends State<AskAiScreen> {
                         : _AiMessageBubble(message: message);
                   },
                 ),
-                // Lapisan 2: Menu Pesan Cepat (jika visible)
+                
                 if (_isQuickReplyVisible)
                   Positioned(
                     bottom: 0,
@@ -304,7 +304,7 @@ class _AskAiScreenState extends State<AskAiScreen> {
     );
   }
 
-  // <-- WIDGET BARU UNTUK MENU PESAN CEPAT
+  
   Widget _buildQuickReplyMenu() {
     final bool hasSuggestions = _currentSuggestions.isNotEmpty && !_isSending;
     final List<String> items = hasSuggestions
@@ -394,7 +394,7 @@ class _AskAiScreenState extends State<AskAiScreen> {
     );
   }
 
-  // <-- WIDGET COMPOSER YANG SUDAH DIMODIFIKASI
+  
   Widget _buildMessageComposer() {
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -537,9 +537,9 @@ class _AskAiScreenState extends State<AskAiScreen> {
   }
 }
 
-// ===========================================================================
-// WIDGET-WIDGET PENDUKUNG (Bubbles, Skeletons)
-// ===========================================================================
+
+
+
 
 class _UserMessageBubble extends StatelessWidget {
   final AiChatMessage message;
@@ -601,36 +601,36 @@ class _UserMessageBubble extends StatelessWidget {
               ],
             ),
           ),
-          // const SizedBox(width: 8),
-          // CircleAvatar(
-          //   radius: 20,
-          //   backgroundColor: AppColors.schneiderGreen,
-          //   child: Text(
-          //     message.sender.avatarInitials,
-          //     style: const TextStyle(
-          //       color: Colors.white,
-          //       fontSize: 12,
-          //       fontWeight: FontWeight.w400,
-          //     ),
-          //   ),
-          // ),
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
         ],
       ),
     );
   }
 }
-// ask_ai_screen.dart
+
 
 class _AiMessageBubble extends StatelessWidget {
   final AiChatMessage message;
   const _AiMessageBubble({super.key, required this.message});
 
-  // Fungsi ini yang akan kita modifikasi
+  
   Widget _buildRichText(String text) {
     List<InlineSpan> spans = [];
     final pattern = RegExp(
       r"(\*\*.*?\*\*)",
-    ); // Kita hanya butuh pattern untuk bold
+    ); 
     final defaultStyle = const TextStyle(
       fontSize: 12,
       height: 1.5,
@@ -643,9 +643,9 @@ class _AiMessageBubble extends StatelessWidget {
       onMatch: (Match match) {
         String matchText = match[0]!;
         if (matchText.startsWith('**') && matchText.endsWith('**')) {
-          // ====================================================================
-          // <-- BAGIAN YANG DIUBAH: Dari TextSpan menjadi WidgetSpan
-          // ====================================================================
+          
+          
+          
           spans.add(
             WidgetSpan(
               alignment: PlaceholderAlignment.middle,
@@ -672,9 +672,9 @@ class _AiMessageBubble extends StatelessWidget {
               ),
             ),
           );
-          // ====================================================================
-          // <-- AKHIR PERUBAHAN
-          // ====================================================================
+          
+          
+          
         }
         return '';
       },
@@ -734,7 +734,7 @@ class _AiMessageBubble extends StatelessWidget {
                   ),
                   child: _buildRichText(
                     message.text!,
-                  ), // Memanggil fungsi yang sudah diubah
+                  ), 
                 ),
                 const SizedBox(height: 4),
                 Text(

@@ -48,7 +48,7 @@ class PanelIssuesScreen extends StatefulWidget {
   State<PanelIssuesScreen> createState() => _PanelIssuesScreenState();
 }
 
-// --- ▼▼▼ [PERUBAHAN 1] Menggunakan Record untuk menyimpan 2 count ▼▼▼ ---
+
 typedef RootCauseCount = ({int unsolved, int solved});
 
 class _PanelIssuesScreenState extends State<PanelIssuesScreen>
@@ -64,7 +64,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
   List<String> _allRootCauses = [];
   List<String> _selectedRootCauses = [];
 
-  // --- ▼▼▼ [PERUBAHAN 2] State variable diubah untuk menyimpan 2 count ▼▼▼ ---
+  
   Map<String, RootCauseCount> _rootCauseCounts = {};
   int _totalUnsolvedCount = 0;
   int _totalSolvedCount = 0;
@@ -79,7 +79,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     _tabController = TabController(
       length: 3,
       vsync: this,
-      initialIndex: 1, // 0 = All, 1 = Unsolved, 2 = Solved
+      initialIndex: 1, 
     );
     _loadInitialData();
   }
@@ -114,7 +114,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     }
   }
 
-  // --- ▼▼▼ [PERUBAHAN 3] Logika kalkulasi count diubah total ▼▼▼ ---
+  
   void _processIssueData(
     List<IssueWithPhotos> issues, {
     List<Map<String, dynamic>>? rootCauseMaps,
@@ -125,7 +125,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
 
     for (var issue in issues) {
       final trimmedTitle = issue.title.trim();
-      // Inisialisasi jika belum ada
+      
       counts.putIfAbsent(trimmedTitle, () => (unsolved: 0, solved: 0));
 
       var current = counts[trimmedTitle]!;
@@ -194,7 +194,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
         widget.panelNoPp,
       );
       if (mounted) {
-        // Hanya memproses ulang issue, tidak perlu load ulang root cause
+        
         _processIssueData(issues);
       }
     } catch (e) {
@@ -441,7 +441,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     );
   }
 
-  // --- ▼▼▼ [PERUBAHAN 5] Widget _buildFilterChip diubah untuk menampilkan 2 count ▼▼▼ ---
+  
   Widget _buildFilterChip({
     required String label,
     required bool isSelected,
@@ -497,7 +497,7 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
     );
   }
 
-  // --- ▼▼▼ [PERUBAHAN 6] Widget helper baru untuk membuat pill count ▼▼▼ ---
+  
   Widget _buildCountPill(int count, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2),
@@ -707,8 +707,8 @@ class _PanelIssuesScreenState extends State<PanelIssuesScreen>
   }
 }
 
-// ... (Sisa kode: _SliverAppBarDelegate dan AddIssuePostBox tidak berubah) ...
-// (Salin sisa kode dari file asli Anda ke sini)
+
+
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   _SliverAppBarDelegate(this._tabBar);
   final TabBar _tabBar;

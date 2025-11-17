@@ -1,12 +1,12 @@
-// lib/models/paneldisplaydata.dart
 
+
+import 'dart:convert';
 import 'package:secpanel/models/busbarremark.dart';
 import 'package:secpanel/models/panels.dart';
 
 class PanelDisplayData {
   final Panel panel;
   final String panelVendorName;
-  final String? panelRemarks; 
   final String busbarVendorNames;
   final List<String> busbarVendorIds;
   final List<BusbarRemark> busbarRemarks;
@@ -21,11 +21,11 @@ class PanelDisplayData {
   final DateTime? productionDate;
   final DateTime? fatDate;
   final DateTime? allDoneDate;
+  final String g3VendorNames; 
 
   PanelDisplayData({
     required this.panel,
     required this.panelVendorName,
-    required this.panelRemarks,
     required this.busbarVendorNames,
     required this.busbarVendorIds,
     required this.busbarRemarks,
@@ -40,51 +40,68 @@ class PanelDisplayData {
     this.productionDate,
     this.fatDate,
     this.allDoneDate,
+    required this.g3VendorNames, 
   });
 
   factory PanelDisplayData.fromJson(Map<String, dynamic> json) {
-    List<String> parseIdList(dynamic rawValue) {
-      if (rawValue is List) {
-        return rawValue.map((e) => e.toString()).toList();
-      }
-      if (rawValue is String && rawValue.isNotEmpty) {
-        return rawValue.split(',').where((id) => id.isNotEmpty).toList();
+    
+    List<String> _parseStringList(dynamic jsonList) {
+      if (jsonList is List) {
+        return jsonList.map((e) => e.toString()).toList();
       }
       return [];
     }
 
-    List<BusbarRemark> remarks = [];
-    final dynamic rawRemarks = json['busbar_remarks'];
-    if (rawRemarks is List) {
-      remarks = rawRemarks
-          .map((r) => BusbarRemark.fromJson(r as Map<String, dynamic>))
-          .toList();
+    
+    List<BusbarRemark> _parseBusbarRemarks(dynamic remarksJson) {
+      if (remarksJson == null) {
+        return [];
+      }
+      try {
+        
+        if (remarksJson is String) {
+          final List<dynamic> decodedList = jsonDecode(remarksJson);
+          return decodedList
+              .map((item) => BusbarRemark.fromJson(item))
+              .toList();
+        }
+        
+        else if (remarksJson is List) {
+          return remarksJson
+              .map((item) => BusbarRemark.fromJson(item))
+              .toList();
+        }
+        return [];
+      } catch (e) {
+        print('Error parsing busbar remarks: $e');
+        return [];
+      }
     }
 
-    final panelData = json['panel'] as Map<String, dynamic>? ?? {};
-    final Panel createdPanel = Panel.fromMap(panelData);
-    DateTime? parseDate(String? dateStr) {
-      if (dateStr == null) return null;
-      return DateTime.tryParse(dateStr)?.toLocal();
-    }
     return PanelDisplayData(
-      panel: createdPanel,
-      panelVendorName: json['panel_vendor_name'] as String? ?? '',
-      panelRemarks: createdPanel.remarks,
-      busbarVendorNames: json['busbar_vendor_names'] as String? ?? '',
-      busbarVendorIds: parseIdList(json['busbar_vendor_ids']),
-      busbarRemarks: remarks,
-      componentVendorNames: json['component_vendor_names'] as String? ?? '',
-      componentVendorIds: parseIdList(json['component_vendor_ids']),
-      paletVendorNames: json['palet_vendor_names'] as String? ?? '',
-      paletVendorIds: parseIdList(json['palet_vendor_ids']),
-      corepartVendorNames: json['corepart_vendor_names'] as String? ?? '',
-      corepartVendorIds: parseIdList(json['corepart_vendor_ids']),
-      issueCount: json['issue_count'] as int? ?? 0,
-      additionalSrCount: json['additional_sr_count'] as int? ?? 0,
-      productionDate: parseDate(json['production_date'] as String?),
-      fatDate: parseDate(json['fat_date'] as String?),
-      allDoneDate: parseDate(json['all_done_date'] as String?),
+      panel: Panel.fromMap(json['panel']),
+      panelVendorName: json['panel_vendor_name'] ?? '',
+      busbarVendorNames: json['busbar_vendor_names'] ?? '',
+      busbarVendorIds: _parseStringList(json['busbar_vendor_ids']),
+      busbarRemarks: _parseBusbarRemarks(json['busbar_remarks']),
+      componentVendorNames: json['component_vendor_names'] ?? '',
+      componentVendorIds: _parseStringList(json['component_vendor_ids']),
+      paletVendorNames: json['palet_vendor_names'] ?? '',
+      paletVendorIds: _parseStringList(json['palet_vendor_ids']),
+      corepartVendorNames: json['corepart_vendor_names'] ?? '',
+      corepartVendorIds: _parseStringList(json['corepart_vendor_ids']),
+      issueCount: json['issue_count'] ?? 0,
+      additionalSrCount: json['additional_sr_count'] ?? 0,
+      productionDate: json['production_date'] != null
+          ? DateTime.parse(json['production_date'])
+          : null,
+      fatDate: json['fat_date'] != null
+          ? DateTime.parse(json['fat_date'])
+          : null,
+      allDoneDate: json['all_done_date'] != null
+          ? DateTime.parse(json['all_done_date'])
+          : null,
+      g3VendorNames: json['g3_vendor_names'] ?? '', 
     );
   }
 }

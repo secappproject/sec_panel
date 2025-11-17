@@ -16,7 +16,7 @@ class CustomBottomNavBar extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        // Menggunakan label "Panel" sesuai nama aset
+        
         _buildNavItem("Panel", 0),
         _buildNavItem("Profil", 1),
       ],
@@ -29,12 +29,12 @@ class CustomBottomNavBar extends StatelessWidget {
 
     String imagePath;
     if (index == 0) {
-      // Item pertama (Panel)
+      
       imagePath = isSelected
           ? 'assets/images/panel-on.png'
           : 'assets/images/panel-off.png';
     } else {
-      // Item kedua (Profile)
+      
       imagePath = isSelected
           ? 'assets/images/profile-on.png'
           : 'assets/images/profile-off.png';
@@ -50,12 +50,12 @@ class CustomBottomNavBar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // ✨ Mengganti widget Icon dengan Image.asset
+            
             Image.asset(
               imagePath,
               width: 24,
               height: 24,
-              // Optional: Mencegah gambar diwarnai oleh tema
+              
               color: null,
             ),
             const SizedBox(height: 4),

@@ -6,7 +6,7 @@ class SearchField extends StatelessWidget {
   final List<String> chips;
   final ValueChanged<String> onSubmitted;
   final ValueChanged<String> onChipDeleted;
-  // [BARU] Tambahkan callback onChanged untuk live search
+  
   final ValueChanged<String> onChanged;
 
   const SearchField({
@@ -15,13 +15,13 @@ class SearchField extends StatelessWidget {
     required this.chips,
     required this.onSubmitted,
     required this.onChipDeleted,
-    required this.onChanged, // Wajib diisi
+    required this.onChanged, 
   });
 
   Widget _buildSearchChip(String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      margin: const EdgeInsets.only(right: 8, top: 8), // Ganti margin ke top
+      margin: const EdgeInsets.only(right: 8, top: 8), 
       decoration: BoxDecoration(
         color: AppColors.schneiderGreen.withOpacity(0.08),
         border: Border.all(color: AppColors.schneiderGreen),
@@ -57,7 +57,7 @@ class SearchField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 1. TextField untuk input (sekarang di atas)
+        
         TextField(
           controller: controller,
           cursorColor: AppColors.schneiderGreen,
@@ -106,11 +106,11 @@ class SearchField extends StatelessWidget {
             filled: true,
             fillColor: Colors.white,
           ),
-          onChanged: onChanged, // Panggil callback saat user mengetik
+          onChanged: onChanged, 
           onSubmitted: onSubmitted,
         ),
 
-        // 2. Tampilkan daftar chip jika ada (sekarang di bawah)
+        
         if (chips.isNotEmpty)
           Wrap(children: chips.map((chip) => _buildSearchChip(chip)).toList()),
       ],

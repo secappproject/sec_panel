@@ -202,14 +202,14 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     final progress = int.tryParse(_progressController.text) ?? 0;
     final paletReady = _selectedPaletStatus == 'Close';
     final corepartReady = _selectedCorepartStatus == 'Close';
-    // final busbarMccReady = _selectedBusbarMccStatus == 'Close';
+    
 
     bool allConditionsMet;
     switch (_selectedPanelType) {
       case 'MCCW':
         allConditionsMet =
             progress == 100 && paletReady && corepartReady ;
-            // progress == 100 && paletReady && corepartReady && busbarMccReady;
+            
         break;
       case 'PCC':
       case 'MCCF':
@@ -293,7 +293,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       panelToSave.statusCorepart = _selectedCorepartStatus;
       panelToSave.aoBusbarPcc = _aoBusbar;
       panelToSave.aoBusbarMcc = _aoBusbar;
-      // ▼▼▼ [BARU] Menyertakan tanggal close busbar saat menyimpan ▼▼▼
+      
       panelToSave.closeDateBusbarPcc = _closeDateBusbar;
       panelToSave.closeDateBusbarMcc = _closeDateBusbar;
 
@@ -521,7 +521,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                 ),
                 const SizedBox(height: 12),
 
-                // Container Utama untuk Data Panel
+                
                 Container(
                   width: MediaQuery.of(context).size.width,
                   padding: const EdgeInsets.all(12),
@@ -694,7 +694,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     );
   }
 
-  // --- [MODIFIKASI] Widget helper baru untuk mode view-only ---
+  
   Widget _buildInfoColumn(String label, String? value, {String placeholder = '-'}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1182,7 +1182,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     );
   }
 
-  // ▼▼▼ [MODIFIKASI] Menambahkan parameter isEnabled ▼▼▼
+  
   Widget _buildDatePickerField({
     required String label,
     required DateTime? selectedDate,

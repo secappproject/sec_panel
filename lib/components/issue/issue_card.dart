@@ -1,4 +1,4 @@
-// issue_card.dart
+
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -16,14 +16,14 @@ import 'package:shimmer/shimmer.dart';
 
 class IssueCard extends StatefulWidget {
   final IssueWithPhotos issue;
-  final String panelNoPp; // ▼▼▼ [PERBAIKAN] Tambahkan properti ini
+  final String panelNoPp; 
   final VoidCallback onUpdate;
   final Company currentCompany;
 
   const IssueCard({
     super.key,
     required this.issue,
-    required this.panelNoPp, // ▼▼▼ [PERBAIKAN] Jadikan required
+    required this.panelNoPp, 
     required this.onUpdate,
     required this.currentCompany,
   });
@@ -86,7 +86,7 @@ class _IssueCardState extends State<IssueCard> {
     final screenWidth = MediaQuery.of(context).size.width;
     const double mobileBreakpoint = 600.0;
 
-    // ▼▼▼ [PERBAIKAN] Teruskan panelNoPp ke ManageNotificationsSheet ▼▼▼
+    
     final manageSheetWidget = ManageNotificationsSheet(
       currentCompany: widget.currentCompany,
       issue: widget.issue,
@@ -94,7 +94,7 @@ class _IssueCardState extends State<IssueCard> {
       onUpdate: widget.onUpdate,
       panelNoPp: widget.panelNoPp,
     );
-    // ▲▲▲ [AKHIR PERBAIKAN] ▲▲▲
+    
 
     if (screenWidth < mobileBreakpoint) {
       showModalBottomSheet(
@@ -582,9 +582,9 @@ class _IssueCardState extends State<IssueCard> {
   }
 }
 
-// =======================================================================
-// MANAGE NOTIFICATIONS SHEET
-// =======================================================================
+
+
+
 
 class ManageNotificationsSheet extends StatefulWidget {
   final IssueWithPhotos issue;
@@ -637,7 +637,7 @@ class _ManageNotificationsSheetState extends State<ManageNotificationsSheet> {
     super.dispose();
   }
 
-  // ▼▼▼ [PERBAIKAN LOGIKA] Mengambil rekomendasi berdasarkan panelNoPp ▼▼▼
+  
   Future<void> _loadRecommendedEmails() async {
     if (!mounted) return;
     setState(() => _isLoadingRecommendations = true);
@@ -646,7 +646,7 @@ class _ManageNotificationsSheetState extends State<ManageNotificationsSheet> {
           .getEmailRecommendations(panelNoPp: widget.panelNoPp);
       if (mounted) {
         setState(() {
-          // Filter email yang sudah ada di daftar notifikasi saat ini
+          
           _recommendedEmails = emails
               .where((rec) => !_notifyEmails.contains(rec))
               .toList();
@@ -658,7 +658,7 @@ class _ManageNotificationsSheetState extends State<ManageNotificationsSheet> {
       if (mounted) setState(() => _isLoadingRecommendations = false);
     }
   }
-  // ▲▲▲ [AKHIR PERBAIKAN] ▲▲▲
+  
 
   Future<void> _updateEmailsOnBackend({String? successMessage}) async {
     if (!mounted) return;
@@ -712,7 +712,7 @@ class _ManageNotificationsSheetState extends State<ManageNotificationsSheet> {
     if (!_notifyEmails.contains(email)) {
       setState(() {
         _notifyEmails.add(email);
-        _recommendedEmails.remove(email); // Hapus dari rekomendasi
+        _recommendedEmails.remove(email); 
       });
       _updateEmailsOnBackend(successMessage: '$email berhasil ditambahkan.');
     }

@@ -17,7 +17,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
 
-// --- CLASS HELPER UNTUK DATA TABEL ---
+
 class _ProjectWbsSummary {
   final String project;
   final String wbs;
@@ -30,7 +30,7 @@ class _ProjectWbsSummary {
   });
 }
 
-// ### Helper class untuk membuat TabBar menjadi sticky ###
+
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   _SliverAppBarDelegate(this._tabBar);
 
@@ -45,7 +45,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: Theme.of(context).scaffoldBackgroundColor, // Warna background saat menempel
+      color: Theme.of(context).scaffoldBackgroundColor, 
       child: _tabBar,
     );
   }
@@ -70,7 +70,7 @@ enum ChartTimeView { daily, monthly, yearly }
 
 class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late final TabController _tabController;
-  late final TabController _chartTabController; // ### BARU: Controller untuk Chart Tab
+  late final TabController _chartTabController; 
   final TextEditingController _searchController = TextEditingController();
 
   List<String> selectedPositions = [];
@@ -82,7 +82,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   bool _isChartView = false;
 
-  // State untuk Chart
+  
   ChartTimeView _panelChartView = ChartTimeView.monthly;
   ChartTimeView _busbarChartView = ChartTimeView.monthly;
   ChartTimeView _projectChartView = ChartTimeView.monthly;
@@ -95,14 +95,14 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Map<String, dynamic> _busbarWipChartData = {};
   Map<String, dynamic> _projectWipChartData = {};
 
-  // --- State untuk filter dropdown di chart ---
-  int _selectedYear = DateTime.now().year; // Untuk filter Daily & Monthly
-  List<int> _selectedYears = [DateTime.now().year]; // BARU: Untuk filter Yearly (multi-select)
+  
+  int _selectedYear = DateTime.now().year; 
+  List<int> _selectedYears = [DateTime.now().year]; 
   int _selectedMonth = DateTime.now().month;
-  int? _selectedWeek; // Bisa null, artinya "semua minggu"
+  int? _selectedWeek; 
   int? _selectedQuartile = (DateTime.now().month / 3).ceil();
 
-  // --- State untuk filter (tidak ada perubahan di sini) ---
+  
   List<String> searchChips = [];
   String activeSearchText = "";
   bool includeArchived = false;
@@ -130,13 +130,13 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   DateFilterType closedDateStatus = DateFilterType.any;
   DateFilterType pccClosedDateStatus = DateFilterType.any;
   DateFilterType mccClosedDateStatus = DateFilterType.any;
-  // --- Akhir State Filter ---
+  
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
-    _chartTabController = TabController(length: 2, vsync: this); // ### BARU: Inisialisasi
+    _chartTabController = TabController(length: 2, vsync: this); 
     _tabController.addListener(() => setState(() {}));
     loadInitialData();
   }
@@ -188,7 +188,7 @@ void _prepareChartData() {
     }
   }
 
-  // Kalkulasi untuk Panel (Tidak Berubah)
+  
   _panelChartData = _calculateDeliveryByTime(
     panelsToDisplay,
     (data) => [
@@ -216,7 +216,7 @@ void _prepareChartData() {
     quartile: _selectedQuartile,
   );
 
-  // Kalkulasi untuk Busbar
+  
   _busbarChartData = _calculateBusbarDeliveryByTime(
     panelsToDisplay,
     (data) {
@@ -252,7 +252,7 @@ void _prepareChartData() {
   );
 
 
-  // Kalkulasi untuk Project (Tidak Berubah)
+  
   _projectChartData = _calculateDeliveryByProject(
       panelsToDisplay,
       view: _projectChartView,
@@ -275,12 +275,12 @@ void _prepareChartData() {
   @override
   void dispose() {
     _tabController.dispose();
-    _chartTabController.dispose(); // ### BARU: Dispose controller
+    _chartTabController.dispose(); 
     _searchController.dispose();
     super.dispose();
   }
 
-  // --- Semua fungsi _open...BottomSheet dan logika filter tidak berubah ---
+  
   void _openFilterBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -414,13 +414,13 @@ void _prepareChartData() {
           onSuccess: (updatedPanelData) {
             Navigator.of(context).pop();
 
-            // === PERBAIKAN ADA DI BARIS-BARIS BERIKUT ===
-            // 1. Gunakan `_allPanelsData` sebagai list yang benar
+            
+            
             final index = _allPanelsData.indexWhere((p) => p.panel.noPp == updatedPanelData.panel.noPp);
             
             if (index != -1) {
               setState(() {
-                // 2. Perbarui item di dalam `_allPanelsData`
+                
                 _allPanelsData[index] = updatedPanelData;
               });
             } else {
@@ -699,20 +699,20 @@ void _prepareChartData() {
           matchSrStatus = true;
           break;
       }
-      // [PERBAIKAN] Logika untuk filter Position
+      
       final bool matchPosition;
       if (selectedPositions.isEmpty) {
-        matchPosition = true; // Jika tidak ada filter, tampilkan semua
+        matchPosition = true; 
       } else {
-        // Ambil status panel, jika null anggap sebagai "VendorWarehouse" agar konsisten
+        
         final currentPosition = panel.statusPenyelesaian ?? 'VendorWarehouse';
 
-        // Cek apakah filter "Warehouse" dipilih
+        
         if (selectedPositions.contains("Warehouse")) {
-          // Jika ya, panel akan lolos jika statusnya adalah salah satu dari ini
+          
           matchPosition = (currentPosition == 'Warehouse' || currentPosition == 'VendorWarehouse');
         } else {
-          // Jika filter lain yang dipilih (misal "Production"), lakukan pengecekan biasa
+          
           matchPosition = selectedPositions.contains(currentPosition);
         }
       }
@@ -895,7 +895,7 @@ void _prepareChartData() {
   }
 
   Widget _buildProductionSummaryCard() {
-    // Helper widget for creating small tags (e.g., "1 di LV1")
+    
     Widget buildTag(String text) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -915,7 +915,7 @@ void _prepareChartData() {
       );
     }
 
-    // Helper widget for creating a section row (e.g., "In Production")
+    
     Widget buildSection(String title, String subtitle, List<Widget> tags) {
       return Container(
         decoration: const ShapeDecoration(
@@ -931,7 +931,7 @@ void _prepareChartData() {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Placeholder for icon
+                  
                   if (title == "In Production")...[
                   SizedBox(
                     width: 28,
@@ -1000,7 +1000,7 @@ void _prepareChartData() {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header
+          
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -1024,7 +1024,7 @@ void _prepareChartData() {
               ),
             ),
           ),
-          // "In Production" Section
+          
           buildSection(
             'In Production',
             '7 Panel in Total',
@@ -1038,7 +1038,7 @@ void _prepareChartData() {
               buildTag('1 di LV7'),
             ],
           ),
-          // "Out Production" Section
+          
           buildSection(
             'Out Production',
             '7 Panel in Total',
@@ -1052,7 +1052,7 @@ void _prepareChartData() {
               buildTag('1 di LV7'),
             ],
           ),
-          // Buttons
+          
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
             child: Column(
@@ -1111,7 +1111,7 @@ void _prepareChartData() {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        // Placeholder for icon
+                        
                         Container(
                           width: 16,
                           height: 16,
@@ -1321,19 +1321,19 @@ void _prepareChartData() {
                     bool isDesktop = constraints.maxWidth > 950;
 
                     if (isDesktop) {
-                      // Layout Desktop (2 Kolom)
+                      
                       return Padding(
                         padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // SizedBox(
-                            //   width: 320,
-                            //   child: SingleChildScrollView(
-                            //     child: _buildProductionSummaryCard(),
-                            //   ),
-                            // ),
-                            // const SizedBox(width: 20),
+                            
+                            
+                            
+                            
+                            
+                            
+                            
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1348,22 +1348,22 @@ void _prepareChartData() {
                         ),
                       );
                     } else {
-                      // Layout Mobile (Scrollable dengan Sticky Header)
+                      
                       return CustomScrollView(
                         slivers: [
-                          // Card di atas
-                          // SliverToBoxAdapter(
-                          //   child: Padding(
-                          //     padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                          //     child: _buildProductionSummaryCard(),
-                          //   ),
-                          // ),
-                          // TabBar yang menempel
+                          
+                          
+                          
+                          
+                          
+                          
+                          
+                          
                           SliverPersistentHeader(
                             delegate: _SliverAppBarDelegate(tabBarWidget),
                             pinned: true,
                           ),
-                          // Daftar Panel
+                          
                           _buildPanelSliverList(),
                         ],
                       );
@@ -1375,7 +1375,7 @@ void _prepareChartData() {
     );
   }
 
-  // Method ini tidak lagi dipakai di mobile, hanya di desktop
+  
   Widget _buildPanelView() {
     final panelsToDisplay = filteredPanelsForDisplay;
 
@@ -1391,7 +1391,7 @@ void _prepareChartData() {
       );
     }
 
-    // Hanya mengembalikan GridView untuk desktop
+    
     return LayoutBuilder(
       builder: (context, constraints) {
         final int crossAxisCount = (constraints.maxWidth / 500).floor().clamp(
@@ -1412,6 +1412,7 @@ void _prepareChartData() {
             final data = panelsToDisplay[index];
             final panel = data.panel;
             return PanelProgressCard(
+              g3VendorNames: data.g3VendorNames,
               currentCompany: widget.currentCompany,
               closedPanel: panel.closedDate,
               productionSlot: panel.productionSlot,
@@ -1460,12 +1461,12 @@ void _prepareChartData() {
     );
   }
 
-  // Method ini membuat daftar panel sebagai Sliver untuk layout mobile
+  
   Widget _buildPanelSliverList() {
     final panelsToDisplay = filteredPanelsForDisplay;
 
     if (panelsToDisplay.isEmpty) {
-      return SliverFillRemaining( // Mengisi sisa ruang jika kosong
+      return SliverFillRemaining( 
         hasScrollBody: false,
         child: const Center(
           child: Padding(
@@ -1479,7 +1480,7 @@ void _prepareChartData() {
       );
     }
 
-    // Memberi padding horizontal pada list
+    
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
       sliver: SliverList.separated(
@@ -1489,6 +1490,7 @@ void _prepareChartData() {
           final data = panelsToDisplay[index];
           final panel = data.panel;
           return PanelProgressCard(
+            g3VendorNames: data.g3VendorNames,
             currentCompany: widget.currentCompany,
             closedPanel: panel.closedDate,
             productionSlot: panel.productionSlot,
@@ -1537,11 +1539,11 @@ void _prepareChartData() {
   }
 
 
-  // --- BARU: Helper untuk menghitung jumlah minggu dalam sebulan ---
+  
   int _getWeeksInMonth(int year, int month) {
     final firstDay = DateTime(year, month, 1);
     final lastDay = DateTime(year, month + 1, 0);
-    // Hitung hari dari Senin pertama hingga hari terakhir
+    
     final days = lastDay.day + (firstDay.weekday - 1);
     return (days / 7).ceil();
   }
@@ -1561,7 +1563,7 @@ Map<String, dynamic> _calculateBusbarDeliveryByTime(
   late DateTimeRange displayRange;
   late DateFormat keyFormat;
 
-  // Setup rentang waktu (tidak ada perubahan)
+  
   switch (view) {
     case ChartTimeView.daily:
       keyFormat = DateFormat('E, d', 'id_ID');
@@ -1610,16 +1612,16 @@ Map<String, dynamic> _calculateBusbarDeliveryByTime(
       break;
   }
 
-  // Busbar dianggap "closed" HANYA JIKA statusnya 'Close'
+  
   final relevantPanels = panels.where((data) {
       return (data.panel.statusBusbarPcc ?? '') == 'Close';
   });
 
   for (var data in relevantPanels) {
-    // Gunakan startDate untuk menempatkan di timeline, karena closedDate diabaikan
+    
     final dateForChart = data.panel.startDate ?? DateTime.now();
 
-    // Cek apakah tanggal berada dalam rentang chart yang dipilih
+    
     bool isInDateRange = false;
     if (view == ChartTimeView.yearly) {
       if (years.contains(dateForChart.year)) {
@@ -1643,7 +1645,7 @@ Map<String, dynamic> _calculateBusbarDeliveryByTime(
     }
   }
 
-  // Sisa kode di bawah ini tidak berubah
+  
   final allKeys = <String>{};
   if (view == ChartTimeView.daily && week == null) {
     for (int i = 0; i < displayRange.duration.inDays + 1; i++) {
@@ -1713,7 +1715,7 @@ Map<String, dynamic> _calculateBusbarWipByTime(
   late DateTimeRange displayRange;
   late DateFormat keyFormat;
 
-  // Setup rentang waktu (tidak ada perubahan)
+  
   switch (view) {
     case ChartTimeView.daily:
       keyFormat = DateFormat('E, d', 'id_ID');
@@ -1761,14 +1763,14 @@ Map<String, dynamic> _calculateBusbarWipByTime(
       break;
   }
 
-  // Busbar dianggap WIP jika statusnya BUKAN 'Close'
+  
   final relevantPanels = panels.where((data) {
     final status = data.panel.statusBusbarPcc ?? '';
     return status != 'Close';
   });
 
   for (var data in relevantPanels) {
-    // Gunakan startDate untuk menempatkan di timeline
+    
     final dateForChart = data.panel.startDate ?? DateTime.now();
 
     bool isInDateRange = false;
@@ -1795,7 +1797,7 @@ Map<String, dynamic> _calculateBusbarWipByTime(
     }
   }
 
-  // Sisa kode di bawah ini tidak berubah
+  
   final allKeys = <String>{};
   if (view == ChartTimeView.daily && week == null) {
     for (int i = 0; i < displayRange.duration.inDays + 1; i++) {
@@ -1860,8 +1862,8 @@ Map<String, dynamic> _calculateWipByTime(
   late DateTimeRange displayRange;
   late DateFormat keyFormat;
 
-  // Logika penentuan rentang waktu (displayRange) dan format (keyFormat)
-  // tidak ada perubahan, jadi kita biarkan.
+  
+  
   switch (view) {
     case ChartTimeView.daily:
       keyFormat = DateFormat('E, d', 'id_ID');
@@ -1909,36 +1911,36 @@ Map<String, dynamic> _calculateWipByTime(
       break;
   }
 
-  // ### PERUBAHAN UTAMA DIMULAI DARI SINI ###
+  
 
-  // 1. (DIUBAH) Filter awal hanya untuk panel yang belum di-close.
+  
   final relevantPanels = panels.where((data) => !data.panel.isClosed);
 
   for (var data in relevantPanels) {
-    // 2. (BARU) Tentukan tanggal untuk chart.
-    // Jika startDate ada, pakai itu. Jika tidak, pakai tanggal hari ini.
+    
+    
     final dateForChart = data.panel.startDate ?? DateTime.now();
 
-    // 3. (BARU) Pindahkan filter waktu ke dalam loop.
-    // Cek apakah tanggal panel (baik dari startDate atau hari ini) masuk
-    // dalam rentang waktu yang dipilih di chart.
+    
+    
+    
     bool isInDateRange = false;
     if (view == ChartTimeView.yearly) {
       if (years.contains(dateForChart.year)) {
         isInDateRange = true;
       }
     } else {
-      // Logika untuk daily/monthly
+      
       if (!dateForChart.isBefore(displayRange.start) &&
           !dateForChart.isAfter(displayRange.end.add(const Duration(days: 1)))) {
         isInDateRange = true;
       }
     }
 
-    // Jika tanggalnya tidak masuk rentang, lewati panel ini dan lanjut ke berikutnya.
+    
     if (!isInDateRange) continue;
 
-    // ### AKHIR PERUBAHAN UTAMA ###
+    
 
     final key = keyFormat.format(dateForChart);
     final vendorsFromPanel = getVendors(data);
@@ -1950,7 +1952,7 @@ Map<String, dynamic> _calculateWipByTime(
     }
   }
 
-  // Sisa kode di bawah ini tidak perlu diubah, biarkan saja.
+  
   final allKeys = <String>{};
   if (view == ChartTimeView.daily && week == null) {
     for (int i = 0; i < displayRange.duration.inDays + 1; i++) {
@@ -2063,21 +2065,21 @@ Map<String, dynamic> _calculateWipByTime(
       break;
   }
 
-  // ============== BAGIAN PENTING YANG DIPERBAIKI ==============
+  
   final relevantPanels = panels.where((data) {
     if (data.panel.closedDate == null) return false;
 
-    // Logika untuk Yearly View (Multi-select)
+    
     if (view == ChartTimeView.yearly) {
       return years.contains(data.panel.closedDate!.year);
     }
 
-    // Logika untuk Daily/Monthly View
+    
     return !data.panel.closedDate!.isBefore(displayRange.start) &&
         !data.panel.closedDate!
             .isAfter(displayRange.end.add(const Duration(days: 1)));
   });
-  // ==========================================================
+  
 
   for (var data in relevantPanels) {
     final date = data.panel.closedDate!;
@@ -2130,7 +2132,7 @@ Map<String, dynamic> _calculateWipByTime(
           final dateB = DateFormat('MMM', 'id_ID').parse(b);
           return dateA.month.compareTo(dateB.month);
         }
-        // Perbaikan untuk sorting yearly
+        
         if (view == ChartTimeView.yearly) {
           return a.compareTo(b);
         }
@@ -2160,7 +2162,7 @@ Map<String, dynamic> _calculateWipByProject(
   late DateTimeRange displayRange;
   late DateFormat keyFormat;
 
-  // Logika penentuan rentang waktu (sama seperti fungsi lainnya)
+  
   switch (view) {
     case ChartTimeView.daily:
       keyFormat = DateFormat('E, d', 'id_ID');
@@ -2209,22 +2211,22 @@ Map<String, dynamic> _calculateWipByProject(
       break;
   }
 
-  // Hanya filter panel yang belum closed
+  
   final relevantPanels = panels.where((data) => !data.panel.isClosed);
 
-  // Kumpulkan semua nama project yang mungkin ada dari panel yang relevan
+  
   final allPossibleProjects = relevantPanels
       .map((p) => p.panel.project?.trim() ?? '')
-      .map((name) => name.isEmpty ? "No Project" : name) // Ganti 'No Vendor' menjadi 'No Project'
+      .map((name) => name.isEmpty ? "No Project" : name) 
       .toSet()
       .toList();
 
 
   for (var data in relevantPanels) {
-    // Gunakan startDate jika ada, jika tidak, gunakan tanggal hari ini
+    
     final dateForChart = data.panel.startDate ?? DateTime.now();
 
-    // Cek apakah tanggal panel masuk dalam rentang waktu chart
+    
     bool isInDateRange = false;
     if (view == ChartTimeView.yearly) {
       if (years.contains(dateForChart.year)) {
@@ -2249,7 +2251,7 @@ Map<String, dynamic> _calculateWipByProject(
     counts[key]![finalProjectName] = (counts[key]![finalProjectName] ?? 0) + 1;
   }
 
-  // Sisa kode di bawah ini untuk memastikan semua label & urutan benar
+  
   final allKeys = <String>{};
   if (view == ChartTimeView.daily && week == null) {
     for (int i = 0; i < displayRange.duration.inDays + 1; i++) {
@@ -2307,9 +2309,9 @@ Map<String, dynamic> _calculateWipByProject(
   Map<String, dynamic> _calculateDeliveryByProject(
     List<PanelDisplayData> panels, {
     required ChartTimeView view,
-    // --- BARU: parameter filter ---
+    
     required int year,
-    required List<int> years, // Diubah
+    required List<int> years, 
     required int month,
     int? week,
     int? quartile,
@@ -2318,7 +2320,7 @@ Map<String, dynamic> _calculateWipByProject(
     late DateTimeRange displayRange;
     late DateFormat keyFormat;
 
-    // --- BARU: Logika penentuan rentang waktu disamakan dengan _calculateDeliveryByTime ---
+    
     switch (view) {
       case ChartTimeView.daily:
         keyFormat = DateFormat('E, d', 'id_ID');
@@ -2336,13 +2338,13 @@ Map<String, dynamic> _calculateWipByProject(
         }
         break;
       case ChartTimeView.monthly:
-        if (quartile == null) { // KONDISI BARU: Jika "Semua Bulan" dipilih
+        if (quartile == null) { 
             keyFormat = DateFormat('MMM', 'id_ID');
             displayRange = DateTimeRange(
               start: DateTime(year, 1, 1),
               end: DateTime(year, 12, 31),
             );
-        } else { // LOGIKA LAMA: Jika Kuartal dipilih
+        } else { 
             keyFormat = DateFormat('MMM yyyy', 'id_ID');
             final startMonth = (quartile - 1) * 3 + 1;
             displayRange = DateTimeRange(
@@ -2370,7 +2372,7 @@ Map<String, dynamic> _calculateWipByProject(
           return years.contains(data.panel.closedDate!.year);
         }
 
-        // Logic untuk daily/monthly
+        
         return !data.panel.closedDate!.isBefore(displayRange.start) &&
                !data.panel.closedDate!.isAfter(displayRange.end.add(const Duration(days: 1)));
       }
@@ -2404,27 +2406,27 @@ Map<String, dynamic> _calculateWipByProject(
       counts[key]![finalProjectName] = (counts[key]![finalProjectName] ?? 0) + 1;
     }
 
-    // --- BARU: Pastikan semua label ada di chart ---
+    
     final allKeys = <String>{};
-    if (view == ChartTimeView.daily && week == null) { // Tampilkan semua tanggal di bulan
+    if (view == ChartTimeView.daily && week == null) { 
       for (int i = 0; i < displayRange.duration.inDays + 1; i++) {
         allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
       }
-    } else if (view == ChartTimeView.daily && week != null) { // Tampilkan 7 hari di minggu
+    } else if (view == ChartTimeView.daily && week != null) { 
         for (int i = 0; i < 7; i++) {
         allKeys.add(keyFormat.format(displayRange.start.add(Duration(days: i))));
       }
-    } else if (view == ChartTimeView.monthly) { // Logika baru untuk label bulan/kuartal
-        if (quartile == null) { // Jika "Semua Bulan", buat label untuk 12 bulan
+    } else if (view == ChartTimeView.monthly) { 
+        if (quartile == null) { 
             for (int i = 1; i <= 12; i++) {
                 allKeys.add(keyFormat.format(DateTime(year, i)));
             }
-        } else { // Jika Kuartal, buat label untuk 3 bulan
+        } else { 
             for (int i = 0; i < 3; i++) {
                 allKeys.add(keyFormat.format(DateTime(year, (quartile - 1) * 3 + 1 + i)));
             }
         }
-    } else { // Yearly
+    } else { 
       years.sort();
       for (final yearValue in years) {
         allKeys.add(yearValue.toString());
@@ -2456,7 +2458,7 @@ Map<String, dynamic> _calculateWipByProject(
     return {'data': sortedMap, 'projects': sortedProjects};
   }
 
-  // ### BARU: Widget untuk konten tab "By Vendor"
+  
   Widget _buildVendorChartView() {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -2469,7 +2471,7 @@ Map<String, dynamic> _calculateWipByProject(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  // ### GANTI DI SINI ###
+                  
                   child: _GroupedBarChartCard(
                     title: "Delivered & On-Progress Panel",
                     itemType: "Panel",
@@ -2481,7 +2483,7 @@ Map<String, dynamic> _calculateWipByProject(
                 ),
                 const SizedBox(width: 24),
                 Expanded(
-                  // ### GANTI DI SINI ###
+                  
                   child: _GroupedBarChartCard(
                     title: "Delivered & On-Progress Busbar",
                     itemType: "Busbar",
@@ -2495,7 +2497,7 @@ Map<String, dynamic> _calculateWipByProject(
             ),
           );
         } else {
-          // Layout Mobile
+          
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
             child: Column(
@@ -2510,7 +2512,7 @@ Map<String, dynamic> _calculateWipByProject(
                   onToggle: (newView) => setState(() => _panelChartView = newView),
                 ),
                 const SizedBox(height: 24),
-                // ### GANTI DI SINI ###
+                
                 _GroupedBarChartCard(
                   title: "Delivered & On-Progress Busbar",
                   itemType: "Busbar",
@@ -2527,7 +2529,7 @@ Map<String, dynamic> _calculateWipByProject(
     );
   }
 
-  // ### BARU: Widget untuk konten tab "By Project"
+  
   Widget _buildProjectChartView() {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
@@ -2543,7 +2545,7 @@ Map<String, dynamic> _calculateWipByProject(
   }
 
 
-  // ### DIUBAH: Widget ini sekarang menjadi kerangka untuk TabBar dan TabBarView
+  
   Widget _buildChartView() {
     _prepareChartData();
     final panelsToDisplay = filteredPanelsForDisplay;
@@ -2565,13 +2567,13 @@ Map<String, dynamic> _calculateWipByProject(
       );
     }
 
-    // Menggunakan DefaultTabController dan Scaffold untuk membuat struktur Tab
+    
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          toolbarHeight: 0, // Sembunyikan toolbar default
+          toolbarHeight: 0, 
           automaticallyImplyLeading: false,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           elevation: 0,
@@ -2587,7 +2589,7 @@ Map<String, dynamic> _calculateWipByProject(
             labelStyle: const TextStyle(
               fontWeight: FontWeight.w500,
               fontFamily: 'Lexend',
-              fontSize: 12, // Sedikit diperbesar agar mudah dibaca
+              fontSize: 12, 
             ),
             unselectedLabelStyle: const TextStyle(
               fontWeight: FontWeight.w400,
@@ -2603,9 +2605,9 @@ Map<String, dynamic> _calculateWipByProject(
         body: TabBarView(
           controller: _chartTabController,
           children: [
-            // Konten untuk Tab "By Vendor"
+            
             _buildVendorChartView(),
-            // Konten untuk Tab "By Project"
+            
             _buildProjectChartView(),
           ],
         ),
@@ -2660,14 +2662,14 @@ Map<String, dynamic> _calculateWipByProject(
   Widget _buildChartFilterDropdowns({
     required ChartTimeView currentView,
   }) {
-    // Dropdown Item Style
+    
     final dropdownStyle = TextStyle(
       fontSize: 12,
       color: Colors.grey[700],
       fontWeight: FontWeight.w400,
     );
 
-    // Dropdown Years
+    
     final yearItems = List.generate(
       5,
       (index) => DropdownMenuItem<int>(
@@ -2676,7 +2678,7 @@ Map<String, dynamic> _calculateWipByProject(
       ),
     );
 
-    // Dropdown Months
+    
     final monthItems = List.generate(
       12,
       (index) => DropdownMenuItem<int>(
@@ -2688,7 +2690,7 @@ Map<String, dynamic> _calculateWipByProject(
       ),
     );
 
-    // Dropdown Weeks
+    
     final weekCount = _getWeeksInMonth(_selectedYear, _selectedMonth);
     final weekItems = [
       DropdownMenuItem<int?>(
@@ -2728,11 +2730,11 @@ Map<String, dynamic> _calculateWipByProject(
           icon: const Icon(Icons.keyboard_arrow_down, size: 16),
           hint: Text(hint, style: dropdownStyle),
 
-          // --- PENYESUAIAN DESAIN DROPDOWN ---
+          
           dropdownColor: Colors.white,
           borderRadius: BorderRadius.circular(6),
           elevation: 2,
-          // ---------------------------------
+          
         ),
       );
     }
@@ -2741,7 +2743,7 @@ Map<String, dynamic> _calculateWipByProject(
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Tahun
+          
           buildDropdown<int>(
             value: _selectedYear,
             items: yearItems,
@@ -2751,7 +2753,7 @@ Map<String, dynamic> _calculateWipByProject(
             },
           ),
           const SizedBox(width: 8),
-          // Bulan
+          
           buildDropdown<int>(
             value: _selectedMonth,
             items: monthItems,
@@ -2760,13 +2762,13 @@ Map<String, dynamic> _calculateWipByProject(
               if (val != null) {
                 setState(() {
                   _selectedMonth = val;
-                  _selectedWeek = null; // Reset minggu jika bulan berubah
+                  _selectedWeek = null; 
                 });
               }
             },
           ),
             const SizedBox(width: 8),
-          // Minggu
+          
           buildDropdown<int?>(
             value: _selectedWeek,
             items: weekItems,
@@ -2781,7 +2783,7 @@ Map<String, dynamic> _calculateWipByProject(
         return Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-                // Tahun (tidak berubah)
+                
                 buildDropdown<int>(
                     value: _selectedYear,
                     items: yearItems,
@@ -2792,16 +2794,16 @@ Map<String, dynamic> _calculateWipByProject(
                 ),
                 const SizedBox(width: 8),
 
-                // Kuartal (dengan opsi "Semua Bulan")
-                buildDropdown<int?>( // Tipe datanya diubah ke int?
+                
+                buildDropdown<int?>( 
                     value: _selectedQuartile,
                     items: [
-                        // Item baru untuk "Semua Bulan"
+                        
                         DropdownMenuItem<int?>(
-                            value: null, // 'null' merepresentasikan "Semua Bulan"
+                            value: null, 
                             child: Text("All Month", style: dropdownStyle),
                         ),
-                        // Item untuk Kuartal 1-4
+                        
                         ...List.generate(
                             4,
                             (index) => DropdownMenuItem<int?>(
@@ -2819,7 +2821,7 @@ Map<String, dynamic> _calculateWipByProject(
         );
     }
     else if (currentView == ChartTimeView.yearly) {
-      // Tampilan Yearly sekarang menggunakan multi-select
+      
       return _buildYearMultiSelect();
     }
 
@@ -2951,14 +2953,14 @@ Map<String, dynamic> _calculateWipByProject(
       fontWeight: FontWeight.w400,
     );
 
-    _selectedYears.sort((a,b) => b.compareTo(a)); // Tampilkan dari tahun terbaru
+    _selectedYears.sort((a,b) => b.compareTo(a)); 
     String displayText = _selectedYears.join(', ');
     if (displayText.isEmpty) {
       displayText = "Select Years";
     }
 
     return InkWell(
-      onTap: _showYearMultiSelectBottomSheet, // DIUBAH ke bottom sheet
+      onTap: _showYearMultiSelectBottomSheet, 
       borderRadius: BorderRadius.circular(6),
       child: Container(
         height: 30,
@@ -2990,11 +2992,11 @@ Map<String, dynamic> _calculateWipByProject(
     required Map<String, Color> colorMap,
     required ChartTimeView currentView,
   }) {
-    // Ekstrak data dan nama series
+    
     final Map<String, Map<String, int>> data = (chartData['data'] as Map<String, Map<String, int>>? ?? {});
     final List<String> seriesNames = (chartData['vendors'] as List<String>? ?? chartData['projects'] as List<String>? ?? []);
 
-    // Hitung nilai Y maksimum untuk skala chart
+    
     double maxValue = 0;
     data.values.forEach((seriesMap) {
       double groupTotal = seriesMap.values.fold(0, (sum, item) => sum + item);
@@ -3004,7 +3006,7 @@ Map<String, dynamic> _calculateWipByProject(
     });
     if (maxValue == 0) maxValue = 10;
 
-    // Kalkulasi lebar dinamis untuk bar group
+    
     const double barWidth = 24.0;
     const double barsSpace = 4.0;
     const double groupsSpace = 24.0;
@@ -3113,48 +3115,48 @@ Map<String, dynamic> _calculateWipByProject(
   BarChartRodData rod,
   int rodIndex,
   Map<String, Map<String, int>> chartData,
-  List<String> seriesNames, // Ini bisa berupa 'vendors' atau 'projects'
+  List<String> seriesNames, 
 ) {
-  // Jangan tampilkan tooltip untuk bar yang nilainya nol
+  
   if (rod.toY.round() == 0) return null;
 
   final currentValue = rod.toY.round();
   String tooltipText = '$currentValue';
 
-  // Lakukan perbandingan hanya jika ini bukan grup data pertama (indeks > 0)
+  
   if (groupIndex > 0) {
-    // Ambil key dari grup data sebelumnya (misal: "Sep 2025")
+    
     final previousGroupKey = chartData.keys.elementAt(groupIndex - 1);
     final previousGroupData = chartData[previousGroupKey];
 
-    // Ambil nama dari seri data saat ini (misal: "ABACUS" atau nama project)
+    
     final seriesName = seriesNames[rodIndex];
 
-    // Ambil nilai dari seri yang sama pada periode sebelumnya, default ke 0 jika tidak ada
+    
     final previousValue = previousGroupData?[seriesName] ?? 0;
 
     final diff = currentValue - previousValue;
 
-    // Format teks perubahan berdasarkan nilai perbedaan (diff)
+    
     if (diff > 0) {
-      tooltipText += ' (+${diff})'; // Hasil: 20 (+2)
+      tooltipText += ' (+${diff})'; 
     } else if (diff < 0) {
-      tooltipText += ' (${diff})'; // Hasil: 18 (-2)
+      tooltipText += ' (${diff})'; 
     }
-    // Jika tidak ada perubahan (diff == 0), kita tidak menambahkan apa-apa
+    
   }
 
   return BarTooltipItem(
     tooltipText,
     const TextStyle(
       color: AppColors.black,
-      fontWeight: FontWeight.w500, // Sedikit tebalkan agar mudah dibaca
-      fontSize: 12, // Sedikit kecilkan agar muat
+      fontWeight: FontWeight.w500, 
+      fontSize: 12, 
     ),
   );
 }
 }
-// ### BARU: Widget Stateful untuk Kartu Chart dengan Scroller ###
+
 class _GroupedBarChartCard extends StatefulWidget {
   final String title;
   final String itemType;
@@ -3186,7 +3188,7 @@ class _GroupedBarChartCardState extends State<_GroupedBarChartCard> {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_scrollListener);
-    // Cek posisi scroll setelah frame pertama selesai di-render
+    
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkScrollPosition());
   }
 
@@ -3197,19 +3199,19 @@ class _GroupedBarChartCardState extends State<_GroupedBarChartCard> {
     super.dispose();
   }
   
-  // Listener untuk mendeteksi perubahan posisi scroll
+  
   void _scrollListener() {
     _checkScrollPosition();
   }
   
-  // Fungsi untuk mengecek apakah tombol panah perlu ditampilkan
+  
   void _checkScrollPosition() {
     if (!mounted || !_scrollController.hasClients) return;
 
     final bool canScrollLeft = _scrollController.position.pixels > 0;
     final bool canScrollRight = _scrollController.position.pixels < _scrollController.position.maxScrollExtent;
 
-    // Hanya update state jika ada perubahan untuk menghindari rebuild yang tidak perlu
+    
     if (canScrollLeft != _showLeftArrow || canScrollRight != _showRightArrow) {
       setState(() {
         _showLeftArrow = canScrollLeft;
@@ -3218,19 +3220,19 @@ class _GroupedBarChartCardState extends State<_GroupedBarChartCard> {
     }
   }
 
-  // Fungsi untuk scroll ke kiri
+  
   void _scrollLeft() {
     _scrollController.animateTo(
-      _scrollController.offset - 200, // Scroll sejauh 200px
+      _scrollController.offset - 200, 
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
   }
 
-  // Fungsi untuk scroll ke kanan
+  
   void _scrollRight() {
     _scrollController.animateTo(
-      _scrollController.offset + 200, // Scroll sejauh 200px
+      _scrollController.offset + 200, 
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
@@ -3238,12 +3240,12 @@ class _GroupedBarChartCardState extends State<_GroupedBarChartCard> {
 
   @override
   Widget build(BuildContext context) {
-    // Logika untuk menggabungkan nama series (vendor/project) dari kedua dataset
+    
     final List<String> closedSeries = (widget.closedChartData['vendors'] as List<String>? ?? widget.closedChartData['projects'] as List<String>? ?? []);
     final List<String> wipSeries = (widget.wipChartData['vendors'] as List<String>? ?? widget.wipChartData['projects'] as List<String>? ?? []);
     final List<String> seriesNames = {...closedSeries, ...wipSeries}.toList()..sort();
 
-    // Palet warna
+    
     final List<Color> colorPalette = [
       const Color(0xFF1D20E4), const Color(0xFFED1B3A), const Color(0xFFFEB019),
       const Color(0xFF09AF77), const Color(0xFF008FFB), const Color(0xFFFF5DD1),
@@ -3255,21 +3257,21 @@ class _GroupedBarChartCardState extends State<_GroupedBarChartCard> {
         seriesNames[i]: colorPalette[i % colorPalette.length],
     };
 
-    // ### PERUBAHAN UTAMA: Widget Legenda dengan Scroller ###
+    
     Widget legendWidget = seriesNames.isNotEmpty
       ? Stack(
           alignment: Alignment.center,
           children: [
-            // Kontainer utama untuk list legenda yang bisa di-scroll
+            
             SingleChildScrollView(
               controller: _scrollController,
               scrollDirection: Axis.horizontal,
-              // Tambahkan padding agar item tidak tertutup oleh tombol panah
+              
               padding: const EdgeInsets.symmetric(horizontal: 30.0),
-              child: Row( // Mengganti Wrap dengan Row
+              child: Row( 
                 children: seriesNames.map((name) {
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0), // Ganti spacing dari Wrap
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0), 
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -3286,7 +3288,7 @@ class _GroupedBarChartCardState extends State<_GroupedBarChartCard> {
               ),
             ),
             
-            // Tombol Panah Kiri
+            
             if (_showLeftArrow)
               Align(
                 alignment: Alignment.centerLeft,
@@ -3303,7 +3305,7 @@ class _GroupedBarChartCardState extends State<_GroupedBarChartCard> {
                 ),
               ),
 
-            // Tombol Panah Kanan
+            
             if (_showRightArrow)
               Align(
                 alignment: Alignment.centerRight,
@@ -3323,7 +3325,7 @@ class _GroupedBarChartCardState extends State<_GroupedBarChartCard> {
         )
       : const SizedBox.shrink();
 
-    // Sisa dari build method (tidak ada perubahan signifikan)
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -3344,7 +3346,7 @@ class _GroupedBarChartCardState extends State<_GroupedBarChartCard> {
                     Expanded(
                       child: Text(widget.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: AppColors.black)),
                     ),
-                    // Panggil method dari parent state (HomeScreenState)
+                    
                     (context.findAncestorStateOfType<HomeScreenState>())!._buildChartFilterDropdowns(currentView: widget.currentView),
                     const SizedBox(width: 8),
                     (context.findAncestorStateOfType<HomeScreenState>())!._buildToggleButtons(currentView: widget.currentView, onToggle: widget.onToggle),
@@ -3371,14 +3373,14 @@ class _GroupedBarChartCardState extends State<_GroupedBarChartCard> {
             },
           ),
           const SizedBox(height: 16),
-          legendWidget, // Widget legenda baru kita
+          legendWidget, 
           const SizedBox(height: 24),
           Text(
             "Jumlah ${widget.itemType == "by Project" ? "Panel" : widget.itemType} Closed",
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.black),
           ),
           const SizedBox(height: 8),
-          // Panggil method dari parent state (HomeScreenState)
+          
           (context.findAncestorStateOfType<HomeScreenState>())!._buildBarChartItself(
             chartData: widget.closedChartData,
             colorMap: seriesColors,
@@ -3400,7 +3402,7 @@ class _GroupedBarChartCardState extends State<_GroupedBarChartCard> {
     );
   }
 
-  // Helper untuk membuat tombol panah
+  
   Widget _buildArrowButton(IconData icon, VoidCallback onPressed) {
     return Material(
       color: Colors.white,
@@ -3423,17 +3425,17 @@ class _GroupedBarChartCardState extends State<_GroupedBarChartCard> {
   }
 }
 
-// ### GANTI SELURUH METHOD INI ###
+
 Widget _buildBarChartItself({
   required Map<String, dynamic> chartData,
   required Map<String, Color> colorMap,
   required ChartTimeView currentView,
 }) {
-  // Ekstrak data dan nama series
+  
   final Map<String, Map<String, int>> data = (chartData['data'] as Map<String, Map<String, int>>? ?? {});
   final List<String> seriesNames = (chartData['vendors'] as List<String>? ?? chartData['projects'] as List<String>? ?? []);
 
-  // Hitung nilai Y maksimum untuk skala chart
+  
   double maxValue = 0;
   data.values.forEach((seriesMap) {
     double groupTotal = seriesMap.values.fold(0, (sum, item) => sum + item);
@@ -3443,15 +3445,15 @@ Widget _buildBarChartItself({
   });
   if (maxValue == 0) maxValue = 10;
 
-  // Kalkulasi lebar dinamis untuk bar group
+  
   const double barWidth = 24.0;
   const double barsSpace = 4.0;
   const double groupsSpace = 24.0;
   final double widthPerGroup = seriesNames.isEmpty ? barWidth : (seriesNames.length * barWidth) + ((seriesNames.length - 1) * barsSpace);
 
-  // ### BARU: Gunakan StatefulWidget untuk mengelola scroller ###
+  
   return _ScrollableBarChart(
-    key: ValueKey(chartData.hashCode), // Key penting agar state di-reset saat data berubah
+    key: ValueKey(chartData.hashCode), 
     data: data,
     seriesNames: seriesNames,
     colorMap: colorMap,
@@ -3464,7 +3466,7 @@ Widget _buildBarChartItself({
   );
 }
 
-// ### BARU: Buat StatefulWidget terpisah untuk Chart yang bisa di-scroll ###
+
 class _ScrollableBarChart extends StatefulWidget {
   final Map<String, Map<String, int>> data;
   final List<String> seriesNames;
@@ -3521,7 +3523,7 @@ class _ScrollableBarChartState extends State<_ScrollableBarChart> {
     if (!mounted || !_scrollController.hasClients) return;
     final position = _scrollController.position;
     final bool canScrollLeft = position.pixels > 0;
-    // Cek dengan sedikit toleransi agar tidak hilang terlalu cepat
+    
     final bool canScrollRight = position.pixels < (position.maxScrollExtent - 5);
 
     if (canScrollLeft != _showLeftArrow || canScrollRight != _showRightArrow) {
@@ -3576,7 +3578,7 @@ class _ScrollableBarChartState extends State<_ScrollableBarChart> {
                 final double availableWidth = constraints.maxWidth;
                 final double finalChartWidth = math.max(availableWidth, calculatedWidth);
                 
-                // Cek ulang posisi setelah layout, karena bisa saja kontennya pas di layar
+                
                 WidgetsBinding.instance.addPostFrameCallback((_) => _checkScrollPosition());
                 
                 return Stack(
@@ -3593,7 +3595,7 @@ class _ScrollableBarChartState extends State<_ScrollableBarChart> {
                             groupsSpace: widget.groupsSpace,
                             maxY: widget.maxValue * 1.25,
                             barTouchData: BarTouchData(
-                              handleBuiltInTouches: true, // Biarkan sentuhan default aktif
+                              handleBuiltInTouches: true, 
                               touchTooltipData: BarTouchTooltipData(
                                 getTooltipColor: (_) => AppColors.black.withOpacity(0.8),
                                 tooltipPadding: const EdgeInsets.all(8),
@@ -3693,7 +3695,7 @@ class _ScrollableBarChartState extends State<_ScrollableBarChart> {
                       ),
                     ),
 
-                    // Tombol Panah Kiri
+                    
                     if (_showLeftArrow)
                       Align(
                         alignment: Alignment.centerLeft,
@@ -3703,7 +3705,7 @@ class _ScrollableBarChartState extends State<_ScrollableBarChart> {
                         ),
                       ),
                     
-                    // Tombol Panah Kanan
+                    
                     if (_showRightArrow)
                       Align(
                         alignment: Alignment.centerRight,

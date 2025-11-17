@@ -136,30 +136,30 @@ Future<void> _logout() async {
     builder: (ctx) => const _LogoutConfirmationSheet(),
   );
 
-  // 1. Guard clause untuk memastikan widget masih ada setelah bottom sheet ditutup
+  
   if (confirm != true || !mounted) return;
 
-  // 2. Simpan Navigator dan ScaffoldMessenger SEBELUM operasi async
+  
   final navigator = Navigator.of(context);
   final messenger = ScaffoldMessenger.of(context);
 
-  // 3. Lakukan proses logout (clear data)
+  
   final prefs = await SharedPreferences.getInstance();
   await prefs.clear();
 
-  // 4. Tampilkan pesan yang BENAR menggunakan messenger yang sudah disimpan
+  
   messenger.showSnackBar(
     const SnackBar(
       content: Text("Anda telah berhasil keluar."),
-      backgroundColor: Colors.green, // Warna hijau untuk sukses logout
+      backgroundColor: Colors.green, 
       behavior: SnackBarBehavior.floating,
     ),
   );
 
-  // Beri jeda singkat agar pengguna bisa melihat pesan
+  
   await Future.delayed(const Duration(milliseconds: 800));
 
-  // 5. Lakukan navigasi menggunakan navigator yang sudah disimpan
+  
   navigator.push(
     MaterialPageRoute(builder: (context) => const LoginPage()),
   );
@@ -209,18 +209,18 @@ Future<void> _logout() async {
             ? const _ProfileSkeleton()
             : _currentCompany == null || _loggedInUsername == null
             ? const Center(child: Text("Gagal memuat data pengguna."))
-            // --- PERUBAHAN: Gunakan LayoutBuilder untuk responsivitas ---
+            
             : LayoutBuilder(
                 builder: (context, constraints) {
-                  // Tentukan breakpoint untuk beralih ke layout desktop
+                  
                   bool isDesktop = constraints.maxWidth > 800;
                   
                   return RefreshIndicator(
                     onRefresh: _loadInitialData,
                     color: AppColors.schneiderGreen,
                     child: isDesktop
-                        ? _buildDesktopLayout() // Tampilan baru untuk desktop
-                        : _buildMobileLayout(), // Tampilan lama untuk mobile
+                        ? _buildDesktopLayout() 
+                        : _buildMobileLayout(), 
                   );
                 },
               ),
@@ -228,7 +228,7 @@ Future<void> _logout() async {
     );
   }
 
-  // --- BARU: Widget untuk layout mobile (kode asli Anda) ---
+  
   Widget _buildMobileLayout() {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -245,22 +245,22 @@ Future<void> _logout() async {
             ),
           ),
           const SizedBox(height: 24),
-          _buildPrimaryProfileCard(isDesktop: false), // Kartu profil utama
+          _buildPrimaryProfileCard(isDesktop: false), 
           const SizedBox(height: 16),
-          _buildUserListSection(), // Daftar pengguna
+          _buildUserListSection(), 
         ],
       ),
     );
   }
 
-  // --- BARU: Widget untuk layout desktop (dua kolom) ---
+  
   Widget _buildDesktopLayout() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Kolom Kiri: Profil Utama
+          
           SizedBox(
             width: 350,
             child: Column(
@@ -281,7 +281,7 @@ Future<void> _logout() async {
           ),
           const SizedBox(width: 24),
 
-          // Kolom Kanan: Daftar Pengguna (Scrollable)
+          
           Expanded(
             child: SingleChildScrollView(
               child: _buildUserListSection(),
@@ -292,7 +292,7 @@ Future<void> _logout() async {
     );
   }
 
-  // --- BARU: Kartu profil utama (bisa dipakai di mobile & desktop) ---
+  
   Widget _buildPrimaryProfileCard({required bool isDesktop}) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -322,7 +322,7 @@ Future<void> _logout() async {
                   ],
                 ),
               ),
-              if (!isDesktop) // Tombol logout hanya muncul di mobile card header
+              if (!isDesktop) 
                 IconButton(
                   icon: Image.asset('assets/images/logout.png', width: 24),
                   onPressed: _logout,
@@ -348,7 +348,7 @@ Future<void> _logout() async {
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w300),
             ),
           ),
-          if (isDesktop) ...[ // Tombol logout muncul di bawah untuk desktop
+          if (isDesktop) ...[ 
             const SizedBox(height: 24),
             const Divider(color: AppColors.grayLight),
             const SizedBox(height: 16),
@@ -461,9 +461,9 @@ Future<void> _logout() async {
           ),
           tabs: [allTab, ...groupTabs],
         ),
-        // Menggunakan SizedBox untuk memberi tinggi pada IndexedStack
+        
         SizedBox(
-          height: 500, // Beri tinggi agar tidak error di dalam SingleChildScrollView
+          height: 500, 
           child: IndexedStack(
             index: _tabController!.index,
             children: [allTabView, ...groupTabViews]

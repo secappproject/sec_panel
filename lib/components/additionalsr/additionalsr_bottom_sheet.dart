@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/models/additionalsr.dart';
-import 'package:secpanel/models/approles.dart'; // Import AppRole
+import 'package:secpanel/models/approles.dart'; 
 import 'package:secpanel/models/company.dart';
 import 'package:secpanel/theme/colors.dart';
 
@@ -27,7 +27,7 @@ class AdditionalSrBottomSheet extends StatefulWidget {
 
 class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
   List<AdditionalSR> _srs = [];
-  bool _isLoading = true;  
+  bool _isLoading = true;
   bool get _isViewer => widget.currentCompany.role == AppRole.viewer;
 
   @override
@@ -67,7 +67,7 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => _AddEditSRDialog( // Pastikan _AddEditSRDialog sudah ada di file ini atau diimport
+      builder: (context) => _AddEditSRDialog(
         panelNoPp: widget.panelNoPp,
         poNumber: widget.poNumber,
         sr: sr,
@@ -122,24 +122,24 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                       ],
                     ),
                   ),
-                  (!_isViewer) ?
-                  ElevatedButton.icon(
-                    onPressed: () => _showEditSRDialog(),
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text(
-                      'Tambah',
-                      style:
-                          TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      shadowColor: Colors.transparent,
-                      backgroundColor: AppColors.schneiderGreen,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6)),
-                    ),
-                  ) 
-                  : SizedBox()
+                  (!_isViewer)
+                      ? ElevatedButton.icon(
+                          onPressed: () => _showEditSRDialog(),
+                          icon: const Icon(Icons.add, size: 16),
+                          label: const Text(
+                            'Tambah',
+                            style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w400),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            shadowColor: Colors.transparent,
+                            backgroundColor: AppColors.schneiderGreen,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6)),
+                          ),
+                        )
+                      : const SizedBox()
                 ],
               ),
               const SizedBox(height: 16),
@@ -161,17 +161,19 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                           onRefresh: _fetchSRs,
                           child: LayoutBuilder(
                             builder: (context, constraints) {
-                              // --- LOGIKA DISESUAIKAN DI SINI ---
                               int crossAxisCount;
                               if (constraints.maxWidth >= 600) {
-                                crossAxisCount = 3; // Untuk non-mobile (Tablet & Desktop)
+                                crossAxisCount = 3;
                               } else {
-                                crossAxisCount = 2; // Untuk mobile
+                                crossAxisCount = 2;
                               }
 
                               const double spacing = 12.0;
-                              final double totalSpacing = (crossAxisCount - 1) * spacing;
-                              final double itemWidth = (constraints.maxWidth - totalSpacing) / crossAxisCount;
+                              final double totalSpacing =
+                                  (crossAxisCount - 1) * spacing;
+                              final double itemWidth =
+                                  (constraints.maxWidth - totalSpacing) /
+                                      crossAxisCount;
 
                               return Wrap(
                                 spacing: spacing,
@@ -274,161 +276,177 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
                       const SizedBox(height: 8),
                       _buildInfoColumn(
                           'Remarks (No. DO)', sr.remarks.toString()),
-                      if (sr.status.toLowerCase() == 'close' &&
-                          sr.receivedDate != null) ...[
+
+                      
+                      if (sr.receivedDate != null) ...[
                         const SizedBox(height: 8),
                         _buildInfoColumn(
                           'Received Date',
-                          DateFormat('d MMM yyyy, HH:mm', 'id_ID')
+                          DateFormat('d MMM yyyy', 'id_ID')
                               .format(sr.receivedDate!),
                         ),
                       ],
-                      if (sr.status.toLowerCase() != 'close' &&
-                          sr.receivedDate == null) ...[
+
+                      
+                      if (sr.status.toLowerCase() == 'close' &&
+                          sr.closeDate != null) ...[
                         const SizedBox(height: 8),
                         _buildInfoColumn(
-                          'Received Date',
-                          "Belum Diterima",
+                          'Close Date',
+                          DateFormat('d MMM yyyy, HH:mm', 'id_ID')
+                              .format(sr.closeDate!),
+                        ),
+                      ],
+                      if (sr.status.toLowerCase() != 'close' &&
+                          sr.closeDate == null) ...[
+                        const SizedBox(height: 8),
+                        _buildInfoColumn(
+                          'Close Date',
+                          "Belum Ditutup",
                         ),
                       ],
                     ],
                   ),
                 ),
-                (!_isViewer) ?
-                PopupMenuButton<String>(
-                  color: const Color(0XFFFFFFFF),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  icon: const Icon(Icons.more_vert,
-                      color: AppColors.gray, size: 20),
-                  onSelected: (value) async {
-                    if (value == 'edit') {
-                      _showEditSRDialog(sr: sr);
-                    } else if (value == 'delete') {
-                      final confirm = await showModalBottomSheet<bool>(
-                        context: context,
-                        backgroundColor: Colors.white,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.vertical(top: Radius.circular(20)),
-                        ),
-                        builder: (ctx) {
-                          return Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Center(
-                                  child: Container(
-                                    height: 5,
-                                    width: 40,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.grayLight,
-                                      borderRadius: BorderRadius.circular(100),
+                if (!_isViewer)
+                  PopupMenuButton<String>(
+                    color: const Color(0XFFFFFFFF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    icon: const Icon(Icons.more_vert,
+                        color: AppColors.gray, size: 20),
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        _showEditSRDialog(sr: sr);
+                      } else if (value == 'delete') {
+                        final confirm = await showModalBottomSheet<bool>(
+                          context: context,
+                          backgroundColor: Colors.white,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.vertical(top: Radius.circular(20)),
+                          ),
+                          builder: (ctx) {
+                            return Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Center(
+                                    child: Container(
+                                      height: 5,
+                                      width: 40,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.grayLight,
+                                        borderRadius:
+                                            BorderRadius.circular(100),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: 24),
-                                const Text(
-                                  "Konfirmasi Hapus",
-                                  style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600),
-                                ),
-                                const SizedBox(height: 12),
-                                const Text(
-                                  "Anda yakin ingin menghapus item ini?",
-                                  style: TextStyle(
-                                      fontSize: 14, color: AppColors.gray),
-                                ),
-                                const SizedBox(height: 24),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: OutlinedButton(
-                                        onPressed: () =>
-                                            Navigator.of(ctx).pop(false),
-                                        style: OutlinedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 14),
-                                          side: const BorderSide(
-                                              color: AppColors.schneiderGreen),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(6),
-                                          ),
-                                        ),
-                                        child: const Text("Batal",
-                                            style: TextStyle(
+                                  const SizedBox(height: 24),
+                                  const Text(
+                                    "Konfirmasi Hapus",
+                                    style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    "Anda yakin ingin menghapus item ini?",
+                                    style: TextStyle(
+                                        fontSize: 14, color: AppColors.gray),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          onPressed: () =>
+                                              Navigator.of(ctx).pop(false),
+                                          style: OutlinedButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 14),
+                                            side: const BorderSide(
                                                 color:
-                                                    AppColors.schneiderGreen)),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: ElevatedButton(
-                                        onPressed: () =>
-                                            Navigator.of(ctx).pop(true),
-                                        style: ElevatedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 14),
-                                          backgroundColor: AppColors.red,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(6),
+                                                    AppColors.schneiderGreen),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
                                           ),
+                                          child: const Text("Batal",
+                                              style: TextStyle(
+                                                  color: AppColors
+                                                      .schneiderGreen)),
                                         ),
-                                        child: const Text("Hapus"),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                              ],
-                            ),
-                          );
-                        },
-                      );
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          onPressed: () =>
+                                              Navigator.of(ctx).pop(true),
+                                          style: ElevatedButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 14),
+                                            backgroundColor: AppColors.red,
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                          ),
+                                          child: const Text("Hapus"),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                ],
+                              ),
+                            );
+                          },
+                        );
 
-                      if (confirm == true && sr.id != null) {
-                        await DatabaseHelper.instance
-                            .deleteAdditionalSR(sr.id!);
-                        _fetchSRs();
+                        if (confirm == true && sr.id != null) {
+                          await DatabaseHelper.instance
+                              .deleteAdditionalSR(sr.id!);
+                          _fetchSRs();
+                        }
                       }
-                    }
-                  },
-                  itemBuilder: (BuildContext context) =>
-                      <PopupMenuEntry<String>>[
-                    PopupMenuItem<String>(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Image.asset("assets/images/edit-gray.png",
-                              height: 20),
-                          const SizedBox(width: 8),
-                          const Text('Edit',
-                              style: TextStyle(
-                                  fontSize: 12, fontWeight: FontWeight.w400)),
-                        ],
+                    },
+                    itemBuilder: (BuildContext context) =>
+                        <PopupMenuEntry<String>>[
+                      PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Image.asset("assets/images/edit-gray.png",
+                                height: 20),
+                            const SizedBox(width: 8),
+                            const Text('Edit',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w400)),
+                          ],
+                        ),
                       ),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Image.asset("assets/images/trash.png", height: 20),
-                          const SizedBox(width: 8),
-                          const Text('Hapus',
-                              style: TextStyle(
-                                  fontSize: 12, fontWeight: FontWeight.w400)),
-                        ],
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Image.asset("assets/images/trash.png", height: 20),
+                            const SizedBox(width: 8),
+                            const Text('Hapus',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w400)),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ): SizedBox(),
+                    ],
+                  )
               ],
             ),
           ),
@@ -465,7 +483,7 @@ class _AdditionalSrBottomSheetState extends State<AdditionalSrBottomSheet> {
   }
 }
 
-// Dialog Form untuk Tambah/Edit
+
 class _AddEditSRDialog extends StatefulWidget {
   final String panelNoPp;
   final String poNumber;
@@ -487,19 +505,20 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
   late TextEditingController _poController;
   late TextEditingController _itemController;
   late TextEditingController _qtyController;
-  late TextEditingController _supplierController;
   late TextEditingController _remarksController;
-  late TextEditingController _receivedDateController;
+  late TextEditingController _closeDateController;
   late String _status;
 
-  // --- 1. STATE UNTUK LOADING ---
+  
+  late TextEditingController _receivedDateController;
+  DateTime? _selectedReceivedDate;
+
   bool _isSaving = false;
 
   List<Company> _supplierCompanies = [];
   bool _isLoadingCompanies = true;
 
   String? _selectedSupplier;
-  bool _showManualSupplierInput = false;
 
   @override
   void initState() {
@@ -510,41 +529,52 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
     _qtyController = TextEditingController(text: sr?.quantity.toString() ?? '');
     _remarksController = TextEditingController(text: sr?.remarks ?? '');
     _status = sr?.status ?? 'open';
+
+    
+    _closeDateController = TextEditingController();
+    if (sr?.closeDate != null) {
+      _closeDateController.text =
+          DateFormat('d MMM yyyy, HH:mm', 'id_ID').format(sr!.closeDate!);
+    }
+
+    
     _receivedDateController = TextEditingController();
     if (sr?.receivedDate != null) {
+      _selectedReceivedDate = sr!.receivedDate;
       _receivedDateController.text =
-          DateFormat('d MMM yyyy, HH:mm', 'id_ID').format(sr!.receivedDate!);
+          DateFormat('d MMM yyyy', 'id_ID').format(sr.receivedDate!);
     }
-    
-    _supplierController = TextEditingController();
-    
+
     _fetchSupplierCompanies().then((_) {
       if (sr?.supplier != null && sr!.supplier!.isNotEmpty) {
-        if (_supplierCompanies.any((c) => c.name == sr.supplier)) {
-          _selectedSupplier = sr.supplier;
-          _showManualSupplierInput = false;
-        } else {
-          _selectedSupplier = 'Lainnya...';
-          _showManualSupplierInput = true;
-          _supplierController.text = sr.supplier!;
+        if (!_supplierCompanies.any((c) => c.name == sr.supplier)) {
+          _supplierCompanies.add(Company(
+            id: sr.supplier!,
+            name: sr.supplier!,
+            role: AppRole.k3,
+          ));
+          _supplierCompanies.sort((a, b) => a.name.compareTo(b.name));
         }
+        _selectedSupplier = sr.supplier;
         if (mounted) setState(() {});
       }
     });
   }
-  
+
   Future<void> _fetchSupplierCompanies() async {
-    if(mounted) setState(() => _isLoadingCompanies = true);
+    if (mounted) setState(() => _isLoadingCompanies = true);
     try {
       final results = await Future.wait([
         DatabaseHelper.instance.getK3Vendors(),
         DatabaseHelper.instance.getK5Vendors(),
+        DatabaseHelper.instance.getG3Vendors(),
       ]);
       final k3Vendors = results[0];
       final k5Vendors = results[1];
+      final g3Vendors = results[2];
 
-      final allVendors = [...k3Vendors, ...k5Vendors];
-      
+      final allVendors = [...k3Vendors, ...k5Vendors, ...g3Vendors];
+
       final uniqueVendorsMap = {for (var v in allVendors) v.name: v};
       final uniqueVendors = uniqueVendorsMap.values.toList()
         ..sort((a, b) => a.name.compareTo(b.name));
@@ -555,19 +585,50 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
         });
       }
     } catch (e) {
-      debugPrint("Error fetching K3/K5 vendors: $e");
+      debugPrint("Error fetching K3/K5/G3 vendors: $e");
     } finally {
-      if(mounted) setState(() => _isLoadingCompanies = false);
+      if (mounted) setState(() => _isLoadingCompanies = false);
     }
   }
 
-  // --- 2. FUNGSI SUBMIT YANG SUDAH DIUBAH ---
+  Future<void> _showAddNewSupplierSheet() async {
+    final newSupplierData = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const _AddNewSupplierSheet(),
+    );
+
+    if (newSupplierData != null) {
+      final String newName = newSupplierData['name'];
+      final AppRole newRole = newSupplierData['role'];
+
+      if (!_supplierCompanies.any((c) => c.name == newName)) {
+        setState(() {
+          _supplierCompanies.add(Company(
+            id: newName.toLowerCase().replaceAll(' ', '_'),
+            name: newName,
+            role: newRole,
+          ));
+          _supplierCompanies.sort((a, b) => a.name.compareTo(b.name));
+          _selectedSupplier = newName;
+        });
+      } else {
+        setState(() {
+          _selectedSupplier = newName;
+        });
+      }
+    }
+  }
+
   Future<void> _submit() async {
-    // Mencegah double-click jika sudah dalam proses saving
     if (_isSaving) return;
 
     if (_formKey.currentState!.validate()) {
-      if (_selectedSupplier == null) {
+      if (_selectedSupplier == null || _selectedSupplier!.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Silakan pilih atau isi supplier.'),
@@ -576,36 +637,21 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
         );
         return;
       }
-      
-      // Atur state menjadi loading SEBELUM memanggil database
+
       setState(() => _isSaving = true);
 
       try {
-        DateTime? receivedDate;
+        
+        DateTime? closeDate;
         if (_status.toLowerCase() == 'close') {
-          receivedDate = widget.sr?.receivedDate ?? DateTime.now().toUtc();
+          
+          closeDate = widget.sr?.closeDate ?? DateTime.now().toUtc();
         } else {
-          receivedDate = null;
+          
+          closeDate = null;
         }
 
-        String finalSupplier;
-        if (_selectedSupplier == 'Lainnya...') {
-          finalSupplier = _supplierController.text.trim();
-        } else {
-          finalSupplier = _selectedSupplier ?? '';
-        }
-
-        if (finalSupplier.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Supplier tidak boleh kosong.'),
-              backgroundColor: AppColors.red,
-            ),
-          );
-          // Hentikan loading jika validasi gagal
-          setState(() => _isSaving = false);
-          return;
-        }
+        String finalSupplier = _selectedSupplier!;
 
         final srData = AdditionalSR(
           id: widget.sr?.id,
@@ -616,7 +662,8 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
           supplier: finalSupplier,
           remarks: _remarksController.text.trim(),
           status: _status,
-          receivedDate: receivedDate,
+          closeDate: closeDate, 
+          receivedDate: _selectedReceivedDate, 
         );
 
         if (widget.sr == null) {
@@ -625,8 +672,7 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
         } else {
           await DatabaseHelper.instance.updateAdditionalSR(srData.id!, srData);
         }
-        
-        // Pastikan widget masih ada sebelum memanggil onSave
+
         if (mounted) {
           widget.onSave();
         }
@@ -639,11 +685,45 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
           );
         }
       } finally {
-        // Atur state kembali ke tidak loading SETELAH semua selesai
         if (mounted) {
           setState(() => _isSaving = false);
         }
       }
+    }
+  }
+
+  
+  Future<void> _selectReceivedDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedReceivedDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2101),
+      
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.schneiderGreen, 
+              onPrimary: Colors.white, 
+              onSurface: AppColors.black, 
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.schneiderGreen, 
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedReceivedDate) {
+      setState(() {
+        _selectedReceivedDate = picked;
+        _receivedDateController.text =
+            DateFormat('d MMM yyyy', 'id_ID').format(picked);
+      });
     }
   }
 
@@ -704,8 +784,22 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
               _buildTextField(
                 controller: _remarksController,
                 label: 'Remarks (No. DO)',
-                validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+                validator: (v) {
+                  if (_status == 'close' && (v == null || v.trim().isEmpty)) {
+                    return 'Remarks wajib diisi saat status Close';
+                  }
+                  return null;
+                },
               ),
+              
+              
+              const SizedBox(height: 16),
+              _buildDatePickerField(
+                controller: _receivedDateController,
+                label: 'Received Date (Manual)',
+                onTap: () => _selectReceivedDate(context),
+              ),
+
               const SizedBox(height: 16),
               _buildSelectorSection(
                 label: "Status",
@@ -715,47 +809,32 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
                   if (val != null) {
                     setState(() {
                       _status = val;
+                      
                       if (_status == 'close') {
-                        // isi tanggal sekarang
-                        final now = DateTime.now();
-                        _receivedDateController.text =
+                        
+                        if (_closeDateController.text.isEmpty) {
+                           final now = DateTime.now();
+                           _closeDateController.text =
                             DateFormat('d MMM yyyy, HH:mm', 'id_ID').format(now);
+                        }
                       } else {
-                        // kosongin lagi kalau bukan close
-                        _receivedDateController.clear();
+                        
+                        _closeDateController.clear();
                       }
                     });
                   }
                 },
               ),
-              if (_status == 'close') ...[
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: _receivedDateController,
-                  label: 'Received Date',
-                  isEnabled: false,
-                ),
-              ] else ...[
-                const SizedBox(height: 16),
-                const Text(
-                  'PO Received Date',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Lexend',
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Diperoleh saat diterima (close)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w300,
-                    fontFamily: 'Lexend',
-                    color: AppColors.gray,
-                  ),
-                ),
-              ],
+
+              
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: _closeDateController,
+                label: 'Close Date',
+                isEnabled: false,
+                hintText: 'Otomatis terisi saat status di-Close', 
+              ),
+              
               const SizedBox(height: 32),
               _buildActionButtons(),
             ],
@@ -779,7 +858,10 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
         ),
         const SizedBox(height: 12),
         _isLoadingCompanies
-            ? const Center(child: CircularProgressIndicator(color: AppColors.schneiderGreen,))
+            ? const Center(
+                child: CircularProgressIndicator(
+                color: AppColors.schneiderGreen,
+              ))
             : Wrap(
                 spacing: 8,
                 runSpacing: 12,
@@ -791,36 +873,16 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
                       onTap: () {
                         setState(() {
                           _selectedSupplier = company.name;
-                          _showManualSupplierInput = false;
-                          _supplierController.clear();
                         });
                       },
                     );
                   }),
                   _buildOtherButton(
-                    selected: _selectedSupplier == 'Lainnya...',
-                    onTap: () {
-                      setState(() {
-                        _selectedSupplier = 'Lainnya...';
-                        _showManualSupplierInput = true;
-                      });
-                    },
+                    selected: false,
+                    onTap: _showAddNewSupplierSheet,
                   ),
                 ],
               ),
-        if (_showManualSupplierInput) ...[
-          const SizedBox(height: 16),
-          _buildTextField(
-            controller: _supplierController,
-            label: "Nama Supplier Lainnya",
-            validator: (v) {
-              if (_showManualSupplierInput && (v == null || v.isEmpty)) {
-                return 'Nama supplier wajib diisi';
-              }
-              return null;
-            },
-          ),
-        ],
       ],
     );
   }
@@ -830,12 +892,10 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
     required bool selected,
     required VoidCallback onTap,
   }) {
-    final Color borderColor = selected
-        ? AppColors.schneiderGreen
-        : AppColors.grayLight;
-    final Color color = selected
-        ? AppColors.schneiderGreen.withOpacity(0.08)
-        : Colors.white;
+    final Color borderColor =
+        selected ? AppColors.schneiderGreen : AppColors.grayLight;
+    final Color color =
+        selected ? AppColors.schneiderGreen.withOpacity(0.08) : Colors.white;
 
     return GestureDetector(
       onTap: onTap,
@@ -876,17 +936,15 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
     );
   }
 
-  Widget _buildOtherButton({required bool selected, required VoidCallback onTap}) {
-    final Color borderColor = selected ? AppColors.schneiderGreen : AppColors.grayLight;
-    final Color color = selected ? AppColors.schneiderGreen.withOpacity(0.08) : Colors.white;
-
+  Widget _buildOtherButton(
+      {required bool selected, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: color,
-          border: Border.all(color: borderColor),
+          color: Colors.white,
+          border: Border.all(color: AppColors.grayLight),
           borderRadius: BorderRadius.circular(8),
         ),
         child: const Text(
@@ -901,13 +959,13 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
     );
   }
 
-
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
     bool isEnabled = true,
+    String? hintText,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -929,15 +987,86 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
           keyboardType: keyboardType,
           validator: validator,
           decoration: InputDecoration(
-            hintText: isEnabled ? 'Masukkan $label' : null,
-            helperStyle: const TextStyle(
-              fontSize: 11,
+            hintText: hintText ?? (isEnabled ? 'Masukkan $label' : null),
+            hintStyle: const TextStyle(
+              fontSize: 12,
               color: AppColors.gray,
-              fontWeight: FontWeight.w300,
+              fontWeight: FontWeight.w300
             ),
             filled: !isEnabled,
             fillColor: Colors.grey.shade100,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.grayLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.grayLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.schneiderGreen),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  
+  Widget _buildDatePickerField({
+    required TextEditingController controller,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: AppColors.black,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          readOnly: true,
+          onTap: onTap,
+          cursorColor: AppColors.schneiderGreen,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
+          decoration: InputDecoration(
+            hintText: 'Pilih Tanggal (Opsional)',
+            hintStyle: const TextStyle(
+              fontSize: 12,
+              color: AppColors.gray,
+              fontWeight: FontWeight.w300
+            ),
+            suffixIcon: Row( 
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (controller.text.isNotEmpty) 
+                  IconButton(
+                    icon: const Icon(Icons.clear, color: AppColors.gray, size: 20),
+                    onPressed: () {
+                      setState(() {
+                        _selectedReceivedDate = null;
+                        _receivedDateController.clear();
+                      });
+                    },
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.calendar_month_outlined, color: AppColors.gray),
+                  onPressed: onTap,
+                ),
+              ],
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: AppColors.grayLight),
@@ -967,8 +1096,7 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
       children: [
         Text(
           label,
-          style:
-              const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -1012,13 +1140,11 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
     );
   }
 
-  // --- 3. TAMPILAN TOMBOL YANG SUDAH DIUBAH ---
   Widget _buildActionButtons() {
     return Row(
       children: [
         Expanded(
           child: OutlinedButton(
-            // Nonaktifkan tombol saat menyimpan
             onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1034,7 +1160,6 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton(
-            // Nonaktifkan tombol saat menyimpan
             onPressed: _isSaving ? null : _submit,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1044,7 +1169,6 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
                 borderRadius: BorderRadius.circular(6),
               ),
             ),
-            // Tampilkan loading atau teks "Simpan" berdasarkan state
             child: _isSaving
                 ? const SizedBox(
                     height: 20,
@@ -1055,6 +1179,224 @@ class _AddEditSRDialogState extends State<_AddEditSRDialog> {
                     ),
                   )
                 : const Text("Simpan"),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+
+class _AddNewSupplierSheet extends StatefulWidget {
+  const _AddNewSupplierSheet();
+  @override
+  State<_AddNewSupplierSheet> createState() => _AddNewSupplierSheetState();
+}
+
+class _AddNewSupplierSheetState extends State<_AddNewSupplierSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  AppRole _selectedRole = AppRole.g3;
+  bool _isSaving = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (_isSaving) return;
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isSaving = true);
+      Navigator.pop(context, {
+        'name': _nameController.text.trim(),
+        'role': _selectedRole,
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        16,
+        20,
+        MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                height: 5,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.grayLight,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              "Tambah Perusahaan Baru",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 24),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Company',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  cursorColor: AppColors.schneiderGreen,
+                  controller: _nameController,
+                  autofocus: true,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w300,
+                    color: AppColors.black,
+                  ),
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Nama tidak boleh kosong' : null,
+                  decoration: InputDecoration(
+                    fillColor: AppColors.white,
+                    filled: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.grayLight),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.grayLight),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: AppColors.schneiderGreen,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildRoleSelector(),
+            const SizedBox(height: 32),
+            _buildActionButtons(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Role',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 12,
+          children: AppRole.values
+              .where((role) =>
+                  role != AppRole.admin && role != AppRole.viewer)
+              .map((role) {
+            return _buildOptionButton(
+              label: role.name.toUpperCase(),
+              selected: _selectedRole == role,
+              onTap: () => setState(() => _selectedRole = role),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOptionButton({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final Color borderColor =
+        selected ? AppColors.schneiderGreen : AppColors.grayLight;
+    final Color color =
+        selected ? AppColors.schneiderGreen.withOpacity(0.08) : Colors.white;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: color,
+          border: Border.all(color: borderColor),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.w400,
+            fontSize: 12,
+            color: AppColors.black,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: _isSaving ? null : () => Navigator.pop(context),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              side: const BorderSide(color: AppColors.schneiderGreen),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            child: const Text(
+              "Batal",
+              style: TextStyle(color: AppColors.schneiderGreen, fontSize: 12),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _isSaving ? null : _save,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: AppColors.schneiderGreen,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            child: _isSaving
+                ? const SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : const Text("Simpan", style: TextStyle(fontSize: 12)),
           ),
         ),
       ],

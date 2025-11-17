@@ -7,13 +7,13 @@ class IssueCardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Helper widget untuk membuat placeholder abu-abu
+    
     Widget placeholder({double? width, double height = 14.0}) {
       return Container(
         height: height,
         width: width,
         decoration: BoxDecoration(
-          color: Colors.white, // Warna dasar untuk shimmer
+          color: Colors.white, 
           borderRadius: BorderRadius.circular(4),
         ),
       );
@@ -36,7 +36,7 @@ class IssueCardSkeleton extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Skeleton
+              
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Row(
@@ -55,18 +55,18 @@ class IssueCardSkeleton extends StatelessWidget {
                           placeholder(
                             width: 180,
                             height: 14,
-                          ), // Nama user & aksi
+                          ), 
                           const SizedBox(height: 6),
-                          placeholder(width: 80, height: 12), // Timestamp
+                          placeholder(width: 80, height: 12), 
                         ],
                       ),
                     ),
                     const SizedBox(width: 8),
-                    placeholder(width: 36, height: 36), // Ikon status
+                    placeholder(width: 36, height: 36), 
                   ],
                 ),
               ),
-              // Content Skeleton
+              
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                 child: Column(
@@ -75,21 +75,21 @@ class IssueCardSkeleton extends StatelessWidget {
                     placeholder(
                       width: MediaQuery.of(context).size.width * 0.6,
                       height: 20,
-                    ), // Judul
+                    ), 
                     const SizedBox(height: 8),
                     placeholder(
                       width: double.infinity,
                       height: 14,
-                    ), // Deskripsi baris 1
+                    ), 
                     const SizedBox(height: 4),
                     placeholder(
                       width: MediaQuery.of(context).size.width * 0.7,
                       height: 14,
-                    ), // Deskripsi baris 2
+                    ), 
                   ],
                 ),
               ),
-              // Photo Grid Skeleton (Opsional, jika ingin lebih detail)
+              
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: GridView.count(
@@ -98,7 +98,7 @@ class IssueCardSkeleton extends StatelessWidget {
                   crossAxisCount: 2,
                   crossAxisSpacing: 8,
                   mainAxisSpacing: 8,
-                  childAspectRatio: 1.25, // Sesuaikan rasio aspek
+                  childAspectRatio: 1.25, 
                   children: List.generate(
                     2,
                     (index) => ClipRRect(
@@ -108,7 +108,7 @@ class IssueCardSkeleton extends StatelessWidget {
                   ),
                 ),
               ),
-              // Footer Skeleton
+              
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                 child: Row(

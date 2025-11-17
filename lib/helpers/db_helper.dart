@@ -375,16 +375,18 @@ Future<Company?> getCompanyByUsername(String username) async {
 
   Future<List<Company>> getK3Vendors() => _getCompaniesByRole(AppRole.k3);
   Future<List<Company>> getK5Vendors() => _getCompaniesByRole(AppRole.k5);
+  Future<List<Company>> getG3Vendors() => _getCompaniesByRole(AppRole.g3);
   Future<List<Company>> getWHSVendors() =>
       _getCompaniesByRole(AppRole.warehouse);
 
-  Future<List<Company>> _getCompaniesByRole(AppRole role) async {
-    final List<dynamic> data = await _apiRequest(
-      'GET',
-      '/vendors?role=${role.name}',
-    );
-    return data.map((map) => Company.fromMap(map)).toList();
-  }
+    Future<List<Company>> _getCompaniesByRole(AppRole role) async {
+      final List<dynamic>? data = await _apiRequest( 
+        'GET',
+        '/vendors?role=${role.name}',
+      );
+      if (data == null) return []; 
+      return data.map((map) => Company.fromMap(map)).toList();
+    }
 
   // Change the isNoPpTaken function to parse the boolean from the API response
   Future<bool> isNoPpTaken(String noPp) async {
@@ -415,17 +417,6 @@ Future<Company?> getCompanyByUsername(String username) async {
   Future<int> insertPanel(Panel panel) async {
     await _apiRequest('POST', '/panels', body: panel.toMapForApi());
     return 1;
-  }
-
-  Future<Panel> changePanelNoPp(String oldNoPp, Panel updatedPanel) async {
-    final responseData = await _apiRequest(
-      'PUT',
-      '/panels/$oldNoPp/change-pp',
-      body: updatedPanel.toMapForApi(),
-    );
-    // Backend sekarang mengembalikan data panel yang sudah diupdate,
-    // kita parsing dan kembalikan sebagai objek Panel.
-    return Panel.fromMap(responseData);
   }
 
   Future<void> deletePanel(String noPp) async {
@@ -1523,60 +1514,86 @@ Future<Company?> getCompanyByUsername(String username) async {
     }
     return data.map((json) => ProductionSlot.fromJson(json)).toList();
   }
-Future<PanelDisplayData> transferPanelAction({
-    required String panelNoPp,
-    required String action,
-    required String actor,
-    String? slot,
-    DateTime? startDate,
-    DateTime? productionDate,
-    DateTime? fatDate,
-    DateTime? allDoneDate,
-    String? vendorId, 
-  }) async {
-    final url = '$_baseUrl/panels/$panelNoPp/transfer';
+  Future<PanelDisplayData> transferPanelAction({
+  required String panelNoPp,
+  required String action,
+  required String actor,
+  String? slot,
+  DateTime? startDate,
+  DateTime? productionDate,
+  DateTime? fatDate,
+  DateTime? allDoneDate,
+  String? vendorId,
+  String? newVendorRole,
+}) async {
+  final url = '$_baseUrl/panels/$panelNoPp/transfer';
 
-    final Map<String, dynamic> body = {
-      'action': action,
-      'actor': actor,
-    };
-    if (slot != null) {
-      body['slot'] = slot;
-    }
-    if (startDate != null) {
-      body['start_date'] = startDate.toUtc().toIso8601String();
-    }
-    if (productionDate != null) {
-      body['production_date'] = productionDate.toUtc().toIso8601String();
-    }
-    if (fatDate != null) {
-      body['fat_date'] = fatDate.toUtc().toIso8601String();
-    }
-    if (allDoneDate != null) {
-      body['all_done_date'] = allDoneDate.toUtc().toIso8601String();
-    }
-    if (vendorId != null) {
-      body['vendor_id'] = vendorId;
-    }
+  final Map<String, dynamic> body = {
+    'action': action,
+    'actor': actor,
+  };
+  if (slot != null) {
+    body['slot'] = slot;
+  }
+  if (startDate != null) {
+    body['start_date'] = startDate.toUtc().toIso8601String();
+  }
+  if (productionDate != null) {
+    body['production_date'] = productionDate.toUtc().toIso8601String();
+  }
+  if (fatDate != null) {
+    body['fat_date'] = fatDate.toUtc().toIso8601String();
+  }
+  if (allDoneDate != null) {
+    body['all_done_date'] = allDoneDate.toUtc().toIso8601String();
+  }
+  if (vendorId != null) {
+    body['vendorId'] = vendorId;
+  }
+  if (newVendorRole != null) {
+    body['newVendorRole'] = newVendorRole;
+  }
+  try {
+    final responseData = await _apiRequest(
+      'POST',
+      url.substring(_baseUrl.length),
+      body: body,
+    );
 
-    try {
-      final responseData = await _apiRequest(
-        'POST',
-        url.substring(_baseUrl.length),
-        body: body,
-      );
-
-      if (responseData != null) {
-        // [PERBAIKAN] Langsung gunakan factory dari PanelDisplayData
+    if (responseData is Map<String, dynamic>) {
+      if (responseData.containsKey('panel')) {
         return PanelDisplayData.fromJson(responseData);
       } else {
-        throw Exception('Failed to transfer panel: No data received from server');
+        throw Exception(
+          'Failed to transfer panel: Server returned an unexpected response.',
+        );
       }
-    } catch (e) {
-      rethrow;
+    } else {
+      throw Exception(
+        'Failed to transfer panel: Invalid response from server. Expected a Map, got ${responseData.runtimeType}',
+      );
     }
-  }
 
+  } catch (e) {
+    rethrow;
+  }
+}
+
+Future<Panel> changePanelNoPp(String oldNoPp, Panel updatedPanel) async {
+  final responseData = await _apiRequest(
+    'PUT',
+    '/panels/$oldNoPp/change-pp',
+    body: updatedPanel.toMapForApi(),
+  );
+
+  if (responseData is Map<String, dynamic>) {
+    return Panel.fromMap(responseData);
+  } else {
+    throw Exception(
+      'Failed to change Panel No PP: Invalid response from server. Expected a Map, got ${responseData.runtimeType}',
+    );
+  }
+}
 Future<void> registerDeviceToken({
     required String username,
     required String token,

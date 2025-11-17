@@ -44,7 +44,6 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
-          // Tampilkan counter gambar, misal: "2 of 5"
           '${_currentIndex + 1} of ${widget.photos.length}',
           style: const TextStyle(
             color: Colors.white,

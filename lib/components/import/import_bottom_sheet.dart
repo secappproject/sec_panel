@@ -21,7 +21,7 @@ class ImportBottomSheet extends StatefulWidget {
 class _ImportBottomSheetState extends State<ImportBottomSheet> {
   bool _isProcessing = false;
   String _statusText = "Ketuk untuk memilih file";
-  String _selectedTemplateType = 'panels_and_relations'; // Value baru
+  String _selectedTemplateType = 'panels_and_relations'; 
   String _selectedTemplateFormat = 'xlsx';
   bool _isDownloading = false;
 
@@ -201,9 +201,9 @@ class _ImportBottomSheetState extends State<ImportBottomSheet> {
                 ),
               ),
             ),
-            // const SizedBox(height: 24),
-            // _buildTemplateDownloaderCard(),
-            // const Divider(height: 40, color: AppColors.grayLight),
+            
+            
+            
             const Text(
               "Upload Data",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w400),

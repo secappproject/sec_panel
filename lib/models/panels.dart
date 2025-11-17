@@ -1,4 +1,4 @@
-// lib/models/panels.dart
+
 
 import 'dart:convert';
 
@@ -27,6 +27,7 @@ class Panel {
   DateTime? closeDateBusbarMcc;
   String? statusPenyelesaian;
   String? productionSlot;
+  
 
   Panel({
     required this.noPp,

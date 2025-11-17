@@ -1,18 +1,18 @@
-// lib/components/export/export_bottom_sheet.dart
+
 import 'package:flutter/material.dart';
 import 'package:secpanel/models/company.dart';
-import 'package:secpanel/models/paneldisplaydata.dart'; // <-- Import yang mungkin dibutuhkan
+import 'package:secpanel/models/paneldisplaydata.dart'; 
 import 'package:secpanel/theme/colors.dart';
 
 class PreviewBottomSheet extends StatefulWidget {
   final Company currentUser;
-  // [PERBAIKAN 1] Tambahkan variabel untuk menerima data terfilter
+  
   final List<PanelDisplayData> filteredPanels;
 
   const PreviewBottomSheet({
     super.key,
     required this.currentUser,
-    // [PERBAIKAN 2] Tambahkan parameter di constructor
+    
     required this.filteredPanels,
   });
 
@@ -156,7 +156,7 @@ class _PreviewBottomSheetState extends State<PreviewBottomSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // [PERBAIKAN 3] Tampilkan jumlah panel yang akan diekspor
+                  
                   _buildSectionTitle(
                     "Pilih Data untuk Di-extract",
                     subtitle:

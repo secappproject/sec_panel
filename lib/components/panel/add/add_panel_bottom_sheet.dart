@@ -39,7 +39,7 @@ class _AddPanelBottomSheetState extends State<AddPanelBottomSheet> {
   bool _isLoading = false;
   bool _isSuccess = false;
 
-  // State untuk tipe panel
+  
   String? _selectedPanelType;
   final List<String> panelTypeOptions = const ["MCCF", "MCCW", "PCC"];
 
@@ -200,21 +200,21 @@ class _AddPanelBottomSheetState extends State<AddPanelBottomSheet> {
   }
 
   Future<void> _savePanel() async {
-    // Mencegah penekanan tombol berulang kali saat sedang proses
+    
     if (_isLoading || _isSuccess) return;
 
     setState(() => _isLoading = true);
 
-    // Ambil nilai No. PP dari controller
+    
     String noPp = _noPpController.text.trim();
 
-    // Cek jika No. PP dikosongkan oleh pengguna
+    
     if (noPp.isEmpty) {
-      // Jika kosong, generate ID unik sementara menggunakan timestamp
+      
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       noPp = 'TEMP_PP_$timestamp';
     } else {
-      // Jika tidak kosong, baru jalankan pengecekan duplikasi ke database
+      
       final isPpTaken = await DatabaseHelper.instance.isNoPpTaken(noPp);
       if (isPpTaken) {
         if (mounted) {
@@ -226,14 +226,14 @@ class _AddPanelBottomSheetState extends State<AddPanelBottomSheet> {
           );
           setState(() => _isLoading = false);
         }
-        return; // Hentikan proses jika No. PP sudah ada
+        return; 
       }
     }
 
-    // Lanjutkan proses penyimpanan dengan data yang sudah siap
+    
     try {
       final newPanel = Panel(
-        noPp: noPp, // Gunakan noPp yang sudah diproses (bisa asli atau TEMP)
+        noPp: noPp, 
         noPanel: _noPanelController.text.trim(),
         noWbs: _noWbsController.text.trim(),
         project: _projectController.text.trim(),
@@ -242,7 +242,7 @@ class _AddPanelBottomSheetState extends State<AddPanelBottomSheet> {
         startDate: _selectedDate,
         createdBy: widget.currentCompany.id,
         vendorId: _selectedK3VendorId,
-        panelType: _selectedPanelType, // Tipe panel boleh null (tidak wajib)
+        panelType: _selectedPanelType, 
         statusBusbarPcc: "On Progress",
         statusBusbarMcc: "On Progress",
         statusComponent: "Open",
@@ -250,10 +250,10 @@ class _AddPanelBottomSheetState extends State<AddPanelBottomSheet> {
         statusCorepart: "Open",
       );
 
-      // Kirim data panel baru ke database
+      
       await DatabaseHelper.instance.insertPanel(newPanel);
 
-      // Buat relasi untuk Palet dan Corepart jika vendor K3 dipilih
+      
       if (_selectedK3VendorId != null && _selectedK3VendorId!.isNotEmpty) {
         await DatabaseHelper.instance.upsertPalet(
           Palet(panelNoPp: newPanel.noPp, vendor: _selectedK3VendorId!),
@@ -263,29 +263,29 @@ class _AddPanelBottomSheetState extends State<AddPanelBottomSheet> {
         );
       }
 
-      // Buat relasi untuk Component ke Warehouse
+      
       await DatabaseHelper.instance.upsertComponent(
         Component(panelNoPp: newPanel.noPp, vendor: 'warehouse'),
       );
 
-      // Tampilkan feedback sukses
+      
       setState(() {
         _isLoading = false;
         _isSuccess = true;
       });
 
-      // Beri jeda sejenak agar user bisa melihat ikon centang
+      
       await Future.delayed(const Duration(milliseconds: 1500));
 
-      // Jika proses masih berjalan (widget belum di-dispose)
+      
       if (mounted) {
-        // Panggil callback untuk memberitahu layar utama agar me-refresh list
+        
         widget.onPanelAdded(newPanel);
-        // Tutup bottom sheet
+        
         Navigator.pop(context);
       }
     } catch (e) {
-      // Tangani jika terjadi error saat proses penyimpanan
+      
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -403,15 +403,15 @@ class _AddPanelBottomSheetState extends State<AddPanelBottomSheet> {
                 return '0-100';
               }
             }
-            // Validator untuk field non-angka
+            
             if (!isNumber && (value == null || value.isEmpty)) {
               return 'Field ini tidak boleh kosong';
             }
-            return null; // Lolos validasi
+            return null; 
           },
 
           decoration: InputDecoration(
-            hintText: 'Masukkan $label', // Tambahkan placeholder
+            hintText: 'Masukkan $label', 
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 12,

@@ -26,12 +26,12 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _descriptionController;
 
-  // --- PERUBAHAN 1: Mengadopsi state dari AddIssueBottomSheet ---
+  
   List<Map<String, dynamic>> _issueTitleOptions = [];
   String? _selectedTitle;
   bool _isLoadingTitles = true;
   bool _isAdmin = false;
-  // --- Akhir Perubahan 1 ---
+  
 
   bool _isLoading = false;
 
@@ -41,14 +41,14 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
     _descriptionController = TextEditingController(
       text: widget.existingIssue.description,
     );
-    // Langsung set root cause yang sudah ada
+    
     _selectedTitle = widget.existingIssue.title;
 
-    // Mulai memuat data dinamis
+    
     _initializeData();
   }
 
-  // --- PERUBAHAN 2: Menambahkan semua fungsi helper dari AddIssueBottomSheet ---
+  
   Future<void> _initializeData() async {
     await _checkUserRole();
     await _loadIssueTitles();
@@ -92,7 +92,7 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
       if (mounted) setState(() => _isLoadingTitles = false);
     }
   }
-  // --- Akhir Perubahan 2 ---
+  
 
   @override
   void dispose() {
@@ -119,7 +119,7 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
       final username = prefs.getString('loggedInUsername') ?? 'unknown_user';
 
       final issueData = {
-        'issue_title': _selectedTitle, // Menggunakan state dinamis
+        'issue_title': _selectedTitle, 
         'issue_description': _descriptionController.text.trim(),
         'issue_status': widget.existingIssue.status,
         'updated_by': username,
@@ -131,7 +131,7 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
       );
 
       if (mounted) {
-        // Tampilkan snackbar sukses dan panggil callback
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Issue berhasil diperbarui'),
@@ -139,7 +139,7 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
           ),
         );
         widget.onIssueSaved();
-        Navigator.pop(context); // Tutup bottom sheet setelah sukses
+        Navigator.pop(context); 
       }
     } catch (e) {
       if (mounted) {
@@ -157,7 +157,7 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
     }
   }
 
-  // --- PERUBAHAN 3: Menambahkan fungsi untuk menampilkan form manajemen root cause ---
+  
   Future<void> _showAddTitleSheet() async {
     final bool? success = await showModalBottomSheet<bool>(
       context: context,
@@ -193,7 +193,7 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
       _loadIssueTitles();
     }
   }
-  // --- Akhir Perubahan 3 ---
+  
 
   @override
   Widget build(BuildContext context) {
@@ -227,9 +227,9 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 24),
-              // --- PERUBAHAN 4: Menggunakan widget selector dinamis ---
+              
               _buildIssueTitleSelector(),
-              // --- Akhir Perubahan 4 ---
+              
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _descriptionController,
@@ -287,7 +287,7 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
     );
   }
 
-  // --- PERUBAHAN 5: Menambahkan semua widget builder dari AddIssueBottomSheet ---
+  
   Widget _buildIssueTitleSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -425,7 +425,7 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
       ),
     );
   }
-  // --- Akhir Perubahan 5 ---
+  
 
   Widget _buildActionButtons() {
     return Row(
@@ -473,9 +473,9 @@ class _IssueFormBottomSheetState extends State<IssueFormBottomSheet> {
   }
 }
 
-// --- PERUBAHAN 6: Menambahkan semua widget helper sheet di akhir file ---
 
-/// Bottom sheet untuk menambah root cause baru.
+
+
 class _AddNewIssueTitleSheet extends StatefulWidget {
   const _AddNewIssueTitleSheet();
 
@@ -633,7 +633,7 @@ class _AddNewIssueTitleSheetState extends State<_AddNewIssueTitleSheet> {
   }
 }
 
-/// Bottom sheet untuk mengedit atau menghapus root cause.
+
 class _EditIssueTitleSheet extends StatefulWidget {
   final Map<String, dynamic> titleData;
   const _EditIssueTitleSheet({required this.titleData});

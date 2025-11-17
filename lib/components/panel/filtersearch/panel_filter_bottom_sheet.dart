@@ -53,7 +53,7 @@ class PanelFilterBottomSheet extends StatefulWidget {
   final IssueFilter selectedIssueStatus;
   final SrFilter selectedSrStatus;
   
-  // [BARU] Properti untuk filter Position
+  
   final List<String> selectedPositions;
   final Function(List<String>) onPositionsChanged;
 
@@ -130,7 +130,7 @@ class PanelFilterBottomSheet extends StatefulWidget {
     required this.selectedSrStatus,
     required this.onSrStatusChanged,
     
-    // [BARU] Tambahkan di constructor
+    
     required this.selectedPositions,
     required this.onPositionsChanged,
 
@@ -178,7 +178,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
   late IssueFilter _selectedIssueStatus;
   late SrFilter _selectedSrStatus;
 
-  // [BARU] State lokal untuk Position
+  
   late List<String> _selectedPositions;
 
   late DateTimeRange? _startDateRange;
@@ -190,7 +190,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
   late DateFilterType _deliveryDateStatus;
   late DateFilterType _closedDateStatus;
 
-  // [BARU] Opsi untuk filter Position
+  
   final List<String> positionOptions = [
     "Warehouse",
     "Subcontractor",
@@ -229,7 +229,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
     _selectedIssueStatus = widget.selectedIssueStatus;
     _selectedSrStatus = widget.selectedSrStatus;
 
-    // [BARU] Inisialisasi state Position
+    
     _selectedPositions = List.from(widget.selectedPositions);
 
     _startDateRange = widget.startDateRange;
@@ -274,7 +274,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
     widget.onIssueStatusChanged(_selectedIssueStatus);
     widget.onSrStatusChanged(_selectedSrStatus);
     
-    // [BARU] Panggil callback untuk Position
+    
     widget.onPositionsChanged(_selectedPositions);
 
     widget.onStartDateRangeChanged(_startDateRange);
@@ -631,7 +631,7 @@ class _PanelFilterBottomSheetState extends State<PanelFilterBottomSheet> {
                   ),
                   const SizedBox(height: 24),
                   
-                  // [BARU] UI untuk filter Position
+                  
                   const Text(
                     "Position",
                     style: TextStyle(fontWeight: FontWeight.w500),

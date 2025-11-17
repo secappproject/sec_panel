@@ -1,10 +1,10 @@
-// filename: lib/components/bulkdelete/bulk_delete_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/models/paneldisplaydata.dart';
 import 'package:secpanel/theme/colors.dart';
 
-// Class untuk membawa hasil kembali ke halaman utama
+
 class BulkDeleteResult {
   final bool success;
   final String message;
@@ -27,7 +27,7 @@ class BulkDeleteBottomSheet extends StatefulWidget {
   });
 
   @override
-  // Ganti State
+  
   State<BulkDeleteBottomSheet> createState() => _BulkDeleteBottomSheetState();
 }
 
@@ -187,18 +187,18 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
         await DatabaseHelper.instance.deletePanel(noPp);
         _dataHasChanged = true;
         
-        // Hapus dari daftar terpilih dan perbarui UI lokal
+        
         setState(() {
           _selectedPanelPks.remove(noPp);
-          // Karena kita tidak memuat ulang data dari DB di sini,
-          // user harus menutup sheet untuk melihat perubahan di HomeScreen.
-          // Untuk menghilangkan panel dari tampilan BulkDelete, 
-          // kita perlu mengubah cara BulkDeleteBottomSheet mendapatkan datanya.
-          // Saat ini kita tidak akan menghapus secara lokal di sini, 
-          // hanya memperbarui _selectedPanelPks dan mengandalkan refresh HomeScreen.
+          
+          
+          
+          
+          
+          
         });
         
-        // Cukup tutup bottom sheet dengan pesan sukses
+        
         if (mounted) {
             Navigator.of(context).pop(
                 BulkDeleteResult(
@@ -262,7 +262,7 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final panelsToDisplay = _filteredAndSearchedPanels; // Gunakan getter baru
+    final panelsToDisplay = _filteredAndSearchedPanels; 
     final isSelectionEmpty = _selectedPanelPks.isEmpty;
     final isListEmpty = panelsToDisplay.isEmpty;
     
@@ -270,14 +270,14 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
       canPop: !_isDeleting,
       onPopInvoked: (didPop) {
         if (!didPop) return;
-        // Kembalikan status dataHasChanged saat ditutup secara manual
-        // Navigator.of(context).pop(
-        //       BulkDeleteResult(
-        //           success: true,
-        //           message: '',
-        //           dataHasChanged: _dataHasChanged,
-        //       ),
-        //   );
+        
+        
+        
+        
+        
+        
+        
+        
       },
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.85,
@@ -441,14 +441,14 @@ class _BulkDeleteBottomSheetState extends State<BulkDeleteBottomSheet> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      // [PERBAIKAN] Tombol tutup sekarang mengirimkan hasil yang benar.
+                      
                       onPressed: _isDeleting
                           ? null
                           : () => Navigator.of(context).pop(
                                 BulkDeleteResult(
                                   success:
-                                      true, // Dianggap sukses karena tidak ada error
-                                  message: '', // Tidak ada pesan
+                                      true, 
+                                  message: '', 
                                   dataHasChanged: _dataHasChanged,
                                 ),
                               ),

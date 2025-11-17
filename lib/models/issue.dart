@@ -19,11 +19,11 @@ String? _parseString(dynamic jsonValue) {
   return jsonValue.toString();
 }
 const List<Color> _userAvatarColors = [
-  Color(0xFFFF5DD1), // Pink
-  Color(0xFF0400FF), // Blue
-  Color(0xFF00B2FF), // Light Blue
-  Color(0xFFFF9E50), // Orange
-  Color(0xFFFF0000), // Red
+  Color(0xFFFF5DD1), 
+  Color(0xFF0400FF), 
+  Color(0xFF00B2FF), 
+  Color(0xFFFF9E50), 
+  Color(0xFFFF0000), 
 ];
 
 Color _getColorForUser(String userId) {
@@ -34,7 +34,7 @@ Color _getColorForUser(String userId) {
 class User {
   final String id;
   final String name;
-  // Bagian avatar ini bisa tetap ada, akan di-generate di client-side
+  
   final String avatarInitials;
   final Color avatarColor;
 
@@ -44,7 +44,7 @@ class User {
           : '??',
       avatarColor = _getColorForUser(id);
 
-  // ▼▼▼ TAMBAHKAN FACTORY CONSTRUCTOR INI ▼▼▼
+  
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'] ?? 'unknown',
@@ -73,7 +73,7 @@ class LogEntry {
 class Photo {
   final int id;
   final int issueId;
-  final String photoData; // base64 string
+  final String photoData; 
 
   Photo({required this.id, required this.issueId, required this.photoData});
 
@@ -89,7 +89,7 @@ class Photo {
 class Issue {
   final int id;
   final int chatId;
-  final String title; // This now holds the issue type
+  final String title; 
   final String description;
   final String status;
   final List<LogEntry> logs;
@@ -171,7 +171,7 @@ class IssueWithPhotos extends Issue {
           .toList();
     }
 
-    // Use the parent's factory to build the base Issue object
+    
     final issuePart = Issue.fromJson(json);
 
     return IssueWithPhotos(
@@ -232,7 +232,7 @@ class IssueComment {
     );
   }
 
-  // Factory constructor untuk membuat objek dari JSON
+  
   factory IssueComment.fromJson(Map<String, dynamic> json) {
     return IssueComment(
       id: json['id'],

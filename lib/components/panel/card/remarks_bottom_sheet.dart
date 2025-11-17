@@ -1,4 +1,4 @@
-// lib/components/panel/card/remarks_bottom_sheet.dart
+
 
 import 'package:flutter/material.dart';
 import 'package:secpanel/theme/colors.dart';
@@ -44,7 +44,7 @@ class RemarksBottomSheet extends StatelessWidget {
               const Icon(Icons.notes_rounded, color: AppColors.schneiderGreen),
               const SizedBox(width: 8),
               Text(
-                title, // <-- Gunakan title dari parameter
+                title, 
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w500,
@@ -58,7 +58,7 @@ class RemarksBottomSheet extends StatelessWidget {
               maxHeight: MediaQuery.of(context).size.height * 0.4,
             ),
             child: remarksMap.isEmpty
-                ? const Center(/* ... */)
+                ? const Center()
                 : ListView.separated(
                     shrinkWrap: true,
                     itemCount: entries.length,
@@ -68,7 +68,7 @@ class RemarksBottomSheet extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            entry.key, // Nama Vendor
+                            entry.key, 
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
@@ -77,7 +77,7 @@ class RemarksBottomSheet extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            entry.value ?? '(Tidak ada komentar)', // Remark
+                            entry.value ?? '(Tidak ada komentar)', 
                             style: const TextStyle(
                               color: AppColors.black,
                               fontSize: 14,

@@ -1,4 +1,4 @@
-// 1. TAMBAHKAN IMPORT INI DI BAGIAN ATAS
+
 import 'dart:io'; 
 
 import 'package:flutter/material.dart';
@@ -10,18 +10,18 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:secpanel/session_timeout_manager.dart';
 
-// Tambahan Firebase
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
 
-// Handler pesan background
+
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   print("Pesan FCM (background): ${message.notification?.title}");
 }
 
-// 2. LETAKKAN KELAS INI DI SINI, DI LUAR FUNGSI main()
+
 class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
@@ -34,20 +34,20 @@ class MyHttpOverrides extends HttpOverrides {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 3. TERAPKAN PENGATURAN GLOBAL DI SINI, SEBELUM runApp()
+  
   HttpOverrides.global = MyHttpOverrides();
 
   await initializeDateFormatting('id_ID', null);
 
-  // Init Firebase
+  
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Register handler background
+  
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // Ambil prefs login
+  
   final prefs = await SharedPreferences.getInstance();
   final companyId = prefs.getString('companyId');
 

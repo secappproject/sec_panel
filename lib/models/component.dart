@@ -1,7 +1,7 @@
 class Component {
   int? id;
-  String panelNoPp; // Foreign Key ke Panel.noPp
-  String vendor; // Foreign Key ke User.id
+  String panelNoPp; 
+  String vendor; 
   Component({this.id, required this.panelNoPp, required this.vendor});
 
   Map<String, dynamic> toMap() {

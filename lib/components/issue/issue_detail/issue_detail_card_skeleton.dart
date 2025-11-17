@@ -15,7 +15,7 @@ class IssueDetailCardSkeleton extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -43,7 +43,7 @@ class IssueDetailCardSkeleton extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            // Action Buttons
+            
             Row(
               children: [
                 Expanded(
@@ -68,7 +68,7 @@ class IssueDetailCardSkeleton extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 24),
-            // Details
+            
             Container(height: 12, width: 80, color: Colors.white),
             const SizedBox(height: 8),
             Container(height: 11, width: double.infinity, color: Colors.white),
@@ -77,7 +77,7 @@ class IssueDetailCardSkeleton extends StatelessWidget {
             const SizedBox(height: 4),
             Container(height: 11, width: 180, color: Colors.white),
             const SizedBox(height: 24),
-            // Photos
+            
             SizedBox(
               height: 100,
               child: ListView.separated(
@@ -97,7 +97,7 @@ class IssueDetailCardSkeleton extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            // Activity Log
+            
             Container(
               padding: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(

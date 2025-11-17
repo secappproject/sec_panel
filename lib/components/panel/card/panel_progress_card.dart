@@ -1,11 +1,10 @@
-// lib/components/panel/card/panel_progress_card.dart
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
+
 import 'package:intl/intl.dart';
 import 'package:secpanel/components/additionalsr/additionalsr_bottom_sheet.dart';
 import 'package:secpanel/components/issue/panel_issue_screen.dart';
-// AlertBox tidak lagi digunakan di sini, bisa dihapus jika tidak ada referensi lain
-// import 'package:secpanel/components/alert_box.dart';
 import 'package:secpanel/components/panel/card/remarks_bottom_sheet.dart';
 import 'package:secpanel/models/approles.dart';
 import 'package:secpanel/models/busbarremark.dart';
@@ -58,6 +57,7 @@ class PanelProgressCard extends StatelessWidget {
   final String componentVendorName;
   final String paletVendorName;
   final String corepartVendorName;
+  final String g3VendorNames;
   final bool isClosed;
   final DateTime? closedDate;
   final String? panelRemarks;
@@ -93,11 +93,12 @@ class PanelProgressCard extends StatelessWidget {
     required this.componentVendorName,
     required this.paletVendorName,
     required this.corepartVendorName,
+    required this.g3VendorNames,
     required this.isClosed,
     this.closedDate,
     this.panelRemarks,
     required this.busbarRemarks,
-    required this.additionalSrCount, 
+    required this.additionalSrCount,
   });
 
   void _showRemarksBottomSheet(
@@ -117,7 +118,6 @@ class PanelProgressCard extends StatelessWidget {
   }
 
   AlertInfo? _getAlertInfo() {
-    // Jika targetDelivery tidak diatur atau tidak valid
     if (targetDelivery == null) {
       return AlertInfo(
         title: "Belum Diatur",
@@ -140,7 +140,6 @@ class PanelProgressCard extends StatelessWidget {
       'd MMM yyyy',
       'id_ID',
     ).format(targetDelivery!);
-    // Deskripsi singkat untuk chip
     String shortDesc = "";
     if (differenceInDays < 0) {
       shortDesc = "Telat ${differenceInDays.abs()} hari ($formattedDate)";
@@ -196,15 +195,6 @@ class PanelProgressCard extends StatelessWidget {
     return 'assets/images/progress-bolt-blue.png';
   }
 
-  // String _getBusbarStatusImage(String status) {
-  //   final lower = status.toLowerCase();
-  //   if (lower.contains('on progress')) return 'assets/images/new-yellow.png';
-  //   if (lower.contains('close')) return 'assets/images/done-green.png';
-  //   if (lower.contains('siap 100%')) return 'assets/images/done-blue.png';
-  //   if (lower.contains('red block')) return 'assets/images/on-block-red.png';
-  //   return 'assets/images/no-status-gray.png';
-  // }
-
   String _getBusbarStatusImage(String status) {
     final lower = status.toLowerCase();
     if (lower.contains('open')) return 'assets/images/no-status-gray.png';
@@ -235,12 +225,12 @@ class PanelProgressCard extends StatelessWidget {
 
   String _getPaletStatusImage(String status) =>
       status.toLowerCase().contains('close')
-      ? 'assets/images/done-green.png'
-      : 'assets/images/no-status-gray.png';
+          ? 'assets/images/done-green.png'
+          : 'assets/images/no-status-gray.png';
   String _getCorepartStatusImage(String status) =>
       status.toLowerCase().contains('close')
-      ? 'assets/images/done-green.png'
-      : 'assets/images/no-status-gray.png';
+          ? 'assets/images/done-green.png'
+          : 'assets/images/no-status-gray.png';
 
   Widget _buildStatusChip() {
     AlertInfo? alert;
@@ -260,7 +250,7 @@ class PanelProgressCard extends StatelessWidget {
     }
 
     if (alert == null) {
-      return const SizedBox.shrink(); // Tidak menampilkan apa-apa jika tidak ada alert
+      return const SizedBox.shrink();
     }
 
     return Padding(
@@ -292,28 +282,26 @@ class PanelProgressCard extends StatelessWidget {
       ),
     );
   }
+
   Widget _buildPanelPosition() {
-    // Tentukan status default jika null atau kosong
-    // final status = statusPenyelesaian ?? 'VendorWarehouse';
     final status = statusPenyelesaian ??
-    (closedPanel != null
-        ? 'Warehouse ${DateFormat('dd MMM yyyy, HH:mm').format(closedPanel!)}'
-        : 'Warehouse (Not Closed Yet)');
+        (closedPanel != null
+            ? 'Warehouse ${DateFormat('dd MMM yyyy, HH:mm').format(closedPanel!)}'
+            : 'Warehouse (Not Closed Yet)');
 
     String positionText;
     String iconPath;
 
     switch (status) {
       case 'Production':
-        // Jika di produksi, tampilkan juga nomor slotnya
         positionText = 'Production (${RegExp(r'Cell\s+\d+')
                                     .firstMatch(productionSlot!)
                                     ?.group(0) ?? productionSlot! ?? 'N/A'})';
         iconPath = 'assets/images/production.png';
         break;
       case 'Subcontractor':
-        positionText = 'Subcon $panelVendorName';
-        iconPath = 'assets/images/production.png'; 
+        positionText = 'Subcon ${g3VendorNames.isNotEmpty ? g3VendorNames : 'N/A'}';
+        iconPath = 'assets/images/production.png';
         break;
       case 'FAT':
         positionText = 'FAT';
@@ -325,13 +313,6 @@ class PanelProgressCard extends StatelessWidget {
         break;
       case 'VendorWarehouse':
       default:
-        // Gabungkan nama vendor dan warehouse
-        // List<String> locations = [];
-        // if (panelVendorName.isNotEmpty) locations.add(panelVendorName);
-        // if (componentVendorName.isNotEmpty) locations.add(componentVendorName);
-
-        // positionText = locations.isEmpty ? 'Vendor/WHS' : locations.join(' & ');
-
         positionText = closedPanel != null
             ? 'Warehouse (${DateFormat('dd MMM yyyy').format(closedPanel!)})'
             : 'Warehouse (Not Closed Yet)';
@@ -355,6 +336,7 @@ class PanelProgressCard extends StatelessWidget {
       ],
     );
   }
+
   @override
   Widget build(BuildContext context) {
     final bool isTemporary = ppNumber.startsWith('TEMP_PP_');
@@ -362,42 +344,28 @@ class PanelProgressCard extends StatelessWidget {
     final bool hasPanelRemarks =
         panelRemarks != null && panelRemarks!.trim().isNotEmpty;
 
-    // final String pccDisplayStatus = statusBusbarPcc.isEmpty
-    //     ? 'On Progress'
-    //     : statusBusbarPcc;
-    // final String mccDisplayStatus = statusBusbarMcc.isEmpty
-    //     ? 'On Progress'
-    //     : statusBusbarMcc;
-    final String displayStatus = statusBusbar.isEmpty
-        ? 'Progress'
-        : statusBusbar;
-    final String componentDisplayStatus = statusComponent.isEmpty
-        ? 'Open'
-        : statusComponent;
-    final String paletDisplayStatus = statusPalet.isEmpty
-        ? 'Open'
-        : statusPalet;
-    final String corepartDisplayStatus = statusCorepart.isEmpty
-        ? 'Open'
-        : statusCorepart;
+    final String displayStatus =
+        statusBusbar.isEmpty ? 'Progress' : statusBusbar;
+    final String componentDisplayStatus =
+        statusComponent.isEmpty ? 'Open' : statusComponent;
+    final String paletDisplayStatus =
+        statusPalet.isEmpty ? 'Open' : statusPalet;
+    final String corepartDisplayStatus =
+        statusCorepart.isEmpty ? 'Open' : statusCorepart;
 
     final bool isFuture =
         startDate != null && startDate!.isAfter(DateTime.now());
 
     final String durationLabel = isFuture ? "Mulai Dalam" : "Durasi Proses";
-    final String displayDuration = startDate == null
-        ? "Belum Diatur"
-        : duration;
-    final String displayPanelType = panelType.isEmpty
-        ? "Belum Diatur"
-        : panelType;
-    final String displayPanelTitle = panelTitle.isEmpty
-        ? "Belum Diatur"
-        : panelTitle;
+    final String displayDuration =
+        startDate == null ? "Belum Diatur" : duration;
+    final String displayPanelType =
+        panelType.isEmpty ? "Belum Diatur" : panelType;
+    final String displayPanelTitle =
+        panelTitle.isEmpty ? "Belum Diatur" : panelTitle;
     final String displayPpNumber = isTemporary ? "Belum Diatur" : ppNumber;
-    final String displayWbsNumber = wbsNumber.isEmpty
-        ? "Belum Diatur"
-        : wbsNumber;
+    final String displayWbsNumber =
+        wbsNumber.isEmpty ? "Belum Diatur" : wbsNumber;
     final String displayProject = project.isEmpty ? "Belum Diatur" : project;
 
     return Padding(
@@ -408,14 +376,6 @@ class PanelProgressCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: const BorderRadius.all(Radius.circular(8)),
           border: Border.all(width: 1, color: AppColors.grayLight),
-          // boxShadow: [
-          //   BoxShadow(
-          //     color: Colors.grey.withOpacity(0.08),
-          //     spreadRadius: 1,
-          //     blurRadius: 0.5,
-          //     offset: const Offset(0, 2),
-          //   ),
-          // ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -475,22 +435,28 @@ class PanelProgressCard extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                           const Text(
-                            "Position:",
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w300, color: AppColors.gray),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                "Position:",
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w300,
+                                    color: AppColors.gray),
+                              ),
+                              SizedBox(
+                                width: 8,
+                              ),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: _buildPanelPosition(),
+                              ),
+                            ],
                           ),
-                          SizedBox(width: 8,),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: _buildPanelPosition(),
+                          SizedBox(
+                            height: 8,
                           ),
-                        ],
-                      ),
-                          
-                          SizedBox(height: 8,),
                           Row(
                             children: [
                               Container(
@@ -524,8 +490,6 @@ class PanelProgressCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      // const SizedBox(height: 4),
-                      // _buildStatusChip(),
                     ],
                   ),
                 ],
@@ -551,7 +515,6 @@ class PanelProgressCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      // _buildStatusChip(),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -561,29 +524,28 @@ class PanelProgressCard extends StatelessWidget {
                         child: _buildStatusColumn(
                           "Busbar",
                           (displayStatus == "100% Siap Kirim")
-                          ? "Ready" : 
-                          (displayStatus == "On Progress")
-                          ? "Progress" : 
-                          displayStatus,
+                              ? "Ready"
+                              : (displayStatus == "On Progress")
+                                  ? "Progress"
+                                  : displayStatus,
                           _getBusbarStatusImage(statusBusbar),
                         ),
                       ),
-                      SizedBox(width: 4,),
+                      SizedBox(
+                        width: 4,
+                      ),
                       Expanded(
                         child: _buildStatusColumn(
                           "Comp.",
-                          componentDisplayStatus == "On Progress" ? "Progress" : componentDisplayStatus,
+                          componentDisplayStatus == "On Progress"
+                              ? "Progress"
+                              : componentDisplayStatus,
                           _getComponentStatusImage(statusComponent),
                         ),
                       ),
-                      // SizedBox(
-                      //   width: 64,
-                      //   child: Align(
-                      //     alignment: Alignment.centerRight,
-                      //     child: _buildEditButton(),
-                      //   ),
-                      // ),
-                      SizedBox(width: 4,),
+                      SizedBox(
+                        width: 4,
+                      ),
                       Expanded(
                         child: _buildStatusColumn(
                           "Palet",
@@ -591,7 +553,9 @@ class PanelProgressCard extends StatelessWidget {
                           _getPaletStatusImage(statusPalet),
                         ),
                       ),
-                      SizedBox(width: 4,),
+                      SizedBox(
+                        width: 4,
+                      ),
                       Container(
                         width: 60,
                         child: _buildStatusColumn(
@@ -602,36 +566,12 @@ class PanelProgressCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  // Row(
-                  //   children: [
-                  //     Expanded(
-                  //       child: _buildStatusColumn(
-                  //         "Palet",
-                  //         paletDisplayStatus,
-                  //         _getPaletStatusImage(statusPalet),
-                  //       ),
-                  //     ),
-                  //     Expanded(
-                  //       child: _buildStatusColumn(
-                  //         "Corepart",
-                  //         corepartDisplayStatus,
-                  //         _getCorepartStatusImage(statusCorepart),
-                  //       ),
-                  //     ),
-                  //     // SizedBox(
-                  //     //   width: 64,
-                  //     //   child: Align(
-                  //     //     alignment: Alignment.centerRight,
-                  //     //     child: _buildIssueButton(context),
-                  //     //   ),
-                  //     // ),
-                  //   ],
-                  // ),
                 ],
               ),
             ),
             Container(
-              padding: const EdgeInsets.only(top: 12, right: 12, left: 12, bottom: 12),
+              padding: const EdgeInsets.only(
+                  top: 12, right: 12, left: 12, bottom: 12),
               decoration: const BoxDecoration(
                 border: Border(
                   bottom: BorderSide(width: 1, color: AppColors.grayLight),
@@ -642,16 +582,24 @@ class PanelProgressCard extends StatelessWidget {
                 children: [
                   Container(
                     padding: EdgeInsets.all(2),
-                    decoration: BoxDecoration(border: BoxBorder.all(width: 1, color: AppColors.grayLight), borderRadius: BorderRadius.all(Radius.circular(12))),
+                    decoration: BoxDecoration(
+                        border: Border.all(width: 1, color: AppColors.grayLight),
+                        borderRadius: BorderRadius.all(Radius.circular(12))),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildAdditionalSRButton(context),
-                        SizedBox(width: 8,),
+                        SizedBox(
+                          width: 8,
+                        ),
                         _buildIssueButton(context),
-                        SizedBox(width: 8,),
+                        SizedBox(
+                          width: 8,
+                        ),
                         _buildCycleButton(),
-                        SizedBox(width: 8,),
+                        SizedBox(
+                          width: 8,
+                        ),
                         _buildEditButton(),
                       ],
                     ),
@@ -659,7 +607,6 @@ class PanelProgressCard extends StatelessWidget {
                 ],
               ),
             ),
-            // Wrap your widgets in a Column for vertical arrangement
             Container(
               padding: EdgeInsets.all(12),
               decoration: const BoxDecoration(
@@ -669,14 +616,16 @@ class PanelProgressCard extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  // 1. A Row for the Vendor and Busbar info
                   Container(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           "Vendor",
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w300, color: AppColors.gray),
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w300,
+                              color: AppColors.gray),
                         ),
                         Row(
                           children: [
@@ -690,13 +639,16 @@ class PanelProgressCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 2),
                               decoration: BoxDecoration(
                                 color: AppColors.grayLight,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                panelVendorName.isEmpty ? 'No Vendor' : panelVendorName,
+                                panelVendorName.isEmpty
+                                    ? 'No Vendor'
+                                    : panelVendorName,
                                 style: const TextStyle(
                                   color: AppColors.black,
                                   fontWeight: FontWeight.w400,
@@ -714,15 +666,17 @@ class PanelProgressCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 4),
-                            // Use Flexible to prevent long text from causing an overflow
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 2),
                               decoration: BoxDecoration(
                                 color: AppColors.grayLight,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                busbarVendorNames.isEmpty ? 'No Vendor' : busbarVendorNames,
+                                busbarVendorNames.isEmpty
+                                    ? 'No Vendor'
+                                    : busbarVendorNames,
                                 style: const TextStyle(
                                   color: AppColors.black,
                                   fontWeight: FontWeight.w400,
@@ -736,11 +690,7 @@ class PanelProgressCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  
-                  // Add some space between the row above and the column below
                   const SizedBox(height: 12),
-              
-                  // 2. A Column for the rest of the panel details
                   Column(
                     children: [
                       _buildInfoRow("Tipe Panel", displayPanelType),
@@ -808,21 +758,32 @@ class PanelProgressCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Image.asset('assets/images/cycle.png', height: 20,),
-            SizedBox(width: 8,),
-            Text("Transfer", style: TextStyle(fontSize: 11, color: AppColors.black, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
+            Image.asset(
+              'assets/images/cycle.png',
+              height: 20,
+            ),
+            SizedBox(
+              width: 8,
+            ),
+            Text(
+              "Transfer",
+              style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.black,
+                  fontWeight: FontWeight.w300,
+                  overflow: TextOverflow.ellipsis),
+            ),
           ],
         ),
       ),
     );
   }
+
   Widget _buildEditButton() {
-    // Tombol tetap muncul untuk Viewer, tapi dengan tampilan "view-only"
     bool isViewer = currentUserRole == AppRole.viewer;
 
     return InkWell(
-      // Untuk viewer, onTap tetap berfungsi untuk membuka halaman edit
-      onTap: onEdit, 
+      onTap: onEdit,
       borderRadius: BorderRadius.circular(8),
       child: Container(
         alignment: Alignment.center,
@@ -832,21 +793,20 @@ class PanelProgressCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Image.asset(
-              'assets/images/edit-green.png', 
-              height: 20, 
-              // Beri warna abu-abu jika hanya viewer
+              'assets/images/edit-green.png',
+              height: 20,
               color: AppColors.gray,
             ),
-            SizedBox(width: 8,),
+            SizedBox(
+              width: 8,
+            ),
             Text(
-              isViewer ? "Detail" : "Edit", 
+              isViewer ? "Detail" : "Edit",
               style: TextStyle(
-                fontSize: 11, 
-                // Beri warna abu-abu jika hanya viewer
-                color:  AppColors.black, 
-                fontWeight: FontWeight.w300,
-                overflow: TextOverflow.ellipsis
-              ),
+                  fontSize: 11,
+                  color: AppColors.black,
+                  fontWeight: FontWeight.w300,
+                  overflow: TextOverflow.ellipsis),
             ),
           ],
         ),
@@ -854,73 +814,80 @@ class PanelProgressCard extends StatelessWidget {
     );
   }
 
-Widget _buildAdditionalSRButton(BuildContext context) {
-  return InkWell(
-    onTap: () {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => AdditionalSrBottomSheet(
-          currentCompany: currentCompany,
-          panelNoPp: ppNumber,
-          poNumber: panelTitle,
-          panelTitle: panelTitle,
-        ),
-      );
-    },
-    borderRadius: BorderRadius.circular(8),
-    child: Container(
-      alignment: Alignment.center,
-      padding: const EdgeInsets.all(8),
-      child: Column(
-        children: [
-          if (additionalSrCount == 0) ...[
-            Image.asset('assets/images/package.png', height: 20, color: AppColors.gray),
-          ],
-          if (additionalSrCount != 0) ...[
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Image.asset(
-                  'assets/images/package.png',
-                  height: 20,
-                  color: AppColors.gray
-                ),
-                Positioned(
-                  right: -3, // posisi ke kanan (seperti issue)
-                  top: -6,   // posisi ke atas (seperti issue)
-                  child: Container(
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Colors.red, 
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 15,
-                      minHeight: 15,
-                    ),
-                    child: Text(
-                      additionalSrCount.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w500,
+  Widget _buildAdditionalSRButton(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => AdditionalSrBottomSheet(
+            currentCompany: currentCompany,
+            panelNoPp: ppNumber,
+            poNumber: panelTitle,
+            panelTitle: panelTitle,
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          children: [
+            if (additionalSrCount == 0) ...[
+              Image.asset('assets/images/package.png',
+                  height: 20, color: AppColors.gray),
+            ],
+            if (additionalSrCount != 0) ...[
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Image.asset('assets/images/package.png',
+                      height: 20, color: AppColors.gray),
+                  Positioned(
+                    right: -3,
+                    top: -6,
+                    child: Container(
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      textAlign: TextAlign.center,
+                      constraints: const BoxConstraints(
+                        minWidth: 15,
+                        minHeight: 15,
+                      ),
+                      child: Text(
+                        additionalSrCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
+            ],
+            SizedBox(
+              width: 8,
+            ),
+            Text(
+              "SR",
+              style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.black,
+                  fontWeight: FontWeight.w300,
+                  overflow: TextOverflow.ellipsis),
             ),
           ],
-          SizedBox(width: 8,),
-          Text("SR", style: TextStyle(fontSize: 11, color: AppColors.black, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
-        ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildIssueButton(BuildContext context) {
     return InkWell(
@@ -938,7 +905,8 @@ Widget _buildAdditionalSRButton(BuildContext context) {
               busbarVendor: busbarVendorNames,
             ),
           ),
-        )},
+        )
+      },
       borderRadius: BorderRadius.circular(8),
       child: Container(
         alignment: Alignment.center,
@@ -947,9 +915,12 @@ Widget _buildAdditionalSRButton(BuildContext context) {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            if (issueCount == 0)...[
-            Image.asset('assets/images/issue-no.png', height: 20,
-                    color: AppColors.gray,),
+            if (issueCount == 0) ...[
+              Image.asset(
+                'assets/images/issue-no.png',
+                height: 20,
+                color: AppColors.gray,
+              ),
             ],
             if (issueCount != 0) ...[
               Stack(
@@ -961,8 +932,8 @@ Widget _buildAdditionalSRButton(BuildContext context) {
                     color: AppColors.gray,
                   ),
                   Positioned(
-                    right: -3, // posisi ke kanan
-                    top: -6,   // posisi ke atas
+                    right: -3,
+                    top: -6,
                     child: Container(
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
@@ -975,7 +946,7 @@ Widget _buildAdditionalSRButton(BuildContext context) {
                       ),
                       child: Text(
                         issueCount.toString(),
-                        style:  TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 9,
                           fontWeight: FontWeight.w500,
@@ -987,13 +958,23 @@ Widget _buildAdditionalSRButton(BuildContext context) {
                 ],
               ),
             ],
-            SizedBox(width: 8,),
-            Text("Issue", style: TextStyle(fontSize: 11, color: AppColors.black, fontWeight: FontWeight.w300,overflow: TextOverflow.ellipsis),),
+            SizedBox(
+              width: 8,
+            ),
+            Text(
+              "Issue",
+              style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.black,
+                  fontWeight: FontWeight.w300,
+                  overflow: TextOverflow.ellipsis),
+            ),
           ],
         ),
       ),
     );
   }
+
   Widget _buildInfoRow(String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -22,7 +22,7 @@ class DeleteConfirmationBottomSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle
+          
           Container(
             height: 5,
             width: 40,
@@ -32,28 +32,28 @@ class DeleteConfirmationBottomSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          // Warning Icon
+          
           Image.asset('assets/images/trash.png', height: 40, color: Colors.red),
           const SizedBox(height: 16),
-          // Title
+          
           const Text(
             'Hapus Issue Ini?',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 8),
-          // Subtitle/Confirmation text
+          
           Text(
             'Anda yakin ingin menghapus issue "$issueTitle"? Aksi ini tidak dapat dibatalkan.',
             textAlign: TextAlign.center,
             style: const TextStyle(color: AppColors.gray, fontSize: 14),
           ),
           const SizedBox(height: 24),
-          // Action Buttons
+          
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context), // Tutup bottom sheet
+                  onPressed: () => Navigator.pop(context), 
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     side: const BorderSide(color: AppColors.grayLight),

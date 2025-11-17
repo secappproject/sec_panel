@@ -1,7 +1,7 @@
-// lib/components/confirm_import_bottom_sheet.dart
+
 
 import 'package:flutter/material.dart';
-import 'package:secpanel/theme/colors.dart'; // Pastikan path ini benar
+import 'package:secpanel/theme/colors.dart'; 
 
 class ConfirmImportBottomSheet extends StatelessWidget {
   final String title;
@@ -22,11 +22,11 @@ class ConfirmImportBottomSheet extends StatelessWidget {
         top: 16,
         bottom:
             MediaQuery.of(context).viewInsets.bottom +
-            24, // Sesuaikan padding bawah
+            24, 
       ),
       child: Column(
         mainAxisSize:
-            MainAxisSize.min, // Penting agar sheet tidak memenuhi layar
+            MainAxisSize.min, 
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
@@ -60,7 +60,7 @@ class ConfirmImportBottomSheet extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () => Navigator.of(
                     context,
-                  ).pop(false), // Mengembalikan false jika batal
+                  ).pop(false), 
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     side: const BorderSide(color: AppColors.schneiderGreen),
@@ -82,7 +82,7 @@ class ConfirmImportBottomSheet extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () => Navigator.of(
                     context,
-                  ).pop(true), // Mengembalikan true jika konfirmasi
+                  ).pop(true), 
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     backgroundColor: AppColors.schneiderGreen,

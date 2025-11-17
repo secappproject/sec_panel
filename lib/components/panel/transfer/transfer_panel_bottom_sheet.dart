@@ -45,11 +45,8 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
   List<ProductionSlot> _productionSlots = [];
   String? _selectedSlot;
 
-  // [MODIFIKASI] State untuk pemilihan subkontraktor, termasuk input manual
-  late TextEditingController _manualVendorController;
-  bool _showManualVendorInput = false;
   List<Company> _subcontractorVendors = [];
-  String? _selectedSubcontractor; // Bisa berisi ID vendor atau string "Lainnya..."
+  String? _selectedSubcontractor;
 
   late DateTime _selectedStartDate;
   late DateTime _selectedProductionDate;
@@ -70,7 +67,6 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
   void initState() {
     super.initState();
     _currentPanelData = widget.panelData;
-    _manualVendorController = TextEditingController(); // Inisialisasi controller
 
     if (_currentPanelData.panel.statusPenyelesaian == 'Production') {
       _selectedSlot = _currentPanelData.panel.productionSlot;
@@ -85,8 +81,43 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
 
   @override
   void dispose() {
-    _manualVendorController.dispose(); // Jangan lupa dispose controller
     super.dispose();
+  }
+
+  Future<void> _showAddNewSubcontractorSheet() async {
+    final newCompanyData = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const _AddNewSubcontractorSheet(),
+    );
+
+    if (newCompanyData != null) {
+      final String newName = newCompanyData['name'];
+      final AppRole newRole = newCompanyData['role'];
+
+      if (!_subcontractorVendors.any((c) => c.name == newName)) {
+        setState(() {
+          final newCompany = Company(
+            id: newName,
+            name: newName,
+            role: newRole,
+          );
+          _subcontractorVendors.add(newCompany);
+          _subcontractorVendors.sort((a, b) => a.name.compareTo(b.name));
+          _selectedSubcontractor = newName;
+        });
+      } else {
+        final existingCompany =
+            _subcontractorVendors.firstWhere((c) => c.name == newName);
+        setState(() {
+          _selectedSubcontractor = existingCompany.id;
+        });
+      }
+    }
   }
 
   Future<void> _fetchProductionSlots() async {
@@ -109,10 +140,9 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
     setState(() => _isLoading = true);
     try {
       final results = await Future.wait([
-        DatabaseHelper.instance.getK3Vendors(),
-        DatabaseHelper.instance.getK5Vendors(),
+        DatabaseHelper.instance.getG3Vendors(),
       ]);
-      final allVendors = [...results[0], ...results[1]];
+      final allVendors = [...results[0]];
       allVendors.sort((a, b) => a.name.compareTo(b.name));
 
       if (mounted) {
@@ -130,7 +160,8 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
     DateTime? productionDate,
     DateTime? fatDate,
     DateTime? allDoneDate,
-    String? subcontractorVendorValue, // Nama parameter diubah agar lebih jelas
+    String? subcontractorVendorValue,
+    String? newVendorRole,
   }) async {
     if (_isLoading) return;
     setState(() => _isLoading = true);
@@ -147,7 +178,8 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
         productionDate: productionDate,
         fatDate: fatDate,
         allDoneDate: allDoneDate,
-        vendorId: subcontractorVendorValue, // Kirim nilai vendor (bisa ID atau nama)
+        vendorId: subcontractorVendorValue,
+        newVendorRole: newVendorRole,
       );
       widget.onSuccess(updatedPanelData);
 
@@ -172,10 +204,10 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
   }
 
   Future<void> _handleDateUpdate({
-      DateTime? newStartDate,
-      DateTime? newProductionDate,
-      DateTime? newFatDate,
-      DateTime? newAllDoneDate,
+    DateTime? newStartDate,
+    DateTime? newProductionDate,
+    DateTime? newFatDate,
+    DateTime? newAllDoneDate,
   }) async {
     if (_isLoading) return;
     setState(() => _isLoading = true);
@@ -184,8 +216,8 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
     final actorUsername = prefs.getString('username') ?? 'unknown_user';
 
     try {
-        final updatedPanelData =
-            await DatabaseHelper.instance.transferPanelAction(
+      final updatedPanelData =
+          await DatabaseHelper.instance.transferPanelAction(
         panelNoPp: _currentPanelData.panel.noPp,
         action: 'update_dates',
         actor: actorUsername,
@@ -193,26 +225,26 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
         productionDate: newProductionDate,
         fatDate: newFatDate,
         allDoneDate: newAllDoneDate,
-        );
-        
-        widget.onSuccess(updatedPanelData);
+      );
 
-        if (mounted) {
+      widget.onSuccess(updatedPanelData);
+
+      if (mounted) {
         setState(() {
-            _currentPanelData = updatedPanelData;
-            if (newStartDate != null) _selectedStartDate = newStartDate;
-            if (newProductionDate != null) _selectedProductionDate = newProductionDate;
-            if (newFatDate != null) _selectedFatDate = newFatDate;
-            if (newAllDoneDate != null) _selectedAllDoneDate = newAllDoneDate;
+          _currentPanelData = updatedPanelData;
+          if (newStartDate != null) _selectedStartDate = newStartDate;
+          if (newProductionDate != null)
+            _selectedProductionDate = newProductionDate;
+          if (newFatDate != null) _selectedFatDate = newFatDate;
+          if (newAllDoneDate != null) _selectedAllDoneDate = newAllDoneDate;
         });
-        }
+      }
     } catch (e) {
-        _showErrorSnackbar('Gagal memperbarui tanggal: ${e.toString()}');
+      _showErrorSnackbar('Gagal memperbarui tanggal: ${e.toString()}');
     } finally {
-        if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
-
 
   void _showErrorSnackbar(String message) {
     if (mounted) {
@@ -288,10 +320,13 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
               onBack: () => setState(
                   () => _currentStep = _TransferFlowStep.displayStatus)),
           const SizedBox(height: 24),
-           Text(
+          Text(
             'Pilih tujuan transfer panel selanjutnya.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.gray, fontSize: 14, fontWeight: FontWeight.w300),
+            style: TextStyle(
+                color: AppColors.gray,
+                fontSize: 14,
+                fontWeight: FontWeight.w300),
           ),
           const SizedBox(height: 24),
           _buildChoiceCard(
@@ -350,7 +385,10 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 12, color: AppColors.gray, fontWeight: FontWeight.w300),
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.gray,
+                        fontWeight: FontWeight.w300),
                   ),
                 ],
               ),
@@ -362,12 +400,8 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
       ),
     );
   }
-
-  // [MODIFIKASI] Widget untuk memilih vendor, sekarang dengan opsi "Lainnya..."
-  Widget _buildSelectSubcontractorVendorView() {
-    final bool isOtherSelected = _selectedSubcontractor == 'Lainnya...';
-    final bool canConfirm = _selectedSubcontractor != null && 
-                          (!isOtherSelected || (isOtherSelected && _manualVendorController.text.trim().isNotEmpty));
+Widget _buildSelectSubcontractorVendorView() {
+    final bool canConfirm = _selectedSubcontractor != null;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
@@ -378,9 +412,11 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
         children: [
           _buildHeader('Select Subcontractor',
               isSubPage: true,
-              onBack: () => setState(() => _currentStep = _TransferFlowStep.selectProductionOrSubcontractor)),
+              onBack: () => setState(() =>
+                  _currentStep = _TransferFlowStep.selectProductionOrSubcontractor)),
           const SizedBox(height: 24),
-          const Text('Pilih Vendor', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+          const Text('Pilih Vendor',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
           const SizedBox(height: 16),
           _isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -389,56 +425,50 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
                   runSpacing: 12,
                   children: [
                     ..._subcontractorVendors.map((vendor) {
-                      final isSelected = _selectedSubcontractor == vendor.id;
+                      final isSelected = _selectedSubcontractor == vendor.id ||
+                          _selectedSubcontractor == vendor.name;
                       return _buildVendorOptionButton(
                         company: vendor,
                         selected: isSelected,
                         onTap: () {
                           setState(() {
-                            _selectedSubcontractor = isSelected ? null : vendor.id;
-                            _showManualVendorInput = false;
-                            _manualVendorController.clear();
+                            _selectedSubcontractor =
+                                isSelected ? null : vendor.id;
                           });
                         },
                       );
                     }),
                     _buildOtherButton(
-                      selected: isOtherSelected,
-                      onTap: () {
-                        setState(() {
-                          _selectedSubcontractor = 'Lainnya...';
-                          _showManualVendorInput = true;
-                        });
-                      },
+                      selected: false, 
+                      onTap: _showAddNewSubcontractorSheet,
                     ),
                   ],
                 ),
-          if (_showManualVendorInput) ...[
-            const SizedBox(height: 16),
-            _buildTextField(
-              controller: _manualVendorController,
-              label: "Nama Vendor Lainnya",
-              onChanged: (_) => setState(() {}), // Untuk re-render tombol konfirmasi
-            ),
-          ],
           const SizedBox(height: 32),
           _buildFooterButtons(
             secondaryText: 'Kembali',
-            secondaryAction: () => setState(() => _currentStep = _TransferFlowStep.selectProductionOrSubcontractor),
+            secondaryAction: () => setState(() =>
+                _currentStep = _TransferFlowStep.selectProductionOrSubcontractor),
             primaryText: 'Konfirmasi Transfer',
             primaryAction: !canConfirm
                 ? null
                 : () {
-                    String finalVendorValue;
-                    if (_selectedSubcontractor == 'Lainnya...') {
-                      finalVendorValue = _manualVendorController.text.trim();
-                    } else {
-                      finalVendorValue = _selectedSubcontractor ?? '';
+                    String finalVendorValue = _selectedSubcontractor ?? '';
+                    String? finalVendorRole;
+
+                    final Company? newVendor = _subcontractorVendors.firstWhere(
+                      (v) =>
+                          v.name == finalVendorValue && v.id == finalVendorValue,
+                    );
+
+                    if (newVendor != null) {
+                      finalVendorRole = newVendor.role.name;
                     }
 
                     _handleTransferAction(
                       'to_subcontractor',
                       subcontractorVendorValue: finalVendorValue,
+                      newVendorRole: finalVendorRole,
                     );
                   },
           ),
@@ -446,11 +476,12 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
       ),
     );
   }
-
-  // [BARU] Helper widget dari AdditionalSR
-  Widget _buildOtherButton({required bool selected, required VoidCallback onTap}) {
-    final Color borderColor = selected ? AppColors.schneiderGreen : AppColors.grayLight;
-    final Color color = selected ? AppColors.schneiderGreen.withOpacity(0.08) : Colors.white;
+  Widget _buildOtherButton(
+      {required bool selected, required VoidCallback onTap}) {
+    final Color borderColor =
+        selected ? AppColors.schneiderGreen : AppColors.grayLight;
+    final Color color =
+        selected ? AppColors.schneiderGreen.withOpacity(0.08) : Colors.white;
 
     return GestureDetector(
       onTap: onTap,
@@ -473,66 +504,15 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
     );
   }
 
-  // [BARU] Helper widget dari AdditionalSR
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    Function(String)? onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: AppColors.black,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          onChanged: onChanged,
-          cursorColor: AppColors.schneiderGreen,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
-          decoration: InputDecoration(
-            hintText: 'Masukkan $label',
-            helperStyle: const TextStyle(
-              fontSize: 11,
-              color: AppColors.gray,
-              fontWeight: FontWeight.w300,
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.grayLight),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.grayLight),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.schneiderGreen),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildVendorOptionButton({
     required Company company,
     required bool selected,
     required VoidCallback onTap,
   }) {
-    final Color borderColor = selected
-        ? AppColors.schneiderGreen
-        : AppColors.grayLight;
-    final Color color = selected
-        ? AppColors.schneiderGreen.withOpacity(0.08)
-        : Colors.white;
+    final Color borderColor =
+        selected ? AppColors.schneiderGreen : AppColors.grayLight;
+    final Color color =
+        selected ? AppColors.schneiderGreen.withOpacity(0.08) : Colors.white;
 
     return GestureDetector(
       onTap: onTap,
@@ -572,7 +552,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
       ),
     );
   }
-  
+
   Widget _buildSlotSelectionView() {
     final Map<int, List<ProductionSlot>> slotsByRow = {};
     for (var slot in _productionSlots) {
@@ -702,8 +682,8 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
         children: [
           _buildHeader('Transfer to Production',
               isSubPage: true,
-              onBack: () =>
-                  setState(() => _currentStep = _TransferFlowStep.selectProductionOrSubcontractor)),
+              onBack: () => setState(() =>
+                  _currentStep = _TransferFlowStep.selectProductionOrSubcontractor)),
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -779,8 +759,8 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
           if (!_isViewer)
             _buildFooterButtons(
               secondaryText: 'Kembali',
-              secondaryAction: () =>
-                  setState(() => _currentStep = _TransferFlowStep.selectProductionOrSubcontractor),
+              secondaryAction: () => setState(() =>
+                  _currentStep = _TransferFlowStep.selectProductionOrSubcontractor),
               primaryText: 'Lanjutkan',
               primaryAction: _selectedSlot == null
                   ? null
@@ -830,7 +810,8 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
         break;
 
       case 'Subcontractor':
-        statusText = 'Dikerjakan oleh Subkontraktor ${_currentPanelData.panelVendorName ?? 'N/A'}';
+        statusText =
+            'Dikerjakan oleh Subkontraktor ${_currentPanelData.panelVendorName ?? 'N/A'}';
         actionButton = _buildActionButton(
           'Transfer to FAT',
           isOutline: true,
@@ -878,7 +859,8 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
           isOutline: true,
           assetIconPath: 'assets/images/production.png',
           onPressed: () {
-            setState(() => _currentStep = _TransferFlowStep.selectProductionOrSubcontractor);
+            setState(() => _currentStep =
+                _TransferFlowStep.selectProductionOrSubcontractor);
           },
         );
         break;
@@ -996,9 +978,9 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
     DateTime? fatDate,
     DateTime? allDoneDate,
   }) {
-    // [MODIFIKASI] Tambahkan 'Subcontractor' sebagai alias dari 'Production' untuk timeline
     final stages = ['VendorWarehouse', 'Production', 'FAT', 'Done'];
-    final normalizedStage = currentStage == 'Subcontractor' ? 'Production' : currentStage;
+    final normalizedStage =
+        currentStage == 'Subcontractor' ? 'Production' : currentStage;
     final stageIndex = stages.indexOf(normalizedStage);
 
     final bool vendorCheck = stageIndex > 0 || isVendorDone;
@@ -1007,7 +989,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
     final bool fatDone = stageIndex >= 3;
     final bool isProductionActive = stageIndex == 1;
     final bool isFatActive = stageIndex == 2;
-    
+
     Future<void> pickAndUpdateDate({
       required DateTime initialDate,
       DateTime? newStartDate,
@@ -1015,40 +997,40 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
       DateTime? newFatDate,
       DateTime? newAllDoneDate,
     }) async {
-        if (_isViewer) return;
+      if (_isViewer) return;
 
-        final newDate = await showDatePicker(
-          context: context,
-          initialDate: initialDate,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          helpText: 'Pilih Tanggal',
-          builder: (context, child) {
-            return Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: const ColorScheme.light(
-                  primary: AppColors.schneiderGreen,
-                  onPrimary: Colors.white,
-                  onSurface: AppColors.black,
-                ),
-                textButtonTheme: TextButtonThemeData(
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.schneiderGreen,
-                  ),
+      final newDate = await showDatePicker(
+        context: context,
+        initialDate: initialDate,
+        firstDate: DateTime(2020),
+        lastDate: DateTime(2100),
+        helpText: 'Pilih Tanggal',
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.light(
+                primary: AppColors.schneiderGreen,
+                onPrimary: Colors.white,
+                onSurface: AppColors.black,
+              ),
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.schneiderGreen,
                 ),
               ),
-              child: child!,
-            );
-          },
+            ),
+            child: child!,
+          );
+        },
+      );
+      if (newDate != null) {
+        await _handleDateUpdate(
+          newStartDate: newStartDate != null ? newDate : null,
+          newProductionDate: newProductionDate != null ? newDate : null,
+          newFatDate: newFatDate != null ? newDate : null,
+          newAllDoneDate: newAllDoneDate != null ? newDate : null,
         );
-        if (newDate != null) {
-            await _handleDateUpdate(
-              newStartDate: newStartDate != null ? newDate : null,
-              newProductionDate: newProductionDate != null ? newDate : null,
-              newFatDate: newFatDate != null ? newDate : null,
-              newAllDoneDate: newAllDoneDate != null ? newDate : null,
-            );
-        }
+      }
     }
 
     return Column(
@@ -1073,9 +1055,8 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
                         isActive: !vendorCheck,
                         date: panelCreatedDate,
                         onDateTap: () => pickAndUpdateDate(
-                          initialDate: _selectedStartDate,
-                          newStartDate: _selectedStartDate
-                        ),
+                            initialDate: _selectedStartDate,
+                            newStartDate: _selectedStartDate),
                         isEditable: !_isViewer,
                       ),
                       const SizedBox(width: 40),
@@ -1091,9 +1072,8 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
                         date: panelClosedDate,
                         datePrefix: 'Closed',
                         onDateTap: () => pickAndUpdateDate(
-                          initialDate: _selectedStartDate,
-                          newStartDate: _selectedStartDate
-                        ),
+                            initialDate: _selectedStartDate,
+                            newStartDate: _selectedStartDate),
                         isEditable: !_isViewer,
                       ),
                     ],
@@ -1107,7 +1087,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
           },
         ),
         _buildTimelineNode(
-          'Prod / Subcon', // [MODIFIKASI] Ubah label
+          'Prod / Subcon',
           Image.asset('assets/images/production.png',
               color: stageIndex >= 1
                   ? (isProductionActive
@@ -1119,10 +1099,12 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
           isActive: isProductionActive,
           date: productionDate,
           datePrefix: 'Start',
-          onDateTap: productionDate == null ? null : () => pickAndUpdateDate(
-            initialDate: _selectedProductionDate,
-            newProductionDate: _selectedProductionDate,
-          ),
+          onDateTap: productionDate == null
+              ? null
+              : () => pickAndUpdateDate(
+                    initialDate: _selectedProductionDate,
+                    newProductionDate: _selectedProductionDate,
+                  ),
           isEditable: !_isViewer && productionDate != null,
         ),
         _buildTimelineConnector(isComplete: stageIndex >= 2),
@@ -1137,10 +1119,12 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
           isActive: isFatActive,
           date: fatDate,
           datePrefix: 'Start',
-           onDateTap: fatDate == null ? null : () => pickAndUpdateDate(
-            initialDate: _selectedFatDate,
-            newFatDate: _selectedFatDate,
-          ),
+          onDateTap: fatDate == null
+              ? null
+              : () => pickAndUpdateDate(
+                    initialDate: _selectedFatDate,
+                    newFatDate: _selectedFatDate,
+                  ),
           isEditable: !_isViewer && fatDate != null,
         ),
         _buildTimelineConnector(isComplete: stageIndex >= 3),
@@ -1157,16 +1141,18 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
           isActive: isFatActive,
           date: allDoneDate,
           datePrefix: 'Done',
-          onDateTap: allDoneDate == null ? null : () => pickAndUpdateDate(
-            initialDate: _selectedAllDoneDate,
-            newAllDoneDate: _selectedAllDoneDate,
-          ),
+          onDateTap: allDoneDate == null
+              ? null
+              : () => pickAndUpdateDate(
+                    initialDate: _selectedAllDoneDate,
+                    newAllDoneDate: _selectedAllDoneDate,
+                  ),
           isEditable: !_isViewer && allDoneDate != null,
         ),
       ],
     );
   }
-  
+
   Widget _buildTimelineNode(
     String label,
     Widget icon, {
@@ -1201,7 +1187,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
             GestureDetector(
               onTap: onDateTap,
               child: Container(
-                color: Colors.transparent, 
+                color: Colors.transparent,
                 padding: const EdgeInsets.only(top: 2.0, left: 4, right: 4),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -1236,7 +1222,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
       ),
     );
   }
-  
+
   Widget _buildEditableDateRow({
     required String label,
     required DateTime date,
@@ -1557,7 +1543,7 @@ class _TransferPanelBottomSheetState extends State<TransferPanelBottomSheet> {
         if (isSubPage)
           IconButton(icon: const Icon(Icons.arrow_back), onPressed: onBack)
         else
-          const SizedBox(width: 48), // Placeholder
+          const SizedBox(width: 48),
         Expanded(
           child: Text(
             title,
@@ -1946,4 +1932,225 @@ class _DashedBorderPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _AddNewSubcontractorSheet extends StatefulWidget {
+  const _AddNewSubcontractorSheet();
+  @override
+  State<_AddNewSubcontractorSheet> createState() =>
+      _AddNewSubcontractorSheetState();
+}
+
+class _AddNewSubcontractorSheetState extends State<_AddNewSubcontractorSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  AppRole _selectedRole = AppRole.g3;
+  bool _isSaving = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (_isSaving) return;
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isSaving = true);
+      Navigator.pop(context, {
+        'name': _nameController.text.trim(),
+        'role': _selectedRole,
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        16,
+        20,
+        MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                height: 5,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.grayLight,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              "Tambah Perusahaan Baru",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 24),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Company',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  cursorColor: AppColors.schneiderGreen,
+                  controller: _nameController,
+                  autofocus: true,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w300,
+                    color: AppColors.black,
+                  ),
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Nama tidak boleh kosong' : null,
+                  decoration: InputDecoration(
+                    fillColor: AppColors.white,
+                    filled: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.grayLight),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.grayLight),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: AppColors.schneiderGreen,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildRoleSelector(),
+            const SizedBox(height: 32),
+            _buildActionButtons(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Role',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 12,
+          children: AppRole.values
+              .where((role) =>
+                  role == AppRole.g3 ||
+                  role == AppRole.k3 ||
+                  role == AppRole.k5 ||
+                  role == AppRole.warehouse)
+              .map((role) {
+            return _buildOptionButton(
+              label: role.name.toUpperCase(),
+              selected: _selectedRole == role,
+              onTap: () => setState(() => _selectedRole = role),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOptionButton({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final Color borderColor =
+        selected ? AppColors.schneiderGreen : AppColors.grayLight;
+    final Color color =
+        selected ? AppColors.schneiderGreen.withOpacity(0.08) : Colors.white;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: color,
+          border: Border.all(color: borderColor),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.w400,
+            fontSize: 12,
+            color: AppColors.black,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: _isSaving ? null : () => Navigator.pop(context),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              side: const BorderSide(color: AppColors.schneiderGreen),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            child: const Text(
+              "Batal",
+              style: TextStyle(color: AppColors.schneiderGreen, fontSize: 12),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _isSaving ? null : _save,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: AppColors.schneiderGreen,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            child: _isSaving
+                ? const SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : const Text("Simpan", style: TextStyle(fontSize: 12)),
+          ),
+        ),
+      ],
+    );
+  }
 }

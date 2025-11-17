@@ -73,18 +73,18 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
   }
 
   void _showDeleteConfirmation() {
-    Navigator.pop(context); // Close the detail bottom sheet
+    Navigator.pop(context); 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => DeleteConfirmationBottomSheet(
         issueTitle: _issue!.title,
         onConfirmDelete: () async {
-          Navigator.pop(ctx); // Close the confirmation sheet
+          Navigator.pop(ctx); 
           try {
             await DatabaseHelper.instance.deleteIssue(_issue!.id);
             PanelIssuesScreen.showSnackBar('Issue berhasil dihapus.');
-            widget.onUpdate(); // Refresh the main list
+            widget.onUpdate(); 
           } catch (e) {
             PanelIssuesScreen.showSnackBar(
               'Gagal menghapus isu: $e',
@@ -100,7 +100,7 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
     if (_issue == null) return;
     final newStatus = _isSolved ? 'unsolved' : 'solved';
 
-    setState(() => _isSolved = !_isSolved); // Optimistic UI
+    setState(() => _isSolved = !_isSolved); 
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -115,7 +115,7 @@ class _IssueDetailCardState extends State<IssueDetailCard> {
       await DatabaseHelper.instance.updateIssue(_issue!.id, issueData);
       widget.onUpdate();
     } catch (e) {
-      setState(() => _isSolved = !_isSolved); // Revert on error
+      setState(() => _isSolved = !_isSolved); 
       PanelIssuesScreen.showSnackBar('Gagal update status: $e', isError: true);
     }
   }

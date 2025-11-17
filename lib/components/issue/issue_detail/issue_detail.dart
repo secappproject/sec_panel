@@ -30,7 +30,7 @@ class IssueDetailBottomSheet extends StatelessWidget {
           ),
           child: Column(
             children: [
-              // Handle (garis abu-abu di atas)
+              
               Center(
                 child: Container(
                   height: 5,
@@ -42,12 +42,12 @@ class IssueDetailBottomSheet extends StatelessWidget {
                   ),
                 ),
               ),
-              // Konten utama
+              
               Expanded(
                 child: ListView(
                   controller: scrollController,
                   children: [
-                    // FIX: Pass the required arguments to IssueDetailCard
+                    
                     IssueDetailCard(
                       currentCompany: currentCompany,
                       issueId: issueId,

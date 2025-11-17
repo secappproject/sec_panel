@@ -26,7 +26,7 @@ class _DuplicateConfirmationBottomSheet extends StatelessWidget {
     return Container(
       height:
           MediaQuery.of(context).size.height *
-          0.7, // Batasi tinggi bottom sheet
+          0.7, 
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -226,17 +226,17 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
     _cleanNumericPrimaryKeys();
     await _fetchAllCompanies();
     await _fetchExistingPrimaryKeys();
-    await _fetchExistingNaturalKeys(); // <-- PANGGIL FUNGSI BARU DI SINI
+    await _fetchExistingNaturalKeys(); 
 
     await _resolveVendorNamesToIds();
-    _revalidateOnDataChange(); // <-- Ganti ini menjadi _revalidateAll()
+    _revalidateOnDataChange(); 
     if (mounted) setState(() => _isLoading = false);
   }
 
-  // Ganti nama _revalidateOnDataChange menjadi _revalidateAll
+  
   void _revalidateAll() {
     setState(() {
-      _validateUpdatesAndDuplicates(); // <-- Ganti ini
+      _validateUpdatesAndDuplicates(); 
       _validateBrokenRelations();
       _validateMissingIdentifiers();
     });
@@ -330,7 +330,7 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
     _duplicateRows.putIfAbsent(tableName, () => {});
     _updateRows.putIfAbsent(tableName, () => {});
 
-    // Buat lookup map dari kunci alami untuk pencarian cepat
+    
     final naturalKeyToDbRow = <String, Map<String, dynamic>>{};
     for (final keyInfo in _existingPanelKeys) {
       final panelNo = keyInfo['no_panel']?.toString().toLowerCase() ?? '';
@@ -355,25 +355,25 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
 
       final naturalKey = "${noPanel}_${project}_${wbs}";
 
-      // Cek duplikasi berdasarkan No PP asli
+      
       if (newNoPp.isNotEmpty &&
           _existingPrimaryKeys['panels']!.contains(newNoPp)) {
         _duplicateRows[tableName]!.add(i);
         continue;
       }
 
-      // Cek berdasarkan kunci alami
+      
       if (naturalKeyToDbRow.containsKey(naturalKey)) {
         final dbRow = naturalKeyToDbRow[naturalKey]!;
         final existingNoPp = dbRow['no_pp']?.toString().toLowerCase() ?? '';
 
-        // KASUS UPDATE (HIJAU)
+        
         if (existingNoPp.startsWith('temp_pp_') &&
             newNoPp.isNotEmpty &&
             !newNoPp.startsWith('temp_pp_')) {
           _updateRows[tableName]!.add(i);
         }
-        // KASUS DUPLIKAT (MERAH)
+        
         else {
           _duplicateRows[tableName]!.add(i);
         }
@@ -382,7 +382,7 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
   }
 
   void _cleanNumericPrimaryKeys() {
-    // Kita hanya menargetkan sheet/tabel 'panel'
+    
     final String tableName = 'panel';
     if (!_editableData.containsKey(tableName) ||
         _editableData[tableName]!.isEmpty) {
@@ -390,28 +390,28 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
     }
 
     final rows = _editableData[tableName]!;
-    // Cari nama kolom Primary Key secara dinamis ('PP Panel' atau 'no_pp')
+    
     final pkColumn = _findPrimaryKeyColumnName(
       tableName,
       rows.first.keys.toList(),
     );
 
     if (pkColumn == null) {
-      return; // Jika kolom PK tidak ditemukan, hentikan proses
+      return; 
     }
 
-    // Iterasi setiap baris dan bersihkan nilai PK
+    
     for (final row in rows) {
       final pkValue = row[pkColumn];
 
-      // Cek jika nilainya sudah berupa angka (hasil parse Excel)
+      
       if (pkValue is num) {
         row[pkColumn] = pkValue.toInt().toString();
       }
-      // Cek jika nilainya berupa string yang terlihat seperti angka desimal
+      
       else if (pkValue is String) {
         final numValue = double.tryParse(pkValue);
-        // Cek ini memastikan kita hanya mengubah angka seperti "123.0" menjadi "123"
+        
         if (numValue != null && numValue == numValue.truncate()) {
           row[pkColumn] = numValue.toInt().toString();
         }
@@ -419,16 +419,16 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
     }
   }
 
-  /// [PERBAIKAN TOTAL] Logika validasi relasi diperbaiki agar lebih ketat dan akurat.
+  
   void _validateBrokenRelations() {
     _brokenRelationCells = {};
 
-    // Kunci yang valid HANYA yang dari database.
+    
     final validCompanyIDs = Set<String>.from(
       _existingPrimaryKeys['companies'] ?? {},
     );
 
-    // Daftar nama kolom DB yang merupakan foreign key ke tabel companies
+    
     const companyForeignKeyDbNames = {
       'vendor_id',
       'busbar_vendor_id',
@@ -445,17 +445,17 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
         _brokenRelationCells[tableName]!.putIfAbsent(i, () => {});
 
         for (final actualColName in row.keys) {
-          // Cari nama kolom versi database-nya
+          
 
           final equivalents = _columnEquivalents[tableName.toLowerCase()];
-          String dbColName = actualColName; // Default value
+          String dbColName = actualColName; 
 
           if (equivalents != null) {
             for (var entry in equivalents.entries) {
-              // Bandingkan setelah keduanya diubah ke huruf kecil
+              
               if (entry.key.toLowerCase() == actualColName.toLowerCase()) {
-                dbColName = entry.value; // Jika cocok, gunakan nama kolom DB
-                break; // Hentikan pencarian
+                dbColName = entry.value; 
+                break; 
               }
             }
           }
@@ -466,14 +466,14 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
               _brokenRelationCells[tableName]![i]!.add(actualColName);
             }
           }
-          // Periksa apakah ini kolom yang perlu divalidasi relasinya ke tabel company
+          
           if (companyForeignKeyDbNames.contains(dbColName)) {
             final fkValue = row[actualColName]?.toString() ?? '';
 
-            // Tandai error HANYA JIKA kolom terisi tapi isinya tidak ada di daftar ID valid
-            // Setelah _resolveVendorNamesToIds berjalan, sel yang valid berisi ID,
-            // yang tidak valid tetap berisi nama asli dari file.
-            // Pengecekan ini akan secara otomatis menandai merah sel yang berisi nama tak dikenal.
+            
+            
+            
+            
             if (fkValue.isNotEmpty && !validCompanyIDs.contains(fkValue)) {
               _brokenRelationCells[tableName]![i]!.add(actualColName);
             }
@@ -631,7 +631,7 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
   }
 
   Future<void> _saveToDatabase() async {
-    // Bagian ini memeriksa validasi di sisi klien (aplikasi) terlebih dahulu
+    
     final hasInvalidIdentifiers = _invalidIdentifierRows.values.any(
       (s) => s.isNotEmpty,
     );
@@ -731,7 +731,7 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
       ),
     );
 
-    // --- [PERBAIKAN UTAMA DI BLOK TRY-CATCH] ---
+    
     try {
       String resultMessage;
       if (widget.isCustomTemplate) {
@@ -751,10 +751,10 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
         resultMessage = "Data berhasil diimpor! 🎉";
       }
 
-      // Jika sukses
+      
       if (mounted) {
-        Navigator.of(context).pop(); // Tutup progress dialog
-        Navigator.of(context).pop(true); // Tutup ImportReviewScreen
+        Navigator.of(context).pop(); 
+        Navigator.of(context).pop(true); 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(resultMessage),
@@ -764,13 +764,13 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
         );
       }
     } catch (e) {
-      // Jika GAGAL (termasuk error validasi dari server)
+      
       if (mounted) {
-        Navigator.of(context).pop(); // Tutup progress dialog
+        Navigator.of(context).pop(); 
 
         final message = e.toString().replaceFirst("Exception: ", "");
 
-        // Tampilkan bottom sheet dengan daftar error
+        
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
@@ -1255,7 +1255,7 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
                           _invalidIdentifierRows[tableName]?.contains(index) ??
                           false;
 
-                      // Cek apakah ada kolom 'panel' atau 'busbar' yang bermasalah.
+                      
                       final isPanelBusbarProblematic = brokenCells.any((col) {
                         final normalizedCol = col.toLowerCase();
                         return (normalizedCol == 'panel' ||
@@ -1266,7 +1266,7 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
                       return DataRow(
                         key: ObjectKey(rowData),
                         color: MaterialStateProperty.resolveWith<Color?>((s) {
-                          // [PERBAIKAN] Tambahkan kondisi untuk warna hijau
+                          
                           if (isUpdate) {
                             return Colors.green.withOpacity(0.15);
                           }
@@ -1279,7 +1279,7 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
                             return AppColors.red.withOpacity(0.15);
                           }
                           if (isPanelBusbarProblematic) {
-                            // Cek tambahan untuk kondisi yang diminta
+                            
                             return AppColors.red.withOpacity(0.15);
                           }
                           if (brokenCells.isNotEmpty &&
@@ -1387,8 +1387,8 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
     final companyId = rowData[colName]?.toString() ?? '';
     final companyName = _companyIdToName[companyId] ?? companyId;
 
-    // Periksa apakah kolom 'panel' atau 'busbar' tidak terpilih (companyId kosong)
-    // dan bukan bagian dari template kustom.
+    
+    
     final bool isNotSelected = companyId.isEmpty;
     final bool isProblematic =
         isBroken || (isNotSelected && !widget.isCustomTemplate);
@@ -2421,8 +2421,8 @@ class _AddNewCompanyRoleSheetState extends State<_AddNewCompanyRoleSheet> {
     );
   }
 }
-// Lokasi: lib/import_review_screen.dart
-// Tambahkan class ini di paling bawah file
+
+
 
 class _ImportErrorBottomSheet extends StatelessWidget {
   final String errorMessage;
@@ -2431,7 +2431,7 @@ class _ImportErrorBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Memisahkan judul dari daftar error
+    
     final parts = errorMessage.split('\n- ');
     final title = parts.first.replaceAll(
       'Impor dibatalkan karena error berikut:',

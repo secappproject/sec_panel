@@ -1,4 +1,4 @@
-// file: models/company_account.dart
+
 class CompanyAccount {
   String username;
   String password;

@@ -87,8 +87,7 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
       }
     }
   }
-
-  // [PERUBAHAN] Widget build() diubah total untuk meniru struktur LoginPage
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,10 +95,10 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
       body: Stack(
         alignment: Alignment.centerLeft,
         children: [
-          // Lapisan 1: Video background, akan tertutup warna putih di mobile
+          
           const VideoBackground(),
 
-          // Lapisan 2: Konten form
+          
           SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -115,7 +114,7 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
     );
   }
   
-  // [PERUBAHAN] Layout Web diubah agar sama persis dengan LoginPage
+  
   Widget _buildWebAppLayout() {
     return Container(
       constraints: BoxConstraints(
@@ -147,13 +146,13 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
     );
   }
 
-  // [PERUBAHAN] Layout Mobile diubah untuk bekerja di dalam Stack
+  
   Widget _buildMobileLayout() {
     return Container(
-      color: Colors.white, // Menutupi video background di layar kecil
+      color: Colors.white, 
       child: Column(
         children: [
-          // AppBar kustom agar bisa ada di dalam body Stack
+          
           AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
@@ -218,7 +217,7 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
     );
   }
 
-  // [PERUBAHAN] Tombol dibuat lebih konsisten, mirip _buildActionButtons di LoginPage
+  
   Widget _buildActionButtons() {
     return Row(
       children: [
@@ -281,7 +280,7 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
     );
   }
 
-  // Sisa kode di bawah ini (fields, snackbars) tidak ada perubahan signifikan
+  
   Widget _buildUsernameField() {
     return Autocomplete<String>(
       optionsBuilder: (TextEditingValue textEditingValue) {
@@ -304,7 +303,7 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
             fontFamily: 'Lexend',
             fontWeight: FontWeight.w300,
             fontSize: 14,
-            color: Colors.black, // warna teks yg diketik
+            color: Colors.black, 
           ),
           controller: fieldTextEditingController,
           focusNode: fieldFocusNode,
@@ -364,7 +363,7 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
         fontFamily: 'Lexend',
         fontWeight: FontWeight.w300,
         fontSize: 14,
-        color: Colors.black, // warna teks yg diketik
+        color: Colors.black, 
       ),
       controller: _passwordController,
       obscureText: !_isPasswordVisible,
@@ -388,7 +387,7 @@ class _LoginChangePasswordPageState extends State<LoginChangePasswordPage> {
         fontFamily: 'Lexend',
         fontWeight: FontWeight.w300,
         fontSize: 14,
-        color: Colors.black, // warna teks yg diketik
+        color: Colors.black, 
       ),
       controller: _newPasswordController,
       obscureText: !_isNewPasswordVisible,

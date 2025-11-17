@@ -1,4 +1,4 @@
-// lib/pages/edit_status_bottom_sheet.dart
+
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -64,7 +64,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
   void initState() {
     super.initState();
 
-    // [PERUBAHAN] Cari remark milik vendor saat ini dari daftar remarks
+    
     String currentVendorRemark = '';
     try {
       final remarkData = widget.panelData.busbarRemarks.firstWhere(
@@ -72,8 +72,8 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
       );
       currentVendorRemark = remarkData.remark ?? '';
     } catch (e) {
-      // It's okay if no remark is found, just leave it blank.
-      // print("No existing remark found for vendor ${widget.currentCompany.id}: $e");
+      
+      
     }
 
     _remarkController = TextEditingController(text: currentVendorRemark);
@@ -119,7 +119,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
             statusBusbarMcc: _selectedStatus ?? '',
           );
 
-          // Remark yang diisi oleh user K5 saat ini akan disimpan untuk vendornya sendiri
+          
           await DatabaseHelper.instance.upsertBusbarRemarkandVendor(
             panelNoPp: widget.panelData.panel.noPp,
             vendorId: widget.currentCompany.id,
@@ -152,19 +152,19 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
     }
   }
 
-  // String _getBusbarStatusImage(String status) {
-  //   final lower = status.toLowerCase();
-  //   if (lower == '' || lower.contains('on progress')) {
-  //     return 'assets/images/new-yellow.png';
-  //   } else if (lower.contains('close')) {
-  //     return 'assets/images/done-green.png';
-  //   } else if (lower.contains('siap 100%')) {
-  //     return 'assets/images/done-blue.png';
-  //   } else if (lower.contains('red block')) {
-  //     return 'assets/images/on-block-red.png';
-  //   }
-  //   return 'assets/images/no-status-gray.png';
-  // }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 
   String _getComponentStatusImage(String status) {
     final lower = status.toLowerCase();
@@ -241,7 +241,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
       ),
     );
   }
-  // Salin dan ganti seluruh method _buildStatusCard() di edit_status_bottom_sheet.dart
+  
 
   Widget _buildStatusCard(String durationLabel) {
     final panel = widget.panelData.panel;
@@ -426,7 +426,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
                       "Tipe Panel",
                       style: TextStyle(fontSize: 12, color: AppColors.gray),
                     ),
-                    // [PERBAIKAN 1] Menambahkan 'style:'
+                    
                     Text(
                       panel.panelType ?? "Belum Diatur",
                       style: const TextStyle(fontSize: 12),
@@ -441,7 +441,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
                       "No. PP",
                       style: TextStyle(fontSize: 12, color: AppColors.gray),
                     ),
-                    // [PERBAIKAN 1] Menambahkan 'style:'
+                    
                     Text(
                       panel.noPp.startsWith('TEMP_PP_')
                           ? 'Belum Diatur'
@@ -458,7 +458,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
                       "No. WBS",
                       style: TextStyle(fontSize: 12, color: AppColors.gray),
                     ),
-                    // [PERBAIKAN 2] Menambahkan 'style:'
+                    
                     Text(
                       panel.noWbs ?? "Belum Diatur",
                       style: const TextStyle(fontSize: 12),
@@ -473,7 +473,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
                       "Project",
                       style: TextStyle(fontSize: 12, color: AppColors.gray),
                     ),
-                    // [PERBAIKAN 3] Menambahkan 'style:'
+                    
                     Text(
                       panel.project ?? "",
                       style: const TextStyle(fontSize: 12),
@@ -653,12 +653,12 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
     );
   }
 
-  // Salin dan ganti seluruh method _buildVendornameField() di edit_status_bottom_sheet.dart
+  
   Widget _buildVendornameField() {
     if (!_isK5) return const SizedBox.shrink();
 
-    // Widget ini sekarang tidak lagi menggunakan TextFormField, melainkan Row
-    // untuk menampilkan proses assignment (penugasan) vendor.
+    
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -679,7 +679,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
             borderRadius: BorderRadius.circular(8),
           ),
           child: widget.busbarVendorNames.isEmpty
-              // KONDISI 1: Belum ada vendor yang ditugaskan
+              
               ? Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -698,7 +698,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
                     ),
                     Expanded(
                       child: Text(
-                        widget.currentCompany.name, // Nama vendor K5 yg login
+                        widget.currentCompany.name, 
                         textAlign: TextAlign.end,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -710,7 +710,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
                     ),
                   ],
                 )
-              // KONDISI 2: Sudah ada vendor yang ditugaskan
+              
               : Text(
                   widget.busbarVendorNames,
                   style: const TextStyle(
@@ -729,7 +729,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Remark Anda", // Judul diubah agar lebih jelas
+          "Remark Anda", 
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
@@ -785,7 +785,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
           child: ElevatedButton(
             onPressed: _isLoading
                 ? null
-                : _saveChanges, // Disable tombol saat loading
+                : _saveChanges, 
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               backgroundColor: AppColors.schneiderGreen,
