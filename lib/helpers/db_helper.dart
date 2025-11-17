@@ -133,7 +133,7 @@ class DatabaseHelper {
     print('DEBUG: Unexpected error: $e');
     print('DEBUG: Stack trace: $stackTrace');
     
-    // Re-throw with more context
+    
     if (e.toString().contains('Database error')) {
       print('DEBUG: Re-throwing existing Database error');
       rethrow;
@@ -143,9 +143,9 @@ class DatabaseHelper {
   }
   }
 
-  // =========================================================================
-  // FUNGSI-FUNGSI API
-  // =========================================================================
+  
+  
+  
 
   Future<List<PanelDisplayData>> getAllPanelsForDisplay({
     Company? currentUser,
@@ -196,19 +196,19 @@ class DatabaseHelper {
     final List<dynamic>? data = await _apiRequest('GET', endpoint);
     if (data == null) return [];
 
-    // Ini adalah titik di mana JSON diubah menjadi objek Dart
-    // Pastikan PanelDisplayData.fromJson sudah benar
+    
+    
     return data.map((json) => PanelDisplayData.fromJson(json)).toList();
   }
 
-  // Placeholder functions, not used with API backend
+  
   static dynamic? _database;
   Future<dynamic> get database async => _database ??= await _initDatabase();
   Future<dynamic> _initDatabase() async => Future.value(null);
 
-  // =========================================================================
-  // FUNGSI-FUNGSI API
-  // =========================================================================
+  
+  
+  
 
   Future<Company?> login(String username, String password) async {
     final data = await _apiRequest(
@@ -223,12 +223,12 @@ Future<Company?> getCompanyByUsername(String username) async {
   final data = await _apiRequest('GET', '/company-by-username/$username');
   if (data == null) return null;
   
-  // Handle jika backend mengembalikan array
+  
   if (data is List && data.isNotEmpty) {
     return Company.fromMap(data[0] as Map<String, dynamic>);
   }
   
-  // Handle jika backend mengembalikan object langsung
+  
   if (data is Map<String, dynamic>) {
     return Company.fromMap(data);
   }
@@ -237,22 +237,22 @@ Future<Company?> getCompanyByUsername(String username) async {
 }
 
   Future<List<String>> searchUsernames(String query) async {
-    // Hindari panggilan API jika input kosong
+    
     if (query.isEmpty) {
       return [];
     }
     try {
-      // Panggil endpoint baru dengan query yang di-encode
+      
       final encodedQuery = Uri.encodeComponent(query);
       final data = await _apiRequest('GET', '/accounts/search?q=$encodedQuery');
 
       if (data != null && data is List) {
-        // Konversi hasil (List<dynamic>) menjadi List<String>
+        
         return List<String>.from(data);
       }
       return [];
     } catch (e) {
-      // Jika terjadi error (misal: tidak ada koneksi), kembalikan list kosong
+      
       print('Error searching usernames: $e');
       return [];
     }
@@ -307,7 +307,7 @@ Future<Company?> getCompanyByUsername(String username) async {
   Future<List<Company>> getAllCompanies() async {
     final dynamic data = await _apiRequest('GET', '/companies');
 
-    // [PERBAIKAN] Cek jika data null, kembalikan list kosong
+    
     if (data == null || data is! List) {
       return [];
     }
@@ -318,7 +318,7 @@ Future<Company?> getCompanyByUsername(String username) async {
   Future<List<CompanyAccount>> getAllCompanyAccounts() async {
     final dynamic data = await _apiRequest('GET', '/accounts');
 
-    // [PERBAIKAN] Cek jika data null, kembalikan list kosong
+    
     if (data == null || data is! List) {
       return [];
     }
@@ -332,7 +332,7 @@ Future<Company?> getCompanyByUsername(String username) async {
     return List<Map<String, dynamic>>.from(data);
   }
 
-  // package:secpanel/helpers/db_helper.dart
+  
 
   Future<List<Map<String, dynamic>>> getColleagueAccountsForDisplay(
     String companyName,
@@ -341,16 +341,16 @@ Future<Company?> getCompanyByUsername(String username) async {
     final endpoint =
         '/users/colleagues/display?company_name=$companyName&current_username=$currentUsername';
 
-    // PERBAIKAN 1: Izinkan `data` bisa bernilai null dengan tanda tanya (?).
+    
     final List<dynamic>? data = await _apiRequest('GET', endpoint);
 
-    // PERBAIKAN 2: Jika data ternyata null (tidak ada kolega),
-    // kembalikan list kosong `[]` yang aman dan tidak membuat crash.
+    
+    
     if (data == null) {
       return [];
     }
 
-    // Jika tidak null, lanjutkan proses seperti biasa.
+    
     return List<Map<String, dynamic>>.from(data);
   }
 
@@ -388,28 +388,28 @@ Future<Company?> getCompanyByUsername(String username) async {
       return data.map((map) => Company.fromMap(map)).toList();
     }
 
-  // Change the isNoPpTaken function to parse the boolean from the API response
+  
   Future<bool> isNoPpTaken(String noPp) async {
     try {
-      // This API call will now always succeed with a 200 OK if the server is reached.
-      // The response body will be like `{"exists": true}` or `{"exists": false}`.
+      
+      
       final data = await _apiRequest('GET', '/panel/exists/no-pp/$noPp');
 
-      // [FIX] Check the value of the 'exists' key in the returned map.
+      
       if (data is Map<String, dynamic> && data.containsKey('exists')) {
         return data['exists'] as bool? ?? false;
       }
 
-      // Fallback: If the response format is unexpected, assume the PP is not taken
-      // to avoid blocking the user.
+      
+      
       return false;
     } catch (e) {
-      // If a real network error occurs, it will be caught here.
-      // For safety, we can assume it's not taken, but also log the error.
+      
+      
       debugPrint("Error checking No. PP existence: $e");
-      // Depending on desired behavior, you might want to rethrow the error
-      // or return true to prevent accidental duplicates on network failure.
-      // Returning `false` is generally safer for user experience.
+      
+      
+      
       return false;
     }
   }
@@ -432,9 +432,9 @@ Future<Company?> getCompanyByUsername(String username) async {
       );
     } catch (e) {
       print('Error deleting multiple panels: $e');
-      // [PERBAIKAN KEDUA] Gunakan 'rethrow' untuk meneruskan error asli dari server.
-      // Ini akan memberikan pesan error yang lebih spesifik di UI,
-      // bukan "Gagal menghapus panel secara massal".
+      
+      
+      
       rethrow;
     }
   }
@@ -442,7 +442,7 @@ Future<Company?> getCompanyByUsername(String username) async {
   Future<List<Panel>> getAllPanels() async {
     final dynamic data = await _apiRequest('GET', '/panels/all');
 
-    // [PERBAIKAN] Cek jika data null, kembalikan list kosong
+    
     if (data == null || data is! List) {
       return [];
     }
@@ -471,7 +471,7 @@ Future<Company?> getCompanyByUsername(String username) async {
   Future<void> deletePalet(String panelNoPp, String vendorId) async {
     await _apiRequest(
       'DELETE',
-      '/palet', // Pastikan endpoint ini ada di backend Go
+      '/palet', 
       body: {'panel_no_pp': panelNoPp, 'vendor': vendorId},
     );
   }
@@ -479,7 +479,7 @@ Future<Company?> getCompanyByUsername(String username) async {
   Future<void> deleteCorepart(String panelNoPp, String vendorId) async {
     await _apiRequest(
       'DELETE',
-      '/corepart', // Pastikan endpoint ini ada di backend Go
+      '/corepart', 
       body: {'panel_no_pp': panelNoPp, 'vendor': vendorId},
     );
   }
@@ -620,21 +620,21 @@ Future<Company?> getCompanyByUsername(String username) async {
       'company_id': currentUser.id,
     };
 
-    // Helper untuk mengubah list menjadi string dipisahkan koma
+    
     void addListToParams(String key, List<String>? list) {
       if (list != null && list.isNotEmpty) {
         queryParams[key] = list.join(',');
       }
     }
 
-    // Helper untuk mengubah enum menjadi string
+    
     void addEnumListToParams(String key, List<dynamic>? list) {
       if (list != null && list.isNotEmpty) {
         queryParams[key] = list.map((e) => e.toString().split('.').last).join(',');
       }
     }
 
-    // Tambahkan semua filter yang aktif ke dalam parameter
+    
     if (startDateRange != null) {
       queryParams['start_date_start'] = startDateRange.start
           .toUtc()
@@ -744,7 +744,7 @@ Future<Company?> getCompanyByUsername(String username) async {
       return 'Error formatting remarks';
     }
   }
-  // ... di dalam file lib/helpers/db_helper.dart
+  
 
   Future<Excel> generateCustomExportExcel({
     required bool includePanelData,
@@ -752,7 +752,7 @@ Future<Company?> getCompanyByUsername(String username) async {
     required bool includeIssueData,
     required bool includeSrData,
     required Company currentUser,
-    required List<PanelDisplayData> filteredPanels, // Ini adalah list yang sudah terfilter oleh search
+    required List<PanelDisplayData> filteredPanels, 
     DateTimeRange? startDateRange,
     DateTimeRange? deliveryDateRange,
     DateTimeRange? closedDateRange,
@@ -795,19 +795,19 @@ Future<Company?> getCompanyByUsername(String username) async {
       includeArchived: includeArchived,
     );
 
-    // [PERBAIKAN 1] Buat Set (kumpulan) No. PP dari panel yang sudah terfilter di UI
+    
     final filteredPanelNoPps = filteredPanels.map((p) => p.panel.noPp).toSet();
 
-    // ### TAMBAHKAN DEBUG PRINT ###
+    
     print("--- DEBUG EXPORT ---");
     print("Jumlah panel terfilter di UI: ${filteredPanels.length}");
-    // Batasi print jika listnya terlalu panjang
+    
     if (filteredPanelNoPps.length > 20) {
       print("Daftar No. PP terfilter (contoh): ${filteredPanelNoPps.take(20).join(', ')}");
     } else {
       print("Daftar No. PP terfilter: $filteredPanelNoPps");
     }
-    // ### AKHIR DEBUG PRINT ###
+    
 
 
     if (includePanelData) {
@@ -930,7 +930,7 @@ Future<Company?> getCompanyByUsername(String username) async {
         'PP Panel', 'WBS', 'Panel No', 'Issue ID', 'Judul', 'Deskripsi', 'Status', 'Dibuat Oleh', 'Tanggal Dibuat', 'Komentar'
       ].map((h) => TextCellValue(h)).toList());
 
-      // [PERBAIKAN 2.1] Ambil SEMUA issues dari server (yang cocok filter modal)
+      
       final List<IssueForExport> allIssues = ((data['issues'] as List<dynamic>?) ?? []).map((i) => IssueForExport.fromMap(i)).toList();
       final List<CommentForExport> comments = ((data['comments'] as List<dynamic>?) ?? []).map((c) => CommentForExport.fromMap(c)).toList();
       
@@ -939,15 +939,15 @@ Future<Company?> getCompanyByUsername(String username) async {
         (commentsByIssue[comment.issueId] ??= []).add(comment);
       }
 
-      // [PERBAIKAN 2.2] Filter issues secara manual berdasarkan No. PP yang sudah terfilter di UI
+      
       final filteredIssues = allIssues.where((issue) => filteredPanelNoPps.contains(issue.panelNoPp)).toList();
 
-      // ### TAMBAHKAN DEBUG PRINT ###
+      
       print("Total issues dari server: ${allIssues.length}");
       print("Issues setelah difilter: ${filteredIssues.length}");
-      // ### AKHIR DEBUG PRINT ###
+      
 
-      // [PERBAIKAN 2.3] Gunakan list 'filteredIssues' untuk di-loop
+      
       for (final issue in filteredIssues) {
         String formattedComments = '';
         int rootCommentCount = 1;
@@ -988,19 +988,19 @@ Future<Company?> getCompanyByUsername(String username) async {
         'PP Panel', 'WBS', 'Panel No', 'No. PO', 'Item', 'Qty', 'Supplier', 'Status', 'Remarks (No. DO)'
       ].map((h) => TextCellValue(h)).toList());
 
-      // [PERBAIKAN 3.1] Ambil SEMUA SRs dari server (yang cocok filter modal)
+      
       final List<AdditionalSRForExport> allSrs = ((data['additional_srs'] as List<dynamic>?) ?? []).map((s) => AdditionalSRForExport.fromMap(s)).toList();
 
-      // [PERBAIKAN 3.2] Filter SRs secara manual berdasarkan No. PP yang sudah terfilter di UI
+      
       final filteredSrs = allSrs.where((sr) => filteredPanelNoPps.contains(sr.panelNoPp)).toList();
 
-      // ### TAMBAHKAN DEBUG PRINT ###
+      
       print("Total SRs dari server: ${allSrs.length}");
       print("SRs setelah difilter: ${filteredSrs.length}");
       print("--- AKHIR DEBUG EXPORT ---");
-      // ### AKHIR DEBUG PRINT ###
+      
 
-      // [PERBAIKAN 3.3] Gunakan list 'filteredSrs' untuk di-loop
+      
       for (final sr in filteredSrs) {
         srSheet.appendRow([
           TextCellValue(
@@ -1070,7 +1070,7 @@ Future<Company?> getCompanyByUsername(String username) async {
           .toUtc()
           .toIso8601String();
     }
-    // ... (Tambahkan semua if dan addListToParams lainnya seperti di fungsi pertama) ...
+    
     if (deliveryDateRange != null) {
       queryParams['delivery_date_start'] = deliveryDateRange.start
           .toUtc()
@@ -1229,24 +1229,24 @@ Future<Company?> getCompanyByUsername(String username) async {
 
   Future<bool> isUsernameTaken(String username) async {
     try {
-      // Panggil API. _apiRequest akan melempar error jika status code bukan 2xx.
+      
       final data = await _apiRequest('GET', '/account/exists/$username');
 
-      // Backend Go akan mengembalikan JSON seperti: `{"exists": true}`.
-      // Kita harus periksa isi dari Map tersebut.
+      
+      
       if (data is Map<String, dynamic> && data.containsKey('exists')) {
-        // Kembalikan nilai boolean dari kunci 'exists'.
-        // `?? false` untuk keamanan, jika nilainya null, anggap tidak ada.
+        
+        
         return data['exists'] as bool? ?? false;
       }
 
-      // Jika respons tidak sesuai format yang diharapkan, anggap saja tidak terpakai
-      // agar tidak memblokir user. Ini adalah fallback yang aman.
+      
+      
       return false;
     } catch (e) {
-      // Jika ada error koneksi atau sejenisnya, anggap username tidak terpakai
-      // agar fungsionalitas tidak terblokir total.
-      // Anda bisa menambahkan log di sini jika perlu.
+      
+      
+      
       debugPrint("Error checking username: $e");
       return false;
     }
@@ -1278,11 +1278,11 @@ Future<Company?> getCompanyByUsername(String username) async {
       '/panels/$panelNoPp/issues',
     );
     if (data == null) return [];
-    // Kembalikan sebagai List<IssueWithPhotos>
+    
     return data.map((json) => IssueWithPhotos.fromJson(json)).toList();
   }
 
-  /// Mengambil detail satu isu beserta foto-fotonya.
+  
   Future<IssueWithPhotos> getIssueById(int issueId) async {
     final data = await _apiRequest('GET', '/issues/$issueId');
     if (data == null) {
@@ -1291,7 +1291,7 @@ Future<Company?> getCompanyByUsername(String username) async {
     return IssueWithPhotos.fromJson(data);
   }
 
-  /// Membuat isu baru untuk sebuah panel.
+  
   Future<void> createIssueForPanel(
     String panelNoPp,
     Map<String, dynamic> issueData,
@@ -1299,39 +1299,39 @@ Future<Company?> getCompanyByUsername(String username) async {
     await _apiRequest('POST', '/panels/$panelNoPp/issues', body: issueData);
   }
 
-  /// Memperbarui data sebuah isu.
+  
   Future<void> updateIssue(int issueId, Map<String, dynamic> issueData) async {
     await _apiRequest('PUT', '/issues/$issueId', body: issueData);
   }
 
-  /// Menghapus sebuah isu.
+  
   Future<void> deleteIssue(int issueId) async {
     await _apiRequest('DELETE', '/issues/$issueId');
   }
 
-  /// Mengambil semua tipe isu yang tersedia untuk ditampilkan sebagai pilihan.
+  
   Future<List<Map<String, dynamic>>> getIssueTitles() async {
     final List<dynamic>? data = await _apiRequest('GET', '/issue-titles');
     if (data == null) return [];
     return List<Map<String, dynamic>>.from(data);
   }
 
-  /// Membuat tipe isu baru.
+  
   Future<void> createIssueTitle(String title) async {
     await _apiRequest('POST', '/issue-titles', body: {'title': title});
   }
 
-  /// Memperbarui nama tipe isu yang sudah ada.
+  
   Future<void> updateIssueTitle(int id, String newTitle) async {
     await _apiRequest('PUT', '/issue-titles/$id', body: {'title': newTitle});
   }
 
-  /// Menghapus tipe isu.
+  
   Future<void> deleteIssueTitle(int id) async {
     await _apiRequest('DELETE', '/issue-titles/$id');
   }
 
-  /// Menambah foto ke sebuah isu.
+  
   Future<void> addPhotoToIssue(int issueId, String base64Photo) async {
     await _apiRequest(
       'POST',
@@ -1340,7 +1340,7 @@ Future<Company?> getCompanyByUsername(String username) async {
     );
   }
 
-  /// Menghapus foto dari sebuah isu.
+  
   Future<void> deletePhoto(int photoId) async {
     await _apiRequest('DELETE', '/photos/$photoId');
   }
@@ -1377,14 +1377,14 @@ Future<Company?> getCompanyByUsername(String username) async {
       'images': base64Images,
     };
 
-    // Panggil _apiRequest dan dapatkan hasilnya
+    
     final responseData = await _apiRequest(
       'POST',
       '/issues/$issueId/comments',
       body: body,
     );
 
-    // Kembalikan ID dari response
+    
     if (responseData != null && responseData['id'] != null) {
       return responseData['id'];
     } else {
@@ -1395,8 +1395,8 @@ Future<Company?> getCompanyByUsername(String username) async {
   Future<void> updateComment({
     required String commentId,
     required String text,
-    required List<String> existingImageUrls, // URL yang sudah ada
-    required List<File> newImages, // File gambar baru
+    required List<String> existingImageUrls, 
+    required List<File> newImages, 
   }) async {
     List<String> finalImages = List.from(existingImageUrls);
 
@@ -1418,12 +1418,12 @@ Future<Company?> getCompanyByUsername(String username) async {
     required int issueId,
     required String question,
     required String senderId,
-    required String replyToCommentId, // <-- TAMBAHKAN INI
+    required String replyToCommentId, 
   }) async {
     final body = {
       'question': question,
       'sender_id': senderId,
-      'reply_to_comment_id': replyToCommentId, // <-- TAMBAHKAN INI
+      'reply_to_comment_id': replyToCommentId, 
     };
     await _apiRequest('POST', '/issues/$issueId/ask-gemini', body: body);
   }
@@ -1476,7 +1476,7 @@ Future<Company?> getCompanyByUsername(String username) async {
     final data = await _apiRequest(
       'POST',
       '/panel/$panelNoPp/additional-sr',
-      body: sr.toMap(), // Gunakan toMap, karena _apiRequest sudah melakukan jsonEncode
+      body: sr.toMap(), 
     );
     if (data != null) {
       return AdditionalSR.fromMap(data);
@@ -1489,7 +1489,7 @@ Future<Company?> getCompanyByUsername(String username) async {
     await _apiRequest(
       'PUT',
       '/additional-sr/$srId',
-      body: sr.toMap(), // Gunakan toMap
+      body: sr.toMap(), 
     );
   }
 
@@ -1502,11 +1502,11 @@ Future<Company?> getCompanyByUsername(String username) async {
     if (data == null) {
       return [];
     }
-    // Konversi dari List<dynamic> ke List<String>
+    
     return List<String>.from(data);
   }
   
-  /// Mengambil semua slot produksi beserta statusnya.
+  
   Future<List<ProductionSlot>> getProductionSlots() async {
     final List<dynamic>? data = await _apiRequest('GET', '/production-slots');
     if (data == null) {
