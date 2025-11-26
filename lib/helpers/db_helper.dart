@@ -744,15 +744,13 @@ Future<Company?> getCompanyByUsername(String username) async {
       return 'Error formatting remarks';
     }
   }
-  
-
-  Future<Excel> generateCustomExportExcel({
+Future<Excel> generateCustomExportExcel({
     required bool includePanelData,
     required bool includeUserData,
     required bool includeIssueData,
     required bool includeSrData,
     required Company currentUser,
-    required List<PanelDisplayData> filteredPanels, 
+    required List<PanelDisplayData> filteredPanels,
     DateTimeRange? startDateRange,
     DateTimeRange? deliveryDateRange,
     DateTimeRange? closedDateRange,
@@ -769,13 +767,14 @@ Future<Company?> getCompanyByUsername(String username) async {
     List<PanelFilterStatus>? selectedPanelStatuses,
     bool? includeArchived,
   }) async {
-
     final excel = Excel.createExcel();
     excel.delete('Sheet1');
     final allCompanies = await getAllCompanies();
     final companyMap = {for (var c in allCompanies) c.id: c};
-    String? formatDate(DateTime? date) => date != null ? DateFormat('dd-MMM-yyyy').format(date) : null;
+    String? formatDate(DateTime? date) =>
+        date != null ? DateFormat('dd-MMM-yyyy').format(date) : null;
 
+    
     final data = await getFilteredDataForExport(
       currentUser: currentUser,
       startDateRange: startDateRange,
@@ -795,92 +794,62 @@ Future<Company?> getCompanyByUsername(String username) async {
       includeArchived: includeArchived,
     );
 
-    
-    final filteredPanelNoPps = filteredPanels.map((p) => p.panel.noPp).toSet();
+    final validPanelIds = filteredPanels
+        .map((p) => p.panel.noPp.trim().toLowerCase())
+        .toSet();
 
-    
-    print("--- DEBUG EXPORT ---");
-    print("Jumlah panel terfilter di UI: ${filteredPanels.length}");
-    
-    if (filteredPanelNoPps.length > 20) {
-      print("Daftar No. PP terfilter (contoh): ${filteredPanelNoPps.take(20).join(', ')}");
-    } else {
-      print("Daftar No. PP terfilter: $filteredPanelNoPps");
+    bool isMatch(String rawItemPp) {
+      final itemPp = rawItemPp.trim().toLowerCase();
+      
+      
+      if (validPanelIds.contains(itemPp)) return true;
+
+      for (final validPp in validPanelIds) {
+        if (validPp.contains(itemPp) || itemPp.contains(validPp)) {
+          return true;
+        }
+      }
+      return false;
     }
+
     
-
-
     if (includePanelData) {
       final panelSheet = excel['Panel'];
       final panelHeaders = [
-        'PP Panel',
-        'Panel No',
-        'WBS',
-        'PROJECT',
-        'Panel Type',
-        'Start Time of Work',
-        'Panel Remarks',
-        'Busbar Remarks',
-        'Plan Start',
-        'Actual Delivery ke SEC',
-        'Panel',
-        'Busbar',
-        'Progres Panel',
-        'Status Corepart',
-        'Status Palet',
-        'Status Busbar',
-        'Status Component',
-        'Close Date Busbar',
-        'AO Busbar',
-        'Current Position',
-        'Production/Subcon. Date',
-        'FAT Date',
-        'All Done Date',
+        'PP Panel', 'Panel No', 'WBS', 'PROJECT', 'Panel Type', 'Start Time of Work',
+        'Panel Remarks', 'Busbar Remarks', 'Plan Start', 'Actual Delivery ke SEC',
+        'Panel', 'Busbar', 'Progres Panel', 'Status Corepart', 'Status Palet',
+        'Status Busbar', 'Status Component', 'Close Date Busbar', 'AO Busbar',
+        'Current Position', 'Production/Subcon. Date', 'FAT Date', 'All Done Date',
       ];
       panelSheet.appendRow(panelHeaders.map((h) => TextCellValue(h)).toList());
 
       for (final panelData in filteredPanels) {
         final panel = panelData.panel;
-        final latestAoBusbar =
-            (panel.aoBusbarPcc != null &&
+        final latestAoBusbar = (panel.aoBusbarPcc != null &&
                 (panel.aoBusbarMcc == null ||
                     panel.aoBusbarPcc!.isAfter(panel.aoBusbarMcc!)))
             ? panel.aoBusbarPcc
             : panel.aoBusbarMcc;
 
-        final latestCloseDateBusbar =
-            (panel.closeDateBusbarPcc != null &&
+        final latestCloseDateBusbar = (panel.closeDateBusbarPcc != null &&
                 (panel.closeDateBusbarMcc == null ||
-                    panel.closeDateBusbarPcc!.isAfter(
-                      panel.closeDateBusbarMcc!,
-                    )))
+                    panel.closeDateBusbarPcc!.isAfter(panel.closeDateBusbarMcc!)))
             ? panel.closeDateBusbarPcc
             : panel.closeDateBusbarMcc;
 
         final status = panel.statusPenyelesaian ?? 'Warehouse';
         String? positionText;
-
         switch (status) {
           case 'Production':
-            positionText = 'Production (${RegExp(r'Cell\s+\d+')
-                                        .firstMatch(panel.productionSlot!)
-                                        ?.group(0) ?? panel.productionSlot! ?? 'N/A'})';
+            positionText = 'Production (${RegExp(r'Cell\s+\d+').firstMatch(panel.productionSlot!)?.group(0) ?? panel.productionSlot! ?? 'N/A'})';
             break;
-          case 'FAT':
-            positionText = 'FAT';
-            break;
-          case 'Done':
-            positionText = 'Done';
-            break;
-          case 'VendorWarehouse':
-          default:
-            positionText = 'Warehouse';
-            break;
+          case 'FAT': positionText = 'FAT'; break;
+          case 'Done': positionText = 'Done'; break;
+          case 'VendorWarehouse': default: positionText = 'Warehouse'; break;
         }
         panelSheet.appendRow([
-          TextCellValue(
-            panel.noPp.startsWith('TEMP_') ? 'Belum Diatur' : panel.noPp,
-          ),
+          TextCellValue(panel.noPp.startsWith('TEMP_') ? 'Belum Diatur' : panel.noPp),
           TextCellValue(panel.noPanel ?? ''),
           TextCellValue(panel.noWbs ?? ''),
           TextCellValue(panel.project ?? ''),
@@ -907,13 +876,11 @@ Future<Company?> getCompanyByUsername(String username) async {
       }
     }
 
+    
     if (includeUserData) {
-      final companyAccounts =
-          (data['companyAccounts'] as List<dynamic>?)?.cast<CompanyAccount>() ??
-          [];
+      final companyAccounts = (data['companyAccounts'] as List<dynamic>?)?.cast<CompanyAccount>() ?? [];
       final userSheet = excel['User'];
-      final userHeaders = ['Username', 'Password', 'Company', 'Company Role'];
-      userSheet.appendRow(userHeaders.map((h) => TextCellValue(h)).toList());
+      userSheet.appendRow(['Username', 'Password', 'Company', 'Company Role'].map((h) => TextCellValue(h)).toList());
       for (final account in companyAccounts) {
         final company = companyMap[account.companyId];
         userSheet.appendRow([
@@ -924,51 +891,45 @@ Future<Company?> getCompanyByUsername(String username) async {
         ]);
       }
     }
+
+    
     if (includeIssueData) {
       final issueSheet = excel['Issues'];
       issueSheet.appendRow([
         'PP Panel', 'WBS', 'Panel No', 'Issue ID', 'Judul', 'Deskripsi', 'Status', 'Dibuat Oleh', 'Tanggal Dibuat', 'Komentar'
       ].map((h) => TextCellValue(h)).toList());
 
-      
       final List<IssueForExport> allIssues = ((data['issues'] as List<dynamic>?) ?? []).map((i) => IssueForExport.fromMap(i)).toList();
       final List<CommentForExport> comments = ((data['comments'] as List<dynamic>?) ?? []).map((c) => CommentForExport.fromMap(c)).toList();
+
       
+      final filteredIssues = allIssues.where((issue) => isMatch(issue.panelNoPp)).toList();
+
+      print("DEBUG ISSUES: Total Server: ${allIssues.length}, Filtered: ${filteredIssues.length}");
+
       final Map<int, List<CommentForExport>> commentsByIssue = {};
       for (var comment in comments) {
         (commentsByIssue[comment.issueId] ??= []).add(comment);
       }
 
-      
-      final filteredIssues = allIssues.where((issue) => filteredPanelNoPps.contains(issue.panelNoPp)).toList();
-
-      
-      print("Total issues dari server: ${allIssues.length}");
-      print("Issues setelah difilter: ${filteredIssues.length}");
-      
-
-      
       for (final issue in filteredIssues) {
         String formattedComments = '';
         int rootCommentCount = 1;
         final issueComments = commentsByIssue[issue.issueId] ?? [];
-        
         final rootComments = issueComments.where((c) => c.replyToCommentId == null).toList();
         final replyComments = issueComments.where((c) => c.replyToCommentId != null).toList();
 
         for (var root in rootComments) {
-            formattedComments += '${rootCommentCount}. ${root.senderId}: ${root.text}\n';
-            final replies = replyComments.where((r) => r.replyToCommentId == root.text).toList();
-            for (var reply in replies) {
-                formattedComments += '   - ${reply.senderId}: ${reply.text}\n';
-            }
-            rootCommentCount++;
+          formattedComments += '${rootCommentCount}. ${root.senderId}: ${root.text}\n';
+          final replies = replyComments.where((r) => r.replyToCommentId == root.text).toList();
+          for (var reply in replies) {
+            formattedComments += '   - ${reply.senderId}: ${reply.text}\n';
+          }
+          rootCommentCount++;
         }
 
         issueSheet.appendRow([
-          TextCellValue(
-            issue.panelNoPp.startsWith('TEMP_') ? 'Belum Diatur' : issue.panelNoPp
-          ),
+          TextCellValue(issue.panelNoPp.startsWith('TEMP_') ? 'Belum Diatur' : issue.panelNoPp),
           TextCellValue(issue.panelNoWbs ?? ''),
           TextCellValue(issue.panelNoPanel ?? ''),
           TextCellValue(issue.issueId.toString()),
@@ -981,31 +942,24 @@ Future<Company?> getCompanyByUsername(String username) async {
         ]);
       }
     }
+
     
     if (includeSrData) {
       final srSheet = excel['Additional SR'];
       srSheet.appendRow([
-        'PP Panel', 'WBS', 'Panel No', 'No. PO', 'Item', 'Qty', 'Supplier', 'Status', 'Remarks (No. DO)'
+        'PP Panel', 'WBS', 'Panel No', 'No. PO', 'Item', 'Qty', 'Supplier', 'Status', 'Remarks (No. DO)', 'Received Date', 'Close Date'
       ].map((h) => TextCellValue(h)).toList());
 
-      
       final List<AdditionalSRForExport> allSrs = ((data['additional_srs'] as List<dynamic>?) ?? []).map((s) => AdditionalSRForExport.fromMap(s)).toList();
 
       
-      final filteredSrs = allSrs.where((sr) => filteredPanelNoPps.contains(sr.panelNoPp)).toList();
+      final filteredSrs = allSrs.where((sr) => isMatch(sr.panelNoPp)).toList();
 
-      
-      print("Total SRs dari server: ${allSrs.length}");
-      print("SRs setelah difilter: ${filteredSrs.length}");
-      print("--- AKHIR DEBUG EXPORT ---");
-      
+      print("DEBUG SR: Total Server: ${allSrs.length}, Filtered: ${filteredSrs.length}");
 
-      
       for (final sr in filteredSrs) {
         srSheet.appendRow([
-          TextCellValue(
-            sr.panelNoPp.startsWith('TEMP_') ? 'Belum Diatur' : sr.panelNoPp 
-          ),
+          TextCellValue(sr.panelNoPp.trim().toUpperCase().startsWith('TEMP_') ? 'Belum Diatur' : sr.panelNoPp),
           TextCellValue(sr.panelNoWbs ?? ''),
           TextCellValue(sr.panelNoPanel ?? ''),
           TextCellValue(sr.poNumber),
@@ -1014,14 +968,15 @@ Future<Company?> getCompanyByUsername(String username) async {
           TextCellValue(sr.supplier ?? ''),
           TextCellValue(sr.status),
           TextCellValue(sr.remarks),
+          TextCellValue(formatDate(sr.receivedDate) ?? ''),
+          TextCellValue(formatDate(sr.closeDate) ?? ''),
         ]);
       }
     }
 
     return excel;
-  
   }
-
+  
   Future<String> generateCustomExportJson({
     required bool includePanelData,
     required bool includeUserData,

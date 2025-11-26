@@ -261,7 +261,7 @@ class IssueForExport {
 
   factory IssueForExport.fromMap(Map<String, dynamic> map) {    
     return IssueForExport(
-      panelNoPp: map['panel_no_pp'] ?? '',
+      panelNoPp: (map['panel_no_pp'] as String? ?? '').trim(),
       panelNoWbs: _parseString(map['panel_no_wbs']),
       panelNoPanel: _parseString(map['panel_no_panel']), 
       issueId: map['issue_id'] ?? 0,
