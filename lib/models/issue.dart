@@ -306,7 +306,7 @@ class CommentForExport {
       issueId: map['issue_id'] != null ? map['issue_id'] as int : 0,
       text: map['text']?.toString() ?? '',
       senderId: map['sender_id']?.toString() ?? '',
-      replyToCommentId: map['reply_to_comment_id']?.toString(),
+      replyToCommentId: _parseString(map['reply_to_comment_id']),
     );
   }
 }
