@@ -285,26 +285,28 @@ class IssueForExport {
     required this.createdAt,
   });
 }
-
 class CommentForExport {
+  final String commentId; 
   final int issueId;
   final String text;
   final String senderId;
   final String? replyToCommentId;
 
-    factory CommentForExport.fromMap(Map<String, dynamic> map) {
-      return CommentForExport(
-        issueId: map['issue_id'] ?? 0,
-        text: _parseString(map['text']) ?? '',
-        senderId: _parseString(map['sender_id']) ?? '',
-        replyToCommentId: _parseString(map['reply_to_comment_id']), 
-      );
-    }
-
   CommentForExport({
+    required this.commentId, 
     required this.issueId,
     required this.text,
     required this.senderId,
     this.replyToCommentId,
   });
+
+  factory CommentForExport.fromMap(Map<String, dynamic> map) {
+    return CommentForExport(
+      commentId: map['comment_id']?.toString() ?? '', 
+      issueId: map['issue_id'] != null ? map['issue_id'] as int : 0,
+      text: map['text']?.toString() ?? '',
+      senderId: map['sender_id']?.toString() ?? '',
+      replyToCommentId: map['reply_to_comment_id']?.toString(),
+    );
+  }
 }

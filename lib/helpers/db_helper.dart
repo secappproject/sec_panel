@@ -877,57 +877,79 @@ Future<Excel> generateCustomExportExcel({
     }
 
     
-    if (includeUserData) {
-      final companyAccounts = (data['companyAccounts'] as List<dynamic>?)?.cast<CompanyAccount>() ?? [];
-      final userSheet = excel['User'];
-      userSheet.appendRow(['Username', 'Password', 'Company', 'Company Role'].map((h) => TextCellValue(h)).toList());
-      for (final account in companyAccounts) {
-        final company = companyMap[account.companyId];
-        userSheet.appendRow([
-          TextCellValue(account.username),
-          TextCellValue(account.password),
-          TextCellValue(company?.name ?? account.companyId),
-          TextCellValue(company?.role.name ?? ''),
-        ]);
-      }
-    }
-
-    
     if (includeIssueData) {
       final issueSheet = excel['Issues'];
+      
+      
+      CellStyle commentStyle = CellStyle(
+        textWrapping: TextWrapping.WrapText, 
+        verticalAlign: VerticalAlign.Top,
+        fontFamily: getFontFamily(FontFamily.Arial),
+      );
+
+      
       issueSheet.appendRow([
         'PP Panel', 'WBS', 'Panel No', 'Issue ID', 'Judul', 'Deskripsi', 'Status', 'Dibuat Oleh', 'Tanggal Dibuat', 'Komentar'
       ].map((h) => TextCellValue(h)).toList());
 
+      
+      
+      issueSheet.setColumnWidth(9, 60.0); 
+
       final List<IssueForExport> allIssues = ((data['issues'] as List<dynamic>?) ?? []).map((i) => IssueForExport.fromMap(i)).toList();
       final List<CommentForExport> comments = ((data['comments'] as List<dynamic>?) ?? []).map((c) => CommentForExport.fromMap(c)).toList();
 
-      
       final filteredIssues = allIssues.where((issue) => isMatch(issue.panelNoPp)).toList();
 
-      print("DEBUG ISSUES: Total Server: ${allIssues.length}, Filtered: ${filteredIssues.length}");
-
+      
       final Map<int, List<CommentForExport>> commentsByIssue = {};
       for (var comment in comments) {
         (commentsByIssue[comment.issueId] ??= []).add(comment);
       }
 
       for (final issue in filteredIssues) {
-        String formattedComments = '';
+        
+        StringBuffer sb = StringBuffer();
         int rootCommentCount = 1;
+        
         final issueComments = commentsByIssue[issue.issueId] ?? [];
         final rootComments = issueComments.where((c) => c.replyToCommentId == null).toList();
         final replyComments = issueComments.where((c) => c.replyToCommentId != null).toList();
 
         for (var root in rootComments) {
-          formattedComments += '${rootCommentCount}. ${root.senderId}: ${root.text}\n';
-          final replies = replyComments.where((r) => r.replyToCommentId == root.text).toList();
-          for (var reply in replies) {
-            formattedComments += '   - ${reply.senderId}: ${reply.text}\n';
+          
+          String cleanRootText = root.text.replaceAll('**', '').replaceAll('"', '').trim();
+          
+          
+          if (cleanRootText.isEmpty) continue; 
+
+          
+          sb.write('$rootCommentCount. ${root.senderId}: "$cleanRootText"\n');
+          
+          
+          final replies = replyComments.where((r) => r.replyToCommentId == root.commentId).toList();
+          
+          if (replies.isNotEmpty) {
+            
+            sb.write('      Balasan:\n'); 
+            
+            for (var reply in replies) {
+              String cleanReplyText = reply.text.replaceAll('**', '').replaceAll('"', '').trim();
+              if (cleanReplyText.isEmpty) continue;
+
+              
+              sb.write('      - ${reply.senderId}: "$cleanReplyText"\n');
+            }
           }
+
+          
+          sb.write('\n'); 
           rootCommentCount++;
         }
+        
+        String finalCommentText = sb.toString().trim(); 
 
+        
         issueSheet.appendRow([
           TextCellValue(issue.panelNoPp.startsWith('TEMP_') ? 'Belum Diatur' : issue.panelNoPp),
           TextCellValue(issue.panelNoWbs ?? ''),
@@ -938,11 +960,20 @@ Future<Excel> generateCustomExportExcel({
           TextCellValue(issue.status),
           TextCellValue(issue.createdBy),
           TextCellValue(formatDate(issue.createdAt) ?? ''),
-          TextCellValue(formattedComments.trim()),
+          TextCellValue(finalCommentText), 
         ]);
+
+        
+        
+        int rowIndex = issueSheet.maxRows - 1; 
+        
+        
+        var cell = issueSheet.cell(CellIndex.indexByColumnRow(columnIndex: 9, rowIndex: rowIndex));
+        
+        
+        cell.cellStyle = commentStyle;
       }
     }
-
     
     if (includeSrData) {
       final srSheet = excel['Additional SR'];
