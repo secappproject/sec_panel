@@ -1933,7 +1933,6 @@ class _DashedBorderPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
 class _AddNewSubcontractorSheet extends StatefulWidget {
   const _AddNewSubcontractorSheet();
   @override
@@ -1944,7 +1943,9 @@ class _AddNewSubcontractorSheet extends StatefulWidget {
 class _AddNewSubcontractorSheetState extends State<_AddNewSubcontractorSheet> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  AppRole _selectedRole = AppRole.g3;
+  
+  // Default sudah G3
+  AppRole _selectedRole = AppRole.g3; 
   bool _isSaving = false;
 
   @override
@@ -1958,7 +1959,8 @@ class _AddNewSubcontractorSheetState extends State<_AddNewSubcontractorSheet> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isSaving = true);
       Navigator.pop(context, {
-        'name': _nameController.text.trim(),
+        // PERUBAHAN 1: Pastikan data yang dikirim disimpan sebagai lowercase
+        'name': _nameController.text.trim().toLowerCase(),
         'role': _selectedRole,
       });
     }
@@ -2007,6 +2009,16 @@ class _AddNewSubcontractorSheetState extends State<_AddNewSubcontractorSheet> {
                   cursorColor: AppColors.schneiderGreen,
                   controller: _nameController,
                   autofocus: true,
+                  // PERUBAHAN 2: Auto lowercase saat mengetik (Visual)
+                  onChanged: (value) {
+                    final val = value.toLowerCase();
+                    if (value != val) {
+                      _nameController.value = _nameController.value.copyWith(
+                        text: val,
+                        selection: TextSelection.collapsed(offset: val.length),
+                      );
+                    }
+                  },
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w300,
@@ -2017,6 +2029,9 @@ class _AddNewSubcontractorSheetState extends State<_AddNewSubcontractorSheet> {
                   decoration: InputDecoration(
                     fillColor: AppColors.white,
                     filled: true,
+                    // Tambahkan hint agar user tahu formatnya
+                    hintText: 'nama perusahaan (huruf kecil)', 
+                    hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
@@ -2061,12 +2076,9 @@ class _AddNewSubcontractorSheetState extends State<_AddNewSubcontractorSheet> {
         Wrap(
           spacing: 8,
           runSpacing: 12,
+          // PERUBAHAN 3: Filter hanya menampilkan AppRole.g3
           children: AppRole.values
-              .where((role) =>
-                  role == AppRole.g3 ||
-                  role == AppRole.k3 ||
-                  role == AppRole.k5 ||
-                  role == AppRole.warehouse)
+              .where((role) => role == AppRole.g3) 
               .map((role) {
             return _buildOptionButton(
               label: role.name.toUpperCase(),

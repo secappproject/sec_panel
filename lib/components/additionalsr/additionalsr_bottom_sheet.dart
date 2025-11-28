@@ -1209,10 +1209,12 @@ class _AddNewSupplierSheetState extends State<_AddNewSupplierSheet> {
     if (_isSaving) return;
     if (_formKey.currentState!.validate()) {
       setState(() => _isSaving = true);
+      final String finalName = _nameController.text.trim().toLowerCase();
       Navigator.pop(context, {
-        'name': _nameController.text.trim(),
-        'role': _selectedRole,
-      });
+      'name': finalName,
+      'role': _selectedRole, 
+      'roleString': _selectedRole.name.toLowerCase(), 
+    });
     }
   }
 
@@ -1243,7 +1245,7 @@ class _AddNewSupplierSheetState extends State<_AddNewSupplierSheet> {
             ),
             const SizedBox(height: 24),
             const Text(
-              "Tambah Perusahaan Baru",
+              "Pilih Perusahaan",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 24),
@@ -1300,33 +1302,31 @@ class _AddNewSupplierSheetState extends State<_AddNewSupplierSheet> {
       ),
     );
   }
-
   Widget _buildRoleSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Role',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 12,
-          children: AppRole.values
-              .where((role) =>
-                  role != AppRole.admin && role != AppRole.viewer)
-              .map((role) {
-            return _buildOptionButton(
-              label: role.name.toUpperCase(),
-              selected: _selectedRole == role,
-              onTap: () => setState(() => _selectedRole = role),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Role',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 12,
+            children: AppRole.values
+                .where((role) => role == AppRole.g3)
+                .map((role) {
+              return _buildOptionButton(
+                label: role.name.toUpperCase(),
+                selected: _selectedRole == role,
+                onTap: () => setState(() => _selectedRole = role),
+              );
+            }).toList(),
+          ),
+        ],
+      );
+    }
 
   Widget _buildOptionButton({
     required String label,
