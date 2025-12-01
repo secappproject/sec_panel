@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:secpanel/login.dart';
 import 'package:secpanel/login_change_password.dart';
 import 'package:secpanel/main_screen.dart';
+import 'package:secpanel/maintenance.dart';
 import 'package:secpanel/theme/colors.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -88,9 +89,10 @@ class _MyAppState extends State<MyApp> {
           ),
           useMaterial3: true,
         ),
-        initialRoute:  '/login',
+        initialRoute:  '/maintenance',
         routes: {
           '/login': (context) => const LoginPage(),
+          '/maintenance': (context) => const MaintenancePage(),
           '/login-change-password': (context) =>
               const LoginChangePasswordPage(),
           '/home': (context) => const MainScreen(),
