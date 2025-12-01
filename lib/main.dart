@@ -93,7 +93,7 @@ class _MyAppState extends State<MyApp> {
         routes: {
           // '/login': (context) => const MaintenancePage(),
           '/login': (context) => const LoginPage(),
-          '/maintenance': (context) => const MaintenancePage(),
+          // '/maintenance': (context) => const MaintenancePage(),
           // '/login-change-password': (context) =>
           //     const MaintenancePage(),
           '/login-change-password': (context) =>
