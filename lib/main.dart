@@ -91,15 +91,15 @@ class _MyAppState extends State<MyApp> {
         ),
         initialRoute:  '/maintenance',
         routes: {
-          '/login': (context) => const MaintenancePage(),
-          // '/login': (context) => const LoginPage(),
+          // '/login': (context) => const MaintenancePage(),
+          '/login': (context) => const LoginPage(),
           '/maintenance': (context) => const MaintenancePage(),
-          '/login-change-password': (context) =>
-              const MaintenancePage(),
           // '/login-change-password': (context) =>
-          //     const LoginChangePasswordPage(),
-          // '/home': (context) => const MainScreen(),
-          '/home': (context) => const MaintenancePage(),
+          //     const MaintenancePage(),
+          '/login-change-password': (context) =>
+              const LoginChangePasswordPage(),
+          '/home': (context) => const MainScreen(),
+          // '/home': (context) => const MaintenancePage(),
         },
       ),
     );
