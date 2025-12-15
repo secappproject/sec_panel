@@ -175,27 +175,7 @@ Future<void> _launchURL(String urlString) async {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: () => _launchURL('https://mvp-fe.vercel.app'),
-                child: const Text(
-                  'MVP',
-                  style: TextStyle(
-                    fontFamily: 'Lexend',
-                    fontWeight: FontWeight.w500,
-                    fontSize: 12,
-                    color: AppColors.schneiderGreen,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(0, 44),
-                  side: const BorderSide(color: AppColors.schneiderGreen),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () => _launchURL('https://vro-fe.vercel.app'),
+                onPressed: () => _launchURL('http://72.61.210.181:3000'),
                 child: const Text(
                   'VRO',
                   style: TextStyle(
