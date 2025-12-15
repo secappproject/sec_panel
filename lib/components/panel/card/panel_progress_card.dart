@@ -445,20 +445,36 @@ class PanelProgressCard extends StatelessWidget {
                                     fontWeight: FontWeight.w300,
                                     color: AppColors.gray),
                               ),
-                              SizedBox(
-                                width: 8,
-                              ),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: _buildPanelPosition(),
-                              ),
+                              // SizedBox(
+                              //   width: 8,
+                              // ),
+                              // Align(
+                              //   alignment: Alignment.centerRight,
+                              //   child: _buildPanelPosition(),
+                              // ),
                             ],
                           ),
                           SizedBox(
-                            height: 8,
+                            height: 6,
+                          ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: _buildPanelPosition(),
+                          ),
+                          SizedBox(
+                            height: 6,
                           ),
                           Row(
                             children: [
+                              Text(
+                                progressLabel,
+                                style: const TextStyle(
+                                  color: AppColors.black,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
                               Container(
                                 height: 11,
                                 width: MediaQuery.of(context).size.width * 0.10,
@@ -475,15 +491,6 @@ class PanelProgressCard extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                   ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                progressLabel,
-                                style: const TextStyle(
-                                  color: AppColors.black,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12,
                                 ),
                               ),
                             ],
