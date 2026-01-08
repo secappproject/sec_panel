@@ -816,8 +816,8 @@ Future<Excel> generateCustomExportExcel({
     if (includePanelData) {
       final panelSheet = excel['Panel'];
       final panelHeaders = [
-        'PP Panel', 'Panel No', 'WBS', 'PROJECT', 'Panel Type', 'Start Time of Work',
-        'Panel Remarks', 'Busbar Remarks', 'Plan Start', 'Actual Delivery ke SEC',
+        'PP Panel', 'Panel No', 'WBS', 'PROJECT', 'Panel Type', 'Start Assembly',
+        'Panel Remarks', 'Busbar Remarks', 'Target Delivery', 'Actual Delivery ke SEC',
         'Panel', 'Busbar', 'Progres Panel', 'Status Corepart', 'Status Palet',
         'Status Busbar', 'Status Component', 'Close Date Busbar', 'AO Busbar',
         'Current Position', 'Production/Subcon. Date', 'FAT Date', 'All Done Date',
