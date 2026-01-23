@@ -207,40 +207,66 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final bool isFuture =
-        widget.startDate != null && widget.startDate!.isAfter(DateTime.now());
-    final String durationLabel = isFuture ? "Mulai Dalam" : "Durasi Proses";
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        16,
-        20,
-        MediaQuery.of(context).viewInsets.bottom + 16,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              height: 5,
-              width: 40,
-              decoration: BoxDecoration(
-                color: AppColors.grayLight,
-                borderRadius: BorderRadius.circular(100),
-              ),
+  @override
+Widget build(BuildContext context) {
+  final bool isFuture =
+      widget.startDate != null && widget.startDate!.isAfter(DateTime.now());
+  final String durationLabel = isFuture ? "Mulai Dalam" : "Durasi Proses";
+
+  return Container(
+    padding: EdgeInsets.only(
+      bottom: MediaQuery.of(context).viewInsets.bottom,
+    ),
+    constraints: BoxConstraints(
+      maxHeight: MediaQuery.of(context).size.height * 0.85,
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min, 
+      children: [
+        const SizedBox(height: 16),
+        Center(
+          child: Container(
+            height: 5,
+            width: 40,
+            decoration: BoxDecoration(
+              color: AppColors.grayLight,
+              borderRadius: BorderRadius.circular(100),
             ),
           ),
-          const SizedBox(height: 24),
-          _buildStatusCard(durationLabel),
-          if (_isK5) ...[const SizedBox(height: 16), _buildRemarkField()],
-          const SizedBox(height: 32),
-          _buildActionButtons(),
-        ],
-      ),
-    );
-  }
+        ),
+        
+        // Bagian Konten Form yang Bisa Di-scroll
+        Flexible(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildStatusCard(durationLabel),
+                if (_isK5) ...[
+                  const SizedBox(height: 16), 
+                  _buildRemarkField(),
+                ],
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              top: BorderSide(color: AppColors.grayLight.withOpacity(0.5)),
+            ),
+          ),
+          child: _buildActionButtons(),
+        ),
+      ],
+    ),
+  );
+}
   
 
   Widget _buildStatusCard(String durationLabel) {

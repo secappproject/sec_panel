@@ -258,6 +258,8 @@ class IssueForExport {
   final String status;
   final String createdBy;
   final DateTime createdAt;
+  final String? notifyEmail;
+  final bool hasImages;
 
   factory IssueForExport.fromMap(Map<String, dynamic> map) {    
     return IssueForExport(
@@ -270,6 +272,8 @@ class IssueForExport {
       status: _parseString(map['status']) ?? '', 
       createdBy: _parseString(map['created_by']) ?? '', 
       createdAt: DateTime.parse(map['created_at']),
+      notifyEmail: _parseString(map['notify_email']),
+      hasImages: map['has_images'] ?? false,
     );
   }
 
@@ -283,6 +287,8 @@ class IssueForExport {
     required this.status,
     required this.createdBy,
     required this.createdAt,
+    this.notifyEmail,
+    required this.hasImages,
   });
 }
 class CommentForExport {

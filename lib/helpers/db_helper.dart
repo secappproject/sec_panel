@@ -33,15 +33,15 @@ class DatabaseHelper {
 
   String get _baseUrl {
     if (kReleaseMode) {
-      return "http://72.61.210.181:8081";
+      return "http://localhost:8099";
 
     } else {
       if (Platform.isAndroid) {
 
-      return "http://72.61.210.181:8081";
+      return "http://localhost:8099";
       } else {
 
-      return "http://72.61.210.181:8081";
+      return "http://localhost:8099";
       }
     }
   }
@@ -889,7 +889,7 @@ Future<Excel> generateCustomExportExcel({
 
       
       issueSheet.appendRow([
-        'PP Panel', 'WBS', 'Panel No', 'Issue ID', 'Judul', 'Deskripsi', 'Status', 'Dibuat Oleh', 'Tanggal Dibuat', 'Komentar'
+        'PP Panel', 'WBS', 'Panel No', 'Issue ID', 'Judul', 'Deskripsi', 'Status', 'Dibuat Oleh', 'Tanggal Dibuat', 'Komentar', 'Ada Gambar?', 'Email Notifikasi'
       ].map((h) => TextCellValue(h)).toList());
 
       
@@ -961,9 +961,9 @@ Future<Excel> generateCustomExportExcel({
           TextCellValue(issue.createdBy),
           TextCellValue(formatDate(issue.createdAt) ?? ''),
           TextCellValue(finalCommentText), 
+          TextCellValue(issue.hasImages ? 'TRUE' : 'FALSE'), 
+          TextCellValue(issue.notifyEmail ?? '-'),
         ]);
-
-        
         
         int rowIndex = issueSheet.maxRows - 1; 
         

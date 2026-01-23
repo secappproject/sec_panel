@@ -468,7 +468,15 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        bottomNavigationBar: Container(
+          padding: EdgeInsets.fromLTRB(20, 10, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(color: AppColors.grayLight.withOpacity(0.5))),
+          ),
+          child: _isViewer ? null : _buildActionButtons(),
+        ),
       body: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.only(
@@ -685,7 +693,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                   _buildCorepartSection(),
                 ],
                 const SizedBox(height: 24),
-                if (!_isViewer) _buildActionButtons(),
+                // if (!_isViewer) _buildActionButtons(),
               ],
             ),
           ),
