@@ -1770,8 +1770,8 @@ Map<String, dynamic> _calculateBusbarWipByTime(
   });
 
   for (var data in relevantPanels) {
-    
-    final dateForChart = data.panel.startDate ?? DateTime.now();
+    if (data.panel.targetDelivery == null) continue; 
+    final dateForChart = data.panel.targetDelivery!;
 
     bool isInDateRange = false;
     if (view == ChartTimeView.yearly) {
@@ -1917,9 +1917,8 @@ Map<String, dynamic> _calculateWipByTime(
   final relevantPanels = panels.where((data) => !data.panel.isClosed);
 
   for (var data in relevantPanels) {
-    
-    
-    final dateForChart = data.panel.startDate ?? DateTime.now();
+    if (data.panel.targetDelivery == null) continue;
+    final dateForChart = data.panel.targetDelivery!;
 
     
     
@@ -2224,7 +2223,8 @@ Map<String, dynamic> _calculateWipByProject(
 
   for (var data in relevantPanels) {
     
-    final dateForChart = data.panel.startDate ?? DateTime.now();
+    if (data.panel.targetDelivery == null) continue; 
+  final dateForChart = data.panel.targetDelivery!;
 
     
     bool isInDateRange = false;
@@ -3388,7 +3388,7 @@ class _GroupedBarChartCardState extends State<_GroupedBarChartCard> {
           ),
           const SizedBox(height: 24),
           Text(
-            "Jumlah ${widget.itemType == "by Project" ? "Panel" : widget.itemType} Work In Progress",
+            "Target Jumlah ${widget.itemType == "by Project" ? "Panel" : widget.itemType} yang Dikirim",
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.black),
           ),
           const SizedBox(height: 8),
