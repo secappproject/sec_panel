@@ -181,6 +181,7 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
     'panel': {
       'PP Panel': 'no_pp',
       'Panel No': 'no_panel',
+      'No Panel': 'no_panel',
       'WBS': 'no_wbs',
       'PROJECT': 'project',
       'Target Delivery': 'target_delivery',
@@ -1189,10 +1190,26 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
     );
   }
 
-  Widget _buildDataTable(String tableName, List<Map<String, dynamic>> rows) {
-    final columns = rows.isNotEmpty
+Widget _buildDataTable(String tableName, List<Map<String, dynamic>> rows) {
+    // 1. Identifikasi nama kolom yang bertindak sebagai Primary Key
+    final pkColumn = _findPrimaryKeyColumnName(
+      tableName, 
+      rows.isNotEmpty ? rows.first.keys.toList() : []
+    );
+
+    // 2. Tentukan daftar kolom yang akan ditampilkan
+    final columns = (rows.isNotEmpty
         ? rows.first.keys.toList()
-        : (_columnEquivalents[tableName.toLowerCase()]?.keys.toList() ?? []);
+        : (_columnEquivalents[tableName.toLowerCase()]?.keys.toList() ?? []))
+        .where((col) {
+          // Jika BUKAN mode default (isCustomTemplate == true) DAN kolom adalah PK, maka sembunyikan
+          if (widget.isCustomTemplate && col == pkColumn) {
+            return false;
+          }
+          return true;
+        })
+        .toList();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       child: Column(
@@ -1248,47 +1265,25 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
                     rows: List.generate(rows.length, (index) {
                       final rowData = rows[index];
 
-                      final isDuplicate =
-                          _duplicateRows[tableName]?.contains(index) ?? false;
-                      final isUpdate =
-                          _updateRows[tableName]?.contains(index) ?? false;
-                      final brokenCells =
-                          _brokenRelationCells[tableName]?[index] ?? <String>{};
-                      final isInvalidIdentifier =
-                          _invalidIdentifierRows[tableName]?.contains(index) ??
-                          false;
+                      final isDuplicate = _duplicateRows[tableName]?.contains(index) ?? false;
+                      final isUpdate = _updateRows[tableName]?.contains(index) ?? false;
+                      final brokenCells = _brokenRelationCells[tableName]?[index] ?? <String>{};
+                      final isInvalidIdentifier = _invalidIdentifierRows[tableName]?.contains(index) ?? false;
 
-                      
+                      // Deteksi sel bermasalah khusus vendor
                       final isPanelBusbarProblematic = brokenCells.any((col) {
                         final normalizedCol = col.toLowerCase();
-                        return (normalizedCol == 'panel' ||
-                                normalizedCol == 'busbar_vendor_id') &&
+                        return (normalizedCol == 'panel' || normalizedCol == 'busbar_vendor_id') &&
                             (rowData[col] as String?)?.isNotEmpty == true;
                       });
 
                       return DataRow(
                         key: ObjectKey(rowData),
                         color: MaterialStateProperty.resolveWith<Color?>((s) {
-                          
-                          if (isUpdate) {
-                            return Colors.green.withOpacity(0.15);
-                          }
-
-                          bool hasError =
-                              isDuplicate ||
-                              isInvalidIdentifier ||
-                              (brokenCells.isNotEmpty);
-                          if (hasError) {
-                            return AppColors.red.withOpacity(0.15);
-                          }
-                          if (isPanelBusbarProblematic) {
-                            
-                            return AppColors.red.withOpacity(0.15);
-                          }
-                          if (brokenCells.isNotEmpty &&
-                              widget.isCustomTemplate) {
-                            return AppColors.orange.withOpacity(0.15);
-                          }
+                          if (isUpdate) return Colors.green.withOpacity(0.15);
+                          if (isDuplicate || isInvalidIdentifier || brokenCells.isNotEmpty) return AppColors.red.withOpacity(0.15);
+                          if (isPanelBusbarProblematic) return AppColors.red.withOpacity(0.15);
+                          if (brokenCells.isNotEmpty && widget.isCustomTemplate) return AppColors.orange.withOpacity(0.15);
                           return null;
                         }),
                         cells: [
