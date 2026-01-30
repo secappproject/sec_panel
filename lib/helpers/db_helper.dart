@@ -33,27 +33,30 @@ class DatabaseHelper {
 
   String get _baseUrl {
     if (kReleaseMode) {
-      return "http://localhost:8099";
+      return "http://72.60.198.70:8099";
 
     } else {
       if (Platform.isAndroid) {
 
-      return "http://localhost:8099";
+      return "http://72.60.198.70:8099";
       } else {
 
-      return "http://localhost:8099";
+      return "http://72.60.198.70:8099";
       }
     }
   }
 
+
   // String get _baseUrl {
   //   if (kReleaseMode) {
-  //     return "http://localhost:8080";
+  //     return "http://localhost:8099";
+
   //   } else {
   //     if (Platform.isAndroid) {
-  //     return "http://localhost:8080";
+  //     return "http://localhost:8099";
   //     } else {
-  //     return "http://localhost:8080";
+
+  //     return "http://localhost:8099";
   //     }
   //   }
   // }
@@ -843,6 +846,9 @@ Future<Excel> generateCustomExportExcel({
         switch (status) {
           case 'Production':
             positionText = 'Production (${RegExp(r'Cell\s+\d+').firstMatch(panel.productionSlot!)?.group(0) ?? panel.productionSlot! ?? 'N/A'})';
+            break;
+          case 'Subcontractor':
+            positionText = 'Subcontractor (${panelData.g3VendorNames ?? 'N/A'})';
             break;
           case 'FAT': positionText = 'FAT'; break;
           case 'Done': positionText = 'Done'; break;

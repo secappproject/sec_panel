@@ -8,6 +8,8 @@ import 'package:secpanel/helpers/db_helper.dart';
 import 'package:secpanel/models/approles.dart';
 import 'package:secpanel/theme/colors.dart';
 
+// ... (Bagian ProfileScreen, _ProfileScreenState, dan _UserCard tetap sama seperti sebelumnya)
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -72,6 +74,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
     }
   }
+
   Future<void> _loadAndGroupAllUsers() async {
     if (mounted) setState(() => _isLoadingUsers = true);
 
@@ -312,9 +315,9 @@ Future<void> _logout() async {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _currentCompany!.name,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w400),
-                    ),
+                        _currentCompany!.name.toLowerCase(),
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w400),
+                      ),
                     Text(
                       _formatRole(_currentCompany!.role),
                       style: const TextStyle(fontSize: 14, color: AppColors.gray, fontWeight: FontWeight.w300),
@@ -423,68 +426,78 @@ Future<void> _logout() async {
   }
 
   Widget _buildAdminUserListView() {
-    if (_allOtherUsers.isEmpty || _tabController == null) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 24.0),
-          child: Text("Belum ada pengguna lain."),
-        ),
-      );
-    }
-    final allTab = Tab(text: "All (${_allOtherUsers.length})");
-    final groupTabs = _companyGroupNames
-        .map((name) => Tab(text: "$name (${_groupedUsers[name]!.length})"))
-        .toList();
-    final allTabView = _buildUserListView(_allOtherUsers);
-    final groupTabViews = _companyGroupNames
-        .map((groupName) => _buildUserListView(_groupedUsers[groupName]!))
-        .toList();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          labelColor: AppColors.black,
-          unselectedLabelColor: AppColors.gray,
-          indicatorColor: AppColors.schneiderGreen,
-          tabAlignment: TabAlignment.start,
-          labelStyle: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w400,
-            fontFamily: 'Lexend',
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w400,
-            fontFamily: 'Lexend',
-          ),
-          tabs: [allTab, ...groupTabs],
-        ),
-        
-        SizedBox(
-          height: 500, 
-          child: IndexedStack(
-            index: _tabController!.index,
-            children: [allTabView, ...groupTabViews]
-                .asMap()
-                .map(
-                  (index, view) => MapEntry(
-                    index,
-                    Visibility(
-                      visible: _tabController!.index == index,
-                      maintainState: true,
-                      child: view,
-                    ),
-                  ),
-                )
-                .values
-                .toList(),
-          ),
-        ),
-      ],
+  if (_allOtherUsers.isEmpty || _tabController == null) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 24.0),
+        child: Text("Belum ada pengguna lain."),
+      ),
     );
   }
+  
+  // Tab teks menggunakan format lowercase agar konsisten
+  final allTab = Tab(text: "all (${_allOtherUsers.length})");
+  final groupTabs = _companyGroupNames
+      .map((name) => Tab(text: "${name.toLowerCase()} (${_groupedUsers[name]!.length})"))
+      .toList();
+
+  final allTabView = _buildUserListView(_allOtherUsers);
+  final groupTabViews = _companyGroupNames
+      .map((groupName) => _buildUserListView(_groupedUsers[groupName]!))
+      .toList();
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // BAGIAN PERBAIKAN TAB AGAR LEBIH KECIL
+      TabBar(
+        controller: _tabController,
+        isScrollable: true,
+        labelColor: AppColors.schneiderGreen, // Warna teks saat terpilih
+        unselectedLabelColor: AppColors.gray,
+        indicatorColor: AppColors.schneiderGreen,
+        indicatorSize: TabBarIndicatorSize.label, // Indikator sepanjang teks saja
+        tabAlignment: TabAlignment.start,
+        dividerColor: Colors.transparent, // Menghilangkan garis bawah panjang
+        labelPadding: const EdgeInsets.symmetric(horizontal: 8.0), // Mengecilkan jarak antar tab
+        labelStyle: const TextStyle(
+          fontSize: 12, // Ukuran teks lebih kecil
+          fontWeight: FontWeight.w600,
+          fontFamily: 'Lexend',
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          fontFamily: 'Lexend',
+        ),
+        tabs: [allTab, ...groupTabs],
+      ),
+      
+      const SizedBox(height: 8), // Jarak kecil antara tab dan list
+
+      SizedBox(
+        height: 500, 
+        child: IndexedStack(
+          index: _tabController!.index,
+          children: [allTabView, ...groupTabViews]
+              .asMap()
+              .map(
+                (index, view) => MapEntry(
+                  index,
+                  Visibility(
+                    visible: _tabController!.index == index,
+                    maintainState: true,
+                    child: view,
+                  ),
+                ),
+              )
+              .values
+              .toList(),
+        ),
+      ),
+    ],
+  );
+}
 
   Widget _buildStandardUserListView() {
     if (_colleagues.isEmpty) {
@@ -617,7 +630,7 @@ class _UserCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  userData['company_name'] as String,
+                  (userData['company_name'] as String).toLowerCase(),
                   style: const TextStyle(
                     color: AppColors.gray,
                     fontWeight: FontWeight.w400,
@@ -632,7 +645,6 @@ class _UserCard extends StatelessWidget {
     );
   }
 }
-
 
 class _CompanyFormBottomSheet extends StatefulWidget {
   final Company? company;
@@ -704,7 +716,7 @@ class _CompanyFormBottomSheetState extends State<_CompanyFormBottomSheet> {
       return;
     }
     setState(() => _isSaving = true);
-    final username = _idController.text.trim();
+    final username = _idController.text.trim().toLowerCase();
     if (!_isEditing) {
       final bool isTaken = await DatabaseHelper.instance.isUsernameTaken(
         username,
@@ -1019,7 +1031,7 @@ class _CompanyFormBottomSheetState extends State<_CompanyFormBottomSheet> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              name,
+              name.toLowerCase(), 
               style: const TextStyle(
                 fontWeight: FontWeight.w400,
                 fontSize: 12,
@@ -1079,23 +1091,34 @@ class _CompanyFormBottomSheetState extends State<_CompanyFormBottomSheet> {
   }
 
   Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    bool enabled = true,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          cursorColor: AppColors.schneiderGreen,
-          controller: controller,
-          enabled: enabled,
-          obscureText: label.toLowerCase().contains('password'),
+  required TextEditingController controller,
+  required String label,
+  bool enabled = true,
+}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+      ),
+      const SizedBox(height: 8),
+      TextFormField(
+        cursorColor: AppColors.schneiderGreen,
+        controller: controller,
+        enabled: enabled,
+        onChanged: (value) {
+          if (label == 'Username') {
+            final String lowerValue = value.toLowerCase();
+            if (value != lowerValue) {
+              controller.value = controller.value.copyWith(
+                text: lowerValue,
+                selection: TextSelection.collapsed(offset: lowerValue.length),
+              );
+            }
+          }
+        },
+        obscureText: label.toLowerCase().contains('password'),
           style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w300,
@@ -1208,7 +1231,8 @@ class _AddNewCompanyRoleSheetState extends State<_AddNewCompanyRoleSheet> {
   void _save() {
     if (_formKey.currentState!.validate()) {
       Navigator.pop(context, {
-        'name': _nameController.text.trim(),
+        // Memastikan nama dikirim dalam bentuk lowercase dan bersih dari spasi
+        'name': _nameController.text.trim().toLowerCase(),
         'role': _selectedRole,
       });
     }
@@ -1257,6 +1281,16 @@ class _AddNewCompanyRoleSheetState extends State<_AddNewCompanyRoleSheet> {
                   cursorColor: AppColors.schneiderGreen,
                   controller: _nameController,
                   autofocus: true,
+                  // LOGIKA OTOMATIS LOWER CASE SAAT DIKETIK
+                  onChanged: (value) {
+                    final String lowerValue = value.toLowerCase();
+                    if (value != lowerValue) {
+                      _nameController.value = _nameController.value.copyWith(
+                        text: lowerValue,
+                        selection: TextSelection.collapsed(offset: lowerValue.length),
+                      );
+                    }
+                  },
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w300,
