@@ -11,19 +11,6 @@ import 'package:secpanel/models/palet.dart';
 import 'package:secpanel/models/corepart.dart';
 import 'package:secpanel/theme/colors.dart';
 
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:secpanel/helpers/db_helper.dart';
-import 'package:secpanel/models/approles.dart';
-import 'package:secpanel/models/paneldisplaydata.dart';
-import 'package:secpanel/models/panels.dart';
-import 'package:secpanel/models/company.dart';
-import 'package:secpanel/models/busbar.dart';
-import 'package:secpanel/models/component.dart';
-import 'package:secpanel/models/palet.dart';
-import 'package:secpanel/models/corepart.dart';
-import 'package:secpanel/theme/colors.dart';
-
 class EditPanelBottomSheet extends StatefulWidget {
   final PanelDisplayData panelData;
   final Company currentCompany;
@@ -62,7 +49,18 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
   late String? _selectedK3VendorId;
 
   String? _selectedPanelType;
-  final List<String> panelTypeOptions = const ["MCCF", "MCCW", "PCC"];
+  final List<String> panelTypeOptions = const [
+    "MCCF",
+    "MCCW",
+    "PCC",
+    "Wall Mounting",
+    "PIX",
+    "MCSet",
+    "Drawer",
+    "LV Box PIX",
+    "LV Box MCSet",
+    "LV Box SM6",
+  ];
 
   late bool _isClosed;
   late DateTime? _closedDate;
@@ -107,7 +105,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
   void initState() {
     super.initState();
     _panel = Panel.fromMap(widget.panelData.panel.toMap());
-    _originalNoPp = _panel.noPp;
+    _originalNoPp = _panel.noPp ?? '';
 
     _noPanelController = TextEditingController(text: _panel.noPanel);
     _noWbsController = TextEditingController(text: _panel.noWbs);
@@ -115,11 +113,11 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     _panelRemarkController = TextEditingController(text: _panel.remarks);
 
     _noPpController = TextEditingController(
-      text: _panel.noPp.startsWith('TEMP_PP_') ? '' : _panel.noPp,
+      text: (_panel.noPp ?? '').startsWith('TEMP_PP_') ? '' : _panel.noPp,
     );
 
     _progressController = TextEditingController(
-      text: _panel.percentProgress?.toInt().toString() ?? '0',
+      text: (_panel.percentProgress ?? 0).toInt().toString(),
     );
     _selectedDate = _panel.startDate;
     _selectedTargetDeliveryDate = _panel.targetDelivery;
@@ -197,23 +195,29 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     super.dispose();
   }
 
-
   void _updateCanMarkAsSent() {
     final progress = int.tryParse(_progressController.text) ?? 0;
     final paletReady = _selectedPaletStatus == 'Close';
     final corepartReady = _selectedCorepartStatus == 'Close';
-    
 
     bool allConditionsMet;
     switch (_selectedPanelType) {
       case 'MCCW':
-        allConditionsMet =
-            progress == 100 && paletReady && corepartReady ;
-            
+        allConditionsMet = progress == 100 && paletReady && corepartReady;
+
         break;
       case 'PCC':
       case 'MCCF':
         allConditionsMet = progress == 100 && paletReady;
+        break;
+      case 'Wall Mounting':
+      case 'Drawer':
+      case 'PIX':
+      case 'MCSet':
+      case 'LV Box PIX':
+      case 'LV Box MCSet':
+      case 'LV Box SM6':
+        allConditionsMet = progress == 100;
         break;
       default:
         allConditionsMet = false;
@@ -293,7 +297,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       panelToSave.statusCorepart = _selectedCorepartStatus;
       panelToSave.aoBusbarPcc = _aoBusbar;
       panelToSave.aoBusbarMcc = _aoBusbar;
-      
+
       panelToSave.closeDateBusbarPcc = _closeDateBusbar;
       panelToSave.closeDateBusbarMcc = _closeDateBusbar;
 
@@ -307,13 +311,16 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
 
       final vendorsToDelete = oldVendorIds.difference(newVendorIds);
       for (final vendorId in vendorsToDelete) {
-        await DatabaseHelper.instance.deleteBusbar(finalPanel.noPp, vendorId);
+        await DatabaseHelper.instance.deleteBusbar(
+          finalPanel.noPp ?? '',
+          vendorId,
+        );
       }
 
       final vendorsToAdd = newVendorIds.difference(oldVendorIds);
       for (final vendorId in vendorsToAdd) {
         await DatabaseHelper.instance.upsertBusbar(
-          Busbar(panelNoPp: finalPanel.noPp, vendor: vendorId),
+          Busbar(panelNoPp: finalPanel.noPp ?? '', vendor: vendorId),
         );
       }
       final oldK3VendorId = widget.panelData.paletVendorIds.isNotEmpty
@@ -324,27 +331,27 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       if (oldK3VendorId != newK3VendorId) {
         if (oldK3VendorId != null && oldK3VendorId.isNotEmpty) {
           await DatabaseHelper.instance.deletePalet(
-            finalPanel.noPp,
+            finalPanel.noPp ?? '',
             oldK3VendorId,
           );
           await DatabaseHelper.instance.deleteCorepart(
-            finalPanel.noPp,
+            finalPanel.noPp ?? '',
             oldK3VendorId,
           );
         }
 
         if (newK3VendorId != null && newK3VendorId.isNotEmpty) {
           await DatabaseHelper.instance.upsertPalet(
-            Palet(panelNoPp: finalPanel.noPp, vendor: newK3VendorId),
+            Palet(panelNoPp: finalPanel.noPp ?? '', vendor: newK3VendorId),
           );
           await DatabaseHelper.instance.upsertCorepart(
-            Corepart(panelNoPp: finalPanel.noPp, vendor: newK3VendorId),
+            Corepart(panelNoPp: finalPanel.noPp ?? '', vendor: newK3VendorId),
           );
         }
       }
 
       await DatabaseHelper.instance.upsertComponent(
-        Component(panelNoPp: finalPanel.noPp, vendor: 'warehouse'),
+        Component(panelNoPp: finalPanel.noPp ?? '', vendor: 'warehouse'),
       );
 
       setState(() {
@@ -521,7 +528,6 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                 ),
                 const SizedBox(height: 12),
 
-                
                 Container(
                   width: MediaQuery.of(context).size.width,
                   padding: const EdgeInsets.all(12),
@@ -535,7 +541,10 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                       _buildSectionHeader("Panel"),
                       _isViewer
                           ? _buildInfoColumn(
-                              'Tipe Panel', _selectedPanelType, placeholder: 'Belum Diatur')
+                              'Tipe Panel',
+                              _selectedPanelType,
+                              placeholder: 'Belum Diatur',
+                            )
                           : _buildPanelTypeSelector(),
                       const SizedBox(height: 16),
                       if (!_isViewer && (_isAdmin || _isK3)) ...[
@@ -554,7 +563,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                           ),
                         const SizedBox(height: 16),
                       ],
-                       _isViewer
+                      _isViewer
                           ? _buildInfoColumn('No. Panel', _panel.noPanel)
                           : _buildTextField(
                               controller: _noPanelController,
@@ -578,9 +587,11 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                       _isViewer
                           ? _buildInfoColumn(
                               'No. PP',
-                              _panel.noPp.startsWith('TEMP_PP_')
+                              (_panel.noPp ?? '').startsWith('TEMP_PP_')
                                   ? null
-                                  : _panel.noPp, placeholder: 'Belum Diatur')
+                                  : _panel.noPp,
+                              placeholder: 'Belum Diatur',
+                            )
                           : _buildTextField(
                               controller: _noPpController,
                               label: "No. PP",
@@ -617,17 +628,19 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                              flex: 2,
-                              child: _isViewer
-                                  ? _buildInfoColumn(
-                                      'Waktu Mulai',
-                                      _selectedDate != null
-                                          ? DateFormat('d MMM yyyy')
-                                              .format(_selectedDate!)
-                                          : null,
-                                      placeholder: 'Belum Diatur',
-                                    )
-                                  : _buildDateTimePicker()),
+                            flex: 2,
+                            child: _isViewer
+                                ? _buildInfoColumn(
+                                    'Waktu Mulai',
+                                    _selectedDate != null
+                                        ? DateFormat(
+                                            'd MMM yyyy',
+                                          ).format(_selectedDate!)
+                                        : null,
+                                    placeholder: 'Belum Diatur',
+                                  )
+                                : _buildDateTimePicker(),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -635,8 +648,9 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                           ? _buildInfoColumn(
                               'Target Delivery',
                               _selectedTargetDeliveryDate != null
-                                  ? DateFormat('d MMM yyyy')
-                                      .format(_selectedTargetDeliveryDate!)
+                                  ? DateFormat(
+                                      'd MMM yyyy',
+                                    ).format(_selectedTargetDeliveryDate!)
                                   : null,
                               placeholder: 'Belum Diatur',
                             )
@@ -647,7 +661,8 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                             ? _buildInfoColumn(
                                 'Vendor Panel (K3)',
                                 widget.panelData.panelVendorName,
-                                placeholder: 'No Vendor')
+                                placeholder: 'No Vendor',
+                              )
                             : _buildAdminVendorPicker()
                       else if (_isK3)
                         _buildK3VendorDisplay(),
@@ -670,9 +685,9 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
                   const SizedBox(height: 12),
                   _buildPaletSection(),
                   if (_selectedPanelType == 'MCCW') ...[
-                  const SizedBox(height: 12),
-                  _buildCorepartSection(),
-                  ]
+                    const SizedBox(height: 12),
+                    _buildCorepartSection(),
+                  ],
                 ],
                 if (_isAdmin || _isViewer) ...[
                   const SizedBox(height: 12),
@@ -694,24 +709,35 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     );
   }
 
-  
-  Widget _buildInfoColumn(String label, String? value, {String placeholder = '-'}) {
+  Widget _buildInfoColumn(
+    String label,
+    String? value, {
+    String placeholder = '-',
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.black),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: AppColors.black,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           value == null || value.isEmpty ? placeholder : value,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w300, color: AppColors.gray),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w300,
+            color: AppColors.gray,
+          ),
         ),
       ],
     );
   }
-  
+
   Widget _buildBusbarSection() {
     return Container(
       width: MediaQuery.of(context).size.width,
@@ -724,20 +750,32 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeader("Busbar"),
-          _isViewer 
-              ? _buildInfoColumn('Vendor Busbar (K5)', widget.panelData.busbarVendorNames, placeholder: 'No Vendor')
+          _isViewer
+              ? _buildInfoColumn(
+                  'Vendor Busbar (K5)',
+                  widget.panelData.busbarVendorNames,
+                  placeholder: 'No Vendor',
+                )
               : _buildMultiSelectorBusbarVendor(),
           const SizedBox(height: 16),
           _isViewer
-              ? _buildInfoColumn('Status Busbar', _selectedBusbarStatus, placeholder: 'Belum Diatur')
+              ? _buildInfoColumn(
+                  'Status Busbar',
+                  _selectedBusbarStatus,
+                  placeholder: 'Belum Diatur',
+                )
               : _buildSelectorSection(
                   label: "Status Busbar",
-                  options: Map.fromEntries(busbarStatusOptions.map((s) => MapEntry(s, s))),
+                  options: Map.fromEntries(
+                    busbarStatusOptions.map((s) => MapEntry(s, s)),
+                  ),
                   selectedValue: _selectedBusbarStatus,
                   onTap: (val) => setState(() {
                     _selectedBusbarStatus = val;
-                    if (val == 'Close') _closeDateBusbar = DateTime.now();
-                    else _closeDateBusbar = null;
+                    if (val == 'Close')
+                      _closeDateBusbar = DateTime.now();
+                    else
+                      _closeDateBusbar = null;
                     _updateCanMarkAsSent();
                   }),
                   isEnabled: _selectedBusbarVendorIds.isNotEmpty,
@@ -746,13 +784,16 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
           _isViewer
               ? _buildInfoColumn(
                   'Close Date Busbar',
-                  _closeDateBusbar != null ? DateFormat('d MMM yyyy').format(_closeDateBusbar!) : null,
+                  _closeDateBusbar != null
+                      ? DateFormat('d MMM yyyy').format(_closeDateBusbar!)
+                      : null,
                   placeholder: '-',
                 )
               : _buildDatePickerField(
                   label: "Close Date Busbar",
                   selectedDate: _closeDateBusbar,
-                  onDateChanged: (date) => setState(() => _closeDateBusbar = date),
+                  onDateChanged: (date) =>
+                      setState(() => _closeDateBusbar = date),
                   icon: Icons.event_available,
                   isEnabled: _selectedBusbarStatus == 'Close',
                 ),
@@ -760,7 +801,9 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
           _isViewer
               ? _buildInfoColumn(
                   'Acknowledgement Order',
-                  _aoBusbar != null ? DateFormat('d MMM yyyy').format(_aoBusbar!) : null,
+                  _aoBusbar != null
+                      ? DateFormat('d MMM yyyy').format(_aoBusbar!)
+                      : null,
                   placeholder: '-',
                 )
               : _buildDatePickerField(
@@ -787,10 +830,16 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
         children: [
           _buildSectionHeader("Komponen"),
           _isViewer
-              ? _buildInfoColumn('Status Komponen', _selectedComponentStatus, placeholder: 'Belum Diatur')
+              ? _buildInfoColumn(
+                  'Status Komponen',
+                  _selectedComponentStatus,
+                  placeholder: 'Belum Diatur',
+                )
               : _buildSelectorSection(
                   label: "Status Komponen",
-                  options: Map.fromEntries(componentStatusOptions.map((s) => MapEntry(s, s))),
+                  options: Map.fromEntries(
+                    componentStatusOptions.map((s) => MapEntry(s, s)),
+                  ),
                   selectedValue: _selectedComponentStatus,
                   onTap: (val) => setState(() {
                     _selectedComponentStatus = val;
@@ -802,9 +851,9 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       ),
     );
   }
-  
+
   Widget _buildPaletSection() {
-     return Container(
+    return Container(
       width: MediaQuery.of(context).size.width,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -816,10 +865,16 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
         children: [
           _buildSectionHeader("Palet"),
           _isViewer
-              ? _buildInfoColumn('Status Palet', _selectedPaletStatus, placeholder: 'Belum Diatur')
+              ? _buildInfoColumn(
+                  'Status Palet',
+                  _selectedPaletStatus,
+                  placeholder: 'Belum Diatur',
+                )
               : _buildSelectorSection(
                   label: "Status Palet",
-                  options: Map.fromEntries(paletCorepartStatusOptions.map((s) => MapEntry(s, s))),
+                  options: Map.fromEntries(
+                    paletCorepartStatusOptions.map((s) => MapEntry(s, s)),
+                  ),
                   selectedValue: _selectedPaletStatus,
                   onTap: (val) => setState(() {
                     _selectedPaletStatus = val;
@@ -845,7 +900,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
   }
 
   Widget _buildCorepartSection() {
-     return Container(
+    return Container(
       width: MediaQuery.of(context).size.width,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -857,10 +912,16 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
         children: [
           _buildSectionHeader("Corepart"),
           _isViewer
-              ? _buildInfoColumn('Status Corepart', _selectedCorepartStatus, placeholder: 'Belum Diatur')
+              ? _buildInfoColumn(
+                  'Status Corepart',
+                  _selectedCorepartStatus,
+                  placeholder: 'Belum Diatur',
+                )
               : _buildSelectorSection(
                   label: "Status Corepart",
-                  options: Map.fromEntries(paletCorepartStatusOptions.map((s) => MapEntry(s, s))),
+                  options: Map.fromEntries(
+                    paletCorepartStatusOptions.map((s) => MapEntry(s, s)),
+                  ),
                   selectedValue: _selectedCorepartStatus,
                   onTap: (val) => setState(() {
                     _selectedCorepartStatus = val;
@@ -899,13 +960,14 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     );
   }
 
-  Widget _buildTextField(
-      {required TextEditingController controller,
-      required String label,
-      bool isNumber = false,
-      String? suffixText,
-      String? Function(String?)? validator,
-      int? maxLines = 1}) {
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    bool isNumber = false,
+    String? suffixText,
+    String? Function(String?)? validator,
+    int? maxLines = 1,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1052,6 +1114,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       ],
     );
   }
+
   Widget _buildMarkAsSent() {
     final Color textColor = (_isAdmin || _isK3)
         ? AppColors.black
@@ -1065,6 +1128,15 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       case 'PCC':
       case 'MCCF':
         subtitleText = "Syarat: Progres 100% & Palet Close.";
+        break;
+      case 'Wall Mounting':
+      case 'Drawer':
+      case 'PIX':
+      case 'MCSet':
+      case 'LV Box PIX':
+      case 'LV Box MCSet':
+      case 'LV Box SM6':
+        subtitleText = "Syarat: Progres 100%";
         break;
       default:
         subtitleText = "Pilih tipe panel terlebih dahulu.";
@@ -1131,7 +1203,7 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Waktu Mulai Pengerjaan",
+          "Start Date",
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
         ),
         const SizedBox(height: 8),
@@ -1182,7 +1254,6 @@ class _EditPanelBottomSheetState extends State<EditPanelBottomSheet> {
     );
   }
 
-  
   Widget _buildDatePickerField({
     required String label,
     required DateTime? selectedDate,

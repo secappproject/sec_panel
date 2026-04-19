@@ -175,9 +175,9 @@ Future<void> _launchURL(String urlString) async {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: () => _launchURL('http://72.61.210.181:3000'),
+                onPressed: () => _launchURL('http://72.60.198.70:3000'),
                 child: const Text(
-                  'VRO',
+                  'VMI',
                   style: TextStyle(
                     fontFamily: 'Lexend',
                     fontWeight: FontWeight.w500,

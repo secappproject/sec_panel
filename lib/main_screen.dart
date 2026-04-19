@@ -19,6 +19,7 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:secpanel/theme/colors.dart';
+import 'package:secpanel/utils/export_helper.dart';
 
 // --- WIDGET SIDEBAR ---
 class AppSidebar extends StatelessWidget {
@@ -67,10 +68,38 @@ class AppSidebar extends StatelessWidget {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  _buildNavTile("Panel", 'assets/images/panel-off.png', 0, selectedIndex == 0, hoverColor, iconColor, activeColor, textColor, activeColor),
-                  _buildNavTile("Profil", 'assets/images/profile-off.png', 1, selectedIndex == 1, hoverColor, iconColor, activeColor, textColor, activeColor),
+                  _buildNavTile(
+                    "Panel",
+                    'assets/images/panel-off.png',
+                    0,
+                    selectedIndex == 0,
+                    hoverColor,
+                    iconColor,
+                    activeColor,
+                    textColor,
+                    activeColor,
+                  ),
+                  _buildNavTile(
+                    "Profil",
+                    'assets/images/profile-off.png',
+                    1,
+                    selectedIndex == 1,
+                    hoverColor,
+                    iconColor,
+                    activeColor,
+                    textColor,
+                    activeColor,
+                  ),
                   const Divider(color: hoverColor, height: 32),
-                  if (canAddPanel) _buildActionTile("Tambah Panel", 'assets/images/plus.png', onAddPanel, hoverColor, activeColor, textColor),
+                  if (canAddPanel)
+                    _buildActionTile(
+                      "Tambah Panel",
+                      'assets/images/plus.png',
+                      onAddPanel,
+                      hoverColor,
+                      activeColor,
+                      textColor,
+                    ),
                 ],
               ),
             ),
@@ -112,7 +141,17 @@ class AppSidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildNavTile(String title, String imagePath, int index, bool isSelected, Color hoverColor, Color iconColor, Color iconActiveColor, Color textColor, Color textActiveColor) {
+  Widget _buildNavTile(
+    String title,
+    String imagePath,
+    int index,
+    bool isSelected,
+    Color hoverColor,
+    Color iconColor,
+    Color iconActiveColor,
+    Color textColor,
+    Color textActiveColor,
+  ) {
     return Material(
       color: Colors.transparent,
       child: Tooltip(
@@ -128,7 +167,9 @@ class AppSidebar extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
-              mainAxisAlignment: isExpanded ? MainAxisAlignment.start : MainAxisAlignment.center,
+              mainAxisAlignment: isExpanded
+                  ? MainAxisAlignment.start
+                  : MainAxisAlignment.center,
               children: [
                 Image.asset(
                   imagePath,
@@ -143,7 +184,9 @@ class AppSidebar extends StatelessWidget {
                       title,
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: isSelected ? FontWeight.w400 : FontWeight.w300,
+                        fontWeight: isSelected
+                            ? FontWeight.w400
+                            : FontWeight.w300,
                         color: isSelected ? textActiveColor : textColor,
                       ),
                     ),
@@ -156,7 +199,14 @@ class AppSidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildActionTile(String title, String imagePath, VoidCallback onTap, Color hoverColor, Color iconColor, Color textColor) {
+  Widget _buildActionTile(
+    String title,
+    String imagePath,
+    VoidCallback onTap,
+    Color hoverColor,
+    Color iconColor,
+    Color textColor,
+  ) {
     return Material(
       color: Colors.transparent,
       child: Tooltip(
@@ -168,20 +218,21 @@ class AppSidebar extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
-              mainAxisAlignment: isExpanded ? MainAxisAlignment.start : MainAxisAlignment.center,
+              mainAxisAlignment: isExpanded
+                  ? MainAxisAlignment.start
+                  : MainAxisAlignment.center,
               children: [
-                Image.asset(
-                  imagePath,
-                  width: 22,
-                  height: 22,
-                  color: iconColor,
-                ),
+                Image.asset(imagePath, width: 22, height: 22, color: iconColor),
                 if (isExpanded) const SizedBox(width: 16),
                 if (isExpanded)
                   Expanded(
                     child: Text(
                       title,
-                      style: TextStyle(fontSize: 14, color: textColor, fontWeight: FontWeight.w300),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: textColor,
+                        fontWeight: FontWeight.w300,
+                      ),
                     ),
                   ),
               ],
@@ -192,10 +243,17 @@ class AppSidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildUserProfile(Company? user, Color hoverColor, Color textColor, Color textActiveColor) {
+  Widget _buildUserProfile(
+    Company? user,
+    Color hoverColor,
+    Color textColor,
+    Color textActiveColor,
+  ) {
     if (user == null) return const SizedBox.shrink();
     final double avatarRadius = isExpanded ? 20 : 18;
-    final EdgeInsets padding = isExpanded ? const EdgeInsets.all(8.0) : const EdgeInsets.symmetric(vertical: 6.0, horizontal: 0);
+    final EdgeInsets padding = isExpanded
+        ? const EdgeInsets.all(8.0)
+        : const EdgeInsets.symmetric(vertical: 6.0, horizontal: 0);
 
     return Material(
       color: Colors.transparent,
@@ -208,14 +266,19 @@ class AppSidebar extends StatelessWidget {
           child: Padding(
             padding: padding,
             child: Row(
-              mainAxisAlignment: isExpanded ? MainAxisAlignment.start : MainAxisAlignment.center,
+              mainAxisAlignment: isExpanded
+                  ? MainAxisAlignment.start
+                  : MainAxisAlignment.center,
               children: [
                 CircleAvatar(
                   backgroundColor: AppColors.schneiderGreen,
                   radius: avatarRadius,
                   child: Text(
                     user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w400),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ),
                 if (isExpanded) const SizedBox(width: 12),
@@ -226,12 +289,19 @@ class AppSidebar extends StatelessWidget {
                       children: [
                         Text(
                           user.name,
-                          style: TextStyle(color: textActiveColor, fontWeight: FontWeight.w400),
+                          style: TextStyle(
+                            color: textActiveColor,
+                            fontWeight: FontWeight.w400,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           user.role.name,
-                          style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.w300),
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w300,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
@@ -315,7 +385,7 @@ class _MainScreenState extends State<MainScreen> {
     }
     final List<PanelDisplayData> filteredPanelsForPreview =
         homeScreenState.filteredPanelsForDisplay;
-    
+
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
@@ -330,6 +400,36 @@ class _MainScreenState extends State<MainScreen> {
         );
       },
     );
+    if (result != null) {
+      final bool exportPanel = result['exportPanel'] ?? false;
+      final bool exportUser = result['exportUser'] ?? false;
+      final bool exportIssue = result['exportIssue'] ?? false;
+      final bool exportSr = result['exportSr'] ?? false;
+      final bool exportWiring = result['exportWiring'] ?? false;
+      final String format = result['format'] ?? 'Excel';
+
+      if (format == 'Excel') {
+        final rows = ExportHelper.exportToExcelRows(
+          currentUser: _currentCompany!,
+          panels: filteredPanelsForPreview,
+          exportPanel: exportPanel,
+          exportUser: exportUser,
+          exportIssue: exportIssue,
+          exportSr: exportSr,
+          exportWiring: exportWiring,
+        );
+      } else {
+        final json = ExportHelper.exportToJson(
+          currentUser: _currentCompany!,
+          panels: filteredPanelsForPreview,
+          exportPanel: exportPanel,
+          exportUser: exportUser,
+          exportIssue: exportIssue,
+          exportSr: exportSr,
+          exportWiring: exportWiring,
+        );
+      }
+    }
 
     if (result != null && mounted) {
       await _processExport(result);
@@ -346,11 +446,12 @@ class _MainScreenState extends State<MainScreen> {
       }
       return;
     }
-    
+
     final bool exportPanel = exportData['exportPanel'] as bool? ?? false;
     final bool exportUser = exportData['exportUser'] as bool? ?? false;
     final bool exportIssue = exportData['exportIssue'] as bool? ?? false;
     final bool exportSr = exportData['exportSr'] as bool? ?? false;
+    final bool exportWiring = exportData['exportWiring'] as bool? ?? false;
     final format = exportData['format'] as String;
 
     if (!exportPanel && !exportUser && !exportIssue && !exportSr) {
@@ -364,7 +465,7 @@ class _MainScreenState extends State<MainScreen> {
       }
       return;
     }
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -384,14 +485,14 @@ class _MainScreenState extends State<MainScreen> {
         );
       },
     );
-    
+
     String? successMessage;
     String? errorMessage;
     try {
       final timestamp = DateFormat('ddMMyy_HHmmss').format(DateTime.now());
       String extension;
       List<int>? fileBytes;
-      
+
       switch (format) {
         case 'Excel':
           extension = 'xlsx';
@@ -400,6 +501,7 @@ class _MainScreenState extends State<MainScreen> {
             includeUserData: exportUser,
             includeIssueData: exportIssue,
             includeSrData: exportSr,
+            includeWiringData: exportWiring,
             currentUser: _currentCompany!,
             filteredPanels: homeScreenState.filteredPanelsForDisplay,
             startDateRange: homeScreenState.startDateRange,
@@ -422,38 +524,43 @@ class _MainScreenState extends State<MainScreen> {
           break;
         case 'JSON':
           extension = 'json';
-          final jsonString = await DatabaseHelper.instance.generateCustomExportJson(
-            includePanelData: exportPanel,
-            includeUserData: exportUser,
-            includeIssueData: exportIssue, 
-            includeSrData: exportSr,
-            currentUser: _currentCompany!,
-            startDateRange: homeScreenState.startDateRange,
-            deliveryDateRange: homeScreenState.deliveryDateRange,
-            closedDateRange: homeScreenState.closedDateRange,
-            selectedPanelTypes: homeScreenState.selectedPanelTypes,
-            selectedPanelVendors: homeScreenState.selectedPanelVendors,
-            selectedBusbarVendors: homeScreenState.selectedBusbarVendors,
-            selectedComponentVendors: homeScreenState.selectedComponentVendors,
-            selectedPaletVendors: homeScreenState.selectedPaletVendors,
-            selectedCorepartVendors: homeScreenState.selectedCorepartVendors,
-            selectedStatuses: homeScreenState.selectedStatuses,
-            selectedComponents: homeScreenState.selectedComponents,
-            selectedPalet: homeScreenState.selectedPalet,
-            selectedCorepart: homeScreenState.selectedCorepart,
-            selectedPanelStatuses: homeScreenState.selectedPanelStatuses,
-            includeArchived: homeScreenState.includeArchived,
-          );
+          final jsonString = await DatabaseHelper.instance
+              .generateCustomExportJson(
+                includePanelData: exportPanel,
+                includeUserData: exportUser,
+                includeIssueData: exportIssue,
+                includeSrData: exportSr,
+                currentUser: _currentCompany!,
+                startDateRange: homeScreenState.startDateRange,
+                deliveryDateRange: homeScreenState.deliveryDateRange,
+                closedDateRange: homeScreenState.closedDateRange,
+                selectedPanelTypes: homeScreenState.selectedPanelTypes,
+                selectedPanelVendors: homeScreenState.selectedPanelVendors,
+                selectedBusbarVendors: homeScreenState.selectedBusbarVendors,
+                selectedComponentVendors:
+                    homeScreenState.selectedComponentVendors,
+                selectedPaletVendors: homeScreenState.selectedPaletVendors,
+                selectedCorepartVendors:
+                    homeScreenState.selectedCorepartVendors,
+                selectedStatuses: homeScreenState.selectedStatuses,
+                selectedComponents: homeScreenState.selectedComponents,
+                selectedPalet: homeScreenState.selectedPalet,
+                selectedCorepart: homeScreenState.selectedCorepart,
+                selectedPanelStatuses: homeScreenState.selectedPanelStatuses,
+                includeArchived: homeScreenState.includeArchived,
+              );
           fileBytes = utf8.encode(jsonString);
           break;
         default:
           throw Exception("Format tidak dikenal");
       }
-      
+
       final fileName = "ExportDataPanel_$timestamp.$extension";
-      
+
       if (kIsWeb) {
-        MimeType mimeType = (format == 'Excel') ? MimeType.microsoftExcel : MimeType.json;
+        MimeType mimeType = (format == 'Excel')
+            ? MimeType.microsoftExcel
+            : MimeType.json;
         await FileSaver.instance.saveFile(
           name: fileName,
           bytes: Uint8List.fromList(fileBytes ?? []),
@@ -480,7 +587,7 @@ class _MainScreenState extends State<MainScreen> {
     } finally {
       if (mounted) Navigator.of(context).pop();
     }
-    
+
     if (mounted) {
       if (successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -553,8 +660,9 @@ class _MainScreenState extends State<MainScreen> {
       );
       return;
     }
-    
-    final List<PanelDisplayData> filteredPanelsForDelete = homeScreenState.filteredPanelsForDisplay; 
+
+    final List<PanelDisplayData> filteredPanelsForDelete =
+        homeScreenState.filteredPanelsForDisplay;
 
     showModalBottomSheet<BulkDeleteResult>(
       context: context,
@@ -563,24 +671,29 @@ class _MainScreenState extends State<MainScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (context) => BulkDeleteBottomSheet(panelsToDisplay: filteredPanelsForDelete), 
+      builder: (context) =>
+          BulkDeleteBottomSheet(panelsToDisplay: filteredPanelsForDelete),
     ).then((result) {
-        if (result != null && mounted) {
-          if (result.message.isNotEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(result.message),
-                backgroundColor: result.success ? AppColors.schneiderGreen : Colors.red,
-              ),
-            );
-          }
-          if (result.dataHasChanged) _refreshHomeScreen();
+      if (result != null && mounted) {
+        if (result.message.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: result.success
+                  ? AppColors.schneiderGreen
+                  : Colors.red,
+            ),
+          );
         }
-      });
-    }
+        if (result.dataHasChanged) _refreshHomeScreen();
+      }
+    });
+  }
 
   Widget _buildMassDataFab() {
-    final bool canImportData = _currentCompany?.role == AppRole.admin || _currentCompany?.role == AppRole.k3;
+    final bool canImportData =
+        _currentCompany?.role == AppRole.admin ||
+        _currentCompany?.role == AppRole.k3;
     final bool canExportData = true;
     final bool canBulkDelete = _currentCompany?.role == AppRole.admin;
 
@@ -599,11 +712,25 @@ class _MainScreenState extends State<MainScreen> {
             PopupMenuItem<String>(
               value: 'import',
               height: 36,
-              child: Row(children: [
-                Image.asset('assets/images/import-green.png', width: 24, height: 24, color: AppColors.schneiderGreen),
-                const SizedBox(width: 12),
-                const Text('Upload', style: TextStyle(color: AppColors.black, fontSize: 12, fontWeight: FontWeight.w400)),
-              ]),
+              child: Row(
+                children: [
+                  Image.asset(
+                    'assets/images/import-green.png',
+                    width: 24,
+                    height: 24,
+                    color: AppColors.schneiderGreen,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Upload',
+                    style: TextStyle(
+                      color: AppColors.black,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         }
@@ -612,11 +739,25 @@ class _MainScreenState extends State<MainScreen> {
             PopupMenuItem<String>(
               value: 'export',
               height: 36,
-              child: Row(children: [
-                Image.asset('assets/images/export-green.png', width: 24, height: 24, color: AppColors.schneiderGreen),
-                const SizedBox(width: 12),
-                const Text('Extract', style: TextStyle(color: AppColors.black, fontSize: 12, fontWeight: FontWeight.w400)),
-              ]),
+              child: Row(
+                children: [
+                  Image.asset(
+                    'assets/images/export-green.png',
+                    width: 24,
+                    height: 24,
+                    color: AppColors.schneiderGreen,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Extract',
+                    style: TextStyle(
+                      color: AppColors.black,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         }
@@ -625,11 +766,24 @@ class _MainScreenState extends State<MainScreen> {
             PopupMenuItem<String>(
               value: 'bulk_delete',
               height: 36,
-              child: Row(children: [
-                const Icon(Icons.delete_sweep_outlined, color: AppColors.red, size: 24),
-                const SizedBox(width: 12),
-                const Text('Bulk Delete', style: TextStyle(color: AppColors.black, fontSize: 12, fontWeight: FontWeight.w400)),
-              ]),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.delete_sweep_outlined,
+                    color: AppColors.red,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Bulk Delete',
+                    style: TextStyle(
+                      color: AppColors.black,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         }
@@ -637,9 +791,15 @@ class _MainScreenState extends State<MainScreen> {
       },
       onSelected: (String result) {
         switch (result) {
-          case 'import': _showImportBottomSheet(); break;
-          case 'export': _showExportBottomSheet(); break;
-          case 'bulk_delete': _showBulkDeleteBottomSheet(); break;
+          case 'import':
+            _showImportBottomSheet();
+            break;
+          case 'export':
+            _showExportBottomSheet();
+            break;
+          case 'bulk_delete':
+            _showBulkDeleteBottomSheet();
+            break;
         }
       },
       child: FloatingActionButton.extended(
@@ -647,9 +807,23 @@ class _MainScreenState extends State<MainScreen> {
         onPressed: null,
         backgroundColor: AppColors.white,
         elevation: 2.0,
-        shape: const StadiumBorder(side: BorderSide(color: AppColors.grayLight, width: 1.5)),
-        icon: Image.asset('assets/images/import-export-green.png', width: 24, height: 24, color: AppColors.schneiderGreen),
-        label: const Text('Mass Data', style: TextStyle(color: AppColors.black, fontSize: 12, fontWeight: FontWeight.w400)),
+        shape: const StadiumBorder(
+          side: BorderSide(color: AppColors.grayLight, width: 1.5),
+        ),
+        icon: Image.asset(
+          'assets/images/import-export-green.png',
+          width: 24,
+          height: 24,
+          color: AppColors.schneiderGreen,
+        ),
+        label: const Text(
+          'Mass Data',
+          style: TextStyle(
+            color: AppColors.black,
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
       ),
     );
   }
@@ -665,9 +839,11 @@ class _MainScreenState extends State<MainScreen> {
         children: [
           IconButton(
             icon: Image.asset(
-              _isSidebarExpanded ? 'assets/images/menu-open.png' : 'assets/images/menu-close.png',
+              _isSidebarExpanded
+                  ? 'assets/images/menu-open.png'
+                  : 'assets/images/menu-close.png',
               width: 24,
-              height: 24, 
+              height: 24,
             ),
             onPressed: _toggleSidebar,
             tooltip: _isSidebarExpanded ? 'Tutup sidebar' : 'Buka sidebar',
@@ -707,8 +883,10 @@ class _MainScreenState extends State<MainScreen> {
       );
     }
 
-    final bool canAddPanel = _currentCompany?.role == AppRole.admin || _currentCompany?.role == AppRole.k3;
-    
+    final bool canAddPanel =
+        _currentCompany?.role == AppRole.admin ||
+        _currentCompany?.role == AppRole.k3;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final bool isDesktop = constraints.maxWidth > 840;
@@ -754,11 +932,7 @@ class _MainScreenState extends State<MainScreen> {
             body: Stack(
               children: [
                 IndexedStack(index: _selectedIndex, children: _pages),
-                Positioned(
-                  bottom: 20,
-                  right: 16,
-                  child: _buildMassDataFab(),
-                ),
+                Positioned(bottom: 20, right: 16, child: _buildMassDataFab()),
               ],
             ),
             floatingActionButton: canAddPanel
@@ -772,7 +946,8 @@ class _MainScreenState extends State<MainScreen> {
                     child: const Icon(Icons.add),
                   )
                 : null,
-            floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+            floatingActionButtonLocation:
+                FloatingActionButtonLocation.centerDocked,
             bottomNavigationBar: Container(
               height: 70,
               decoration: BoxDecoration(

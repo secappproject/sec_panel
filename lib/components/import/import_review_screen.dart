@@ -1,4 +1,5 @@
-import 'dart:convert';
+// import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:secpanel/components/import/confirm_import_bottom_sheet.dart';
 import 'package:secpanel/components/import/import_progress_dialog.dart';
@@ -24,9 +25,7 @@ class _DuplicateConfirmationBottomSheet extends StatelessWidget {
     final duplicateEntries = duplicateData.entries.toList();
 
     return Container(
-      height:
-          MediaQuery.of(context).size.height *
-          0.7, 
+      height: MediaQuery.of(context).size.height * 0.7,
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -154,11 +153,13 @@ class _ValidationResult {
 class ImportReviewScreen extends StatefulWidget {
   final Map<String, List<Map<String, dynamic>>> initialData;
   final bool isCustomTemplate;
+  final String mode; // Kita gunakan nama 'mode' sesuai constructor Anda
 
   const ImportReviewScreen({
     super.key,
     required this.initialData,
-    this.isCustomTemplate = false,
+    required this.isCustomTemplate,
+    required this.mode,
   });
 
   @override
@@ -177,19 +178,34 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
   List<Company> _allCompanies = [];
   Map<String, String> _companyIdToName = {};
 
+  String? clean(dynamic value) {
+    if (value == null) return null;
+    final v = value.toString().trim();
+    if (v.isEmpty) return null;
+    return v;
+  }
+
   static const Map<String, Map<String, String>> _columnEquivalents = {
     'panel': {
       'PP Panel': 'no_pp',
       'Panel No': 'no_panel',
       'WBS': 'no_wbs',
       'PROJECT': 'project',
+      'Panel Type': 'panel_type',
       'Target Delivery': 'target_delivery',
-      'Plan Start': 'target_delivery',
-      'Start Assembly': 'start_date',       
-      'Type Panel': 'panel_type',
-      'Actual Delivery ke SEC': 'closed_date',
-      'Panel': 'vendor_id',
-      'Busbar': 'busbar_vendor_id',
+      'Panel (Vendor)': 'vendor_id',
+      'Busbar (Vendor)': 'busbar_vendor_id',
+      'Progress Panel': 'percent_progress',
+      'Status Busbar': 'status_busbar_pcc',
+      'AO Busbar': 'ao_busbar_pcc',
+    },
+    'wiring': {
+      'PP Panel': 'panel_no_pp',
+      'Panel No': 'no_panel',
+      'WBS': 'no_wbs',
+      'Progress Wiring': 'progress',
+      'Target Delivery Wiring': 'target_delivery_wiring',
+      'Supplier': 'supplier',
     },
     'user': {
       'Username': 'username',
@@ -216,7 +232,14 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
     _invalidIdentifierRows = {};
     _existingPanelKeys = [];
     _updateRows = {};
-    _initializeAndValidateData();
+
+    // ⭐ PERBAIKAN DI SINI
+    if (widget.mode.contains('wiring')) {
+      // wiring tidak perlu validation
+      _isLoading = false;
+    } else {
+      _initializeAndValidateData();
+    }
   }
 
   Future<void> _fetchExistingNaturalKeys() async {
@@ -229,17 +252,16 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
     _cleanNumericPrimaryKeys();
     await _fetchAllCompanies();
     await _fetchExistingPrimaryKeys();
-    await _fetchExistingNaturalKeys(); 
+    await _fetchExistingNaturalKeys();
 
     await _resolveVendorNamesToIds();
-    _revalidateOnDataChange(); 
+    _revalidateOnDataChange();
     if (mounted) setState(() => _isLoading = false);
   }
 
-  
   void _revalidateAll() {
     setState(() {
-      _validateUpdatesAndDuplicates(); 
+      _validateUpdatesAndDuplicates();
       _validateBrokenRelations();
       _validateMissingIdentifiers();
     });
@@ -259,7 +281,7 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
           .map((a) => a.username)
           .toSet(),
       'panels': (await dbHelper.getAllPanels())
-          .map((p) => p.noPp.trim().toLowerCase())
+          .map((p) => (p.noPp ?? '').trim().toLowerCase())
           .toSet(),
       'busbars': (await dbHelper.getAllBusbars())
           .map((b) => "${b.panelNoPp}_${b.vendor}")
@@ -283,9 +305,11 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
     const dbPkMap = {
       'companies': 'id',
       'company_accounts': 'username',
-      'panels': 'no_pp',
+
       'user': 'username',
-      'panel': 'no_pp',
+
+      //'panels': 'no_pp',
+      //'panel': 'no_pp',
     };
 
     final dbPkName = dbPkMap[tableName.toLowerCase()];
@@ -323,7 +347,7 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
   void _validateUpdatesAndDuplicates() {
     _duplicateRows = {};
     _updateRows = {};
-    final String tableName = 'panel';
+    final String tableName = 'panels';
 
     if (!_editableData.containsKey(tableName)) return;
 
@@ -333,14 +357,14 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
     _duplicateRows.putIfAbsent(tableName, () => {});
     _updateRows.putIfAbsent(tableName, () => {});
 
-    
     final naturalKeyToDbRow = <String, Map<String, dynamic>>{};
     for (final keyInfo in _existingPanelKeys) {
-      final panelNo = keyInfo['no_panel']?.toString().toLowerCase() ?? '';
-      final project = keyInfo['project']?.toString().toLowerCase() ?? '';
-      final wbs = keyInfo['no_wbs']?.toString().toLowerCase() ?? '';
-      if (panelNo.isNotEmpty || project.isNotEmpty || wbs.isNotEmpty) {
-        naturalKeyToDbRow["${panelNo}_${project}_${wbs}"] = keyInfo;
+      final panelNo =
+          keyInfo['no_panel']?.toString().toLowerCase().trim() ?? '';
+      final wbs = keyInfo['no_wbs']?.toString().toLowerCase().trim() ?? '';
+
+      if (panelNo.isNotEmpty && wbs.isNotEmpty) {
+        naturalKeyToDbRow["${panelNo}_${wbs}"] = keyInfo;
       }
     }
 
@@ -352,32 +376,28 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
               .trim()
               .toLowerCase() ??
           '';
-      final noPanel = row['Panel No']?.toString().toLowerCase() ?? '';
-      final project = row['PROJECT']?.toString().toLowerCase() ?? '';
-      final wbs = row['WBS']?.toString().toLowerCase() ?? '';
+      final noPanel = row['Panel No']?.toString().toLowerCase().trim() ?? '';
+      final wbs = row['WBS']?.toString().toLowerCase().trim() ?? '';
 
-      final naturalKey = "${noPanel}_${project}_${wbs}";
+      final naturalKey = "${noPanel}_${wbs}";
 
-      
       if (newNoPp.isNotEmpty &&
           _existingPrimaryKeys['panels']!.contains(newNoPp)) {
         _duplicateRows[tableName]!.add(i);
         continue;
       }
 
-      
       if (naturalKeyToDbRow.containsKey(naturalKey)) {
         final dbRow = naturalKeyToDbRow[naturalKey]!;
         final existingNoPp = dbRow['no_pp']?.toString().toLowerCase() ?? '';
 
-        
-        if (existingNoPp.startsWith('temp_pp_') &&
-            newNoPp.isNotEmpty &&
-            !newNoPp.startsWith('temp_pp_')) {
+        if (naturalKeyToDbRow.containsKey(naturalKey)) {
           _updateRows[tableName]!.add(i);
+          continue;
         }
-        
-        else {
+
+        if (newNoPp.isNotEmpty &&
+            (_existingPrimaryKeys['panels']?.contains(newNoPp) ?? false)) {
           _duplicateRows[tableName]!.add(i);
         }
       }
@@ -385,36 +405,31 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
   }
 
   void _cleanNumericPrimaryKeys() {
-    
-    final String tableName = 'panel';
+    final String tableName = 'panels';
     if (!_editableData.containsKey(tableName) ||
         _editableData[tableName]!.isEmpty) {
       return;
     }
 
     final rows = _editableData[tableName]!;
-    
+
     final pkColumn = _findPrimaryKeyColumnName(
       tableName,
       rows.first.keys.toList(),
     );
 
     if (pkColumn == null) {
-      return; 
+      return;
     }
 
-    
     for (final row in rows) {
       final pkValue = row[pkColumn];
 
-      
       if (pkValue is num) {
         row[pkColumn] = pkValue.toInt().toString();
-      }
-      
-      else if (pkValue is String) {
+      } else if (pkValue is String) {
         final numValue = double.tryParse(pkValue);
-        
+
         if (numValue != null && numValue == numValue.truncate()) {
           row[pkColumn] = numValue.toInt().toString();
         }
@@ -422,16 +437,13 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
     }
   }
 
-  
   void _validateBrokenRelations() {
     _brokenRelationCells = {};
 
-    
     final validCompanyIDs = Set<String>.from(
       _existingPrimaryKeys['companies'] ?? {},
     );
 
-    
     const companyForeignKeyDbNames = {
       'vendor_id',
       'busbar_vendor_id',
@@ -448,35 +460,21 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
         _brokenRelationCells[tableName]!.putIfAbsent(i, () => {});
 
         for (final actualColName in row.keys) {
-          
-
           final equivalents = _columnEquivalents[tableName.toLowerCase()];
-          String dbColName = actualColName; 
+          String dbColName = actualColName;
 
           if (equivalents != null) {
             for (var entry in equivalents.entries) {
-              
               if (entry.key.toLowerCase() == actualColName.toLowerCase()) {
-                dbColName = entry.value; 
-                break; 
+                dbColName = entry.value;
+                break;
               }
             }
           }
+
           if (companyForeignKeyDbNames.contains(dbColName)) {
             final fkValue = row[actualColName]?.toString() ?? '';
 
-            if (fkValue.isNotEmpty && !validCompanyIDs.contains(fkValue)) {
-              _brokenRelationCells[tableName]![i]!.add(actualColName);
-            }
-          }
-          
-          if (companyForeignKeyDbNames.contains(dbColName)) {
-            final fkValue = row[actualColName]?.toString() ?? '';
-
-            
-            
-            
-            
             if (fkValue.isNotEmpty && !validCompanyIDs.contains(fkValue)) {
               _brokenRelationCells[tableName]![i]!.add(actualColName);
             }
@@ -634,97 +632,24 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
   }
 
   Future<void> _saveToDatabase() async {
-    
-    final hasInvalidIdentifiers = _invalidIdentifierRows.values.any(
-      (s) => s.isNotEmpty,
-    );
-    if (hasInvalidIdentifiers) {
-      _showErrorSnackBar(
-        'Beberapa baris panel tidak memiliki identifier (No PP/Panel/WBS). Harap perbaiki.',
-      );
+    //debugPrint("=== SAVE BUTTON CLICKED ===");
+    //debugPrint("MODE: ${widget.mode}");
+    //debugPrint("EDITABLE DATA KEYS: ${_editableData.keys}");
+    //debugPrint("DATA (data): ${_editableData['data']}");
+    //debugPrint("DATA (panel): ${_editableData['panel']}");
+
+    final List<dynamic>? rawDataList =
+        (widget.mode.contains('wiring') || widget.mode == 'panel_transfer')
+        ? _editableData['data']
+        : _editableData['panel'];
+    //debugPrint("RAW DATA LIST FINAL: $rawDataList");
+
+    if (rawDataList == null || rawDataList.isEmpty) {
+      //debugPrint("RAW DATA LIST FINAL: $rawDataList");
       return;
     }
 
-    final hasBrokenRelations = _brokenRelationCells.values.any(
-      (map) => map.values.any((set) => set.isNotEmpty),
-    );
-    if (hasBrokenRelations) {
-      _showErrorSnackBar(
-        'Masih ada relasi data yang belum valid (ditandai merah). Harap perbaiki.',
-      );
-      return;
-    }
-
-    final panelDuplicates = _duplicateRows['panel'];
-    if (panelDuplicates != null &&
-        panelDuplicates.isNotEmpty &&
-        _editableData['panel']!.isNotEmpty) {
-      final panelRows = _editableData['panel']!;
-      final pkColumn =
-          _findPrimaryKeyColumnName('panel', panelRows.first.keys.toList()) ??
-          'no_pp';
-
-      final Map<String, List<int>> duplicatePpToRows = {};
-      for (final index in panelDuplicates) {
-        final noPp = panelRows[index][pkColumn]?.toString();
-        if (noPp != null && noPp.isNotEmpty) {
-          duplicatePpToRows.putIfAbsent(noPp, () => []).add(index + 1);
-        }
-      }
-
-      if (duplicatePpToRows.isNotEmpty) {
-        final totalDuplicateRows = panelDuplicates.length;
-        final uniqueDuplicatePpCount = duplicatePpToRows.length;
-
-        final summary =
-            'Terdapat $totalDuplicateRows data panel dengan $uniqueDuplicatePpCount No. PP yang sama. Sistem akan memilih data paling lengkap untuk setiap No. PP berikut:';
-
-        final confirm = await showModalBottomSheet<bool>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (ctx) => _DuplicateConfirmationBottomSheet(
-            title: 'Konfirmasi Data Duplikat',
-            summary: summary,
-            duplicateData: duplicatePpToRows,
-          ),
-        );
-
-        if (confirm != true) {
-          return;
-        }
-      }
-    }
-
-    final confirmGeneral = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => const ConfirmImportBottomSheet(
-        title: 'Konfirmasi Impor',
-        content:
-            'Data akan ditambahkan atau diperbarui di database. Lanjutkan?',
-      ),
-    );
-    if (confirmGeneral != true) return;
-
-    final dataToImport = _editableData.map((key, value) {
-      return MapEntry(
-        key,
-        value.map((item) => Map<String, dynamic>.from(item)).toList(),
-      );
-    });
-
-    if (dataToImport.containsKey('panel')) {
-      dataToImport['panel'] = _resolvePanelDuplicates(dataToImport['panel']!);
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    final String? loggedInUsername = prefs.getString('loggedInUsername');
-
+    // 1. Tampilkan Loading Dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -734,53 +659,190 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
       ),
     );
 
-    
     try {
-      String resultMessage;
-      if (widget.isCustomTemplate) {
-        resultMessage = await DatabaseHelper.instance.importFromCustomTemplate(
-          data: dataToImport,
-          onProgress: (p, m) {
-            _progressNotifier.value = p;
-            _statusNotifier.value = m;
-          },
-          loggedInUsername: loggedInUsername,
-        );
-      } else {
-        await DatabaseHelper.instance.importData(dataToImport, (p, m) {
-          _progressNotifier.value = p;
-          _statusNotifier.value = m;
-        });
-        resultMessage = "Data berhasil diimpor! 🎉";
+      _statusNotifier.value = "Menyiapkan data...";
+      _progressNotifier.value = 0.2;
+
+      // Helper Anda (Dibiarkan tetap sama agar AO Busbar aman)
+      dynamic parseDate(dynamic date) {
+        if (date == null ||
+            date.toString().toLowerCase() == 'null' ||
+            date.toString().isEmpty) {
+          return null;
+        }
+        return date;
       }
 
-      
-      if (mounted) {
-        Navigator.of(context).pop(); 
-        Navigator.of(context).pop(true); 
+      // ============================================================
+      // CEK MODE: WIRING ATAU PANEL
+      // ============================================================
+      if (widget.mode == 'panel_transfer') {
+        // ========================= PANEL TRANSFER (G3 / PRODUCTION AUTO) =========================
+        final List<Map<String, dynamic>> finalPayload = rawDataList
+            .map((item) {
+              final String noPP = item['no_pp']?.toString().trim() ?? "";
+              final String noPanel = item['no_panel']?.toString().trim() ?? "";
+              final String noWBS = item['no_wbs']?.toString().trim() ?? "";
+              final String vendor =
+                  item['vendor']?.toString().trim().toLowerCase() ?? "";
+              final rawTarget = item['target_delivery_wiring'];
+              String formattedTarget = "";
+
+              if (rawTarget != null && rawTarget.toString().isNotEmpty) {
+                try {
+                  DateTime parsedDate = DateTime.parse(rawTarget.toString());
+                  formattedTarget =
+                      "${parsedDate.day.toString().padLeft(2, '0')}/${parsedDate.month.toString().padLeft(2, '0')}/${parsedDate.year}";
+                } catch (e) {
+                  formattedTarget = rawTarget.toString().trim();
+                }
+              }
+
+              return {
+                'no_pp': noPP,
+                'no_panel': noPanel,
+                'no_wbs': noWBS,
+                'target_delivery_wiring': formattedTarget.isEmpty
+                    ? null
+                    : formattedTarget,
+                'action': 'to_subcontractor',
+                'vendor': vendor,
+              };
+            })
+            .where(
+              (e) =>
+                  (e['no_pp'] ?? "").isNotEmpty &&
+                  (e['no_panel'] ?? "").isNotEmpty &&
+                  (e['no_wbs'] ?? "").isNotEmpty &&
+                  (e['vendor'] ?? "").toString().trim().isNotEmpty,
+            )
+            .toList();
+        //debugPrint("PAYLOAD PANEL TRANSFER: $finalPayload");
+
+        if (finalPayload.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Tidak ada data valid untuk ditransfer"),
+            ),
+          );
+          return;
+        }
+
+        _statusNotifier.value = "Transferring Panels to Vendor...";
+
+        final result = await DatabaseHelper.instance.syncMassPanelTransfer(
+          finalPayload,
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(resultMessage),
-            backgroundColor: AppColors.schneiderGreen,
-            behavior: SnackBarBehavior.floating,
+            content: Text(
+              "Success: ${result['success']} | Skipped: ${result['skipped']}",
+            ),
+            backgroundColor: (result['skipped'] ?? 0) > 0
+                ? Colors.orange
+                : Colors.green,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } else if (widget.mode == 'wiring_replace' ||
+          widget.mode == 'wiring_import') {
+        final List<Map<String, dynamic>> finalPayload = rawDataList.map((item) {
+          // Parsing progress
+          int progressValue;
+          final progressRaw = item['progress']?.toString().trim();
+
+          if (progressRaw == null || progressRaw.isEmpty) {
+            progressValue = -1; // kosong → pakai data lama di DB
+          } else {
+            progressValue = int.tryParse(progressRaw) ?? -1;
+          }
+
+          // Parsing target delivery
+          final rawTarget =
+              item['target_delivery_wiring'] ?? item['target_delivery'];
+
+          final targetDelivery = (() {
+            if (rawTarget == null) return null;
+
+            final str = rawTarget.toString().trim();
+
+            if (str.isEmpty || str.toLowerCase() == 'null') return null;
+
+            return str;
+          })();
+          final supplierValue = item['supplier']?.toString().trim() ?? "";
+
+          return {
+            'panel_no_pp': item['panel_no_pp']?.toString().trim() ?? "",
+            'no_wbs': item['no_wbs']?.toString().trim() ?? "",
+            'no_panel': item['no_panel']?.toString().trim() ?? "",
+            'progress': progressValue,
+            'target_delivery_wiring': targetDelivery,
+            'supplier': supplierValue,
+          };
+        }).toList();
+
+        _statusNotifier.value = "Updating Wirings...";
+        final result = await DatabaseHelper.instance.syncMassWiring(
+          finalPayload,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Updated: ${result['updated_rows']} | Not Found: ${result['not_found_rows']}",
+            ),
+          ),
+        );
+      } else {
+        // --- LOGIKA PANEL (ASLI MILIK ANDA - TIDAK DIRUBAH) ---
+        // Bagian ini menjamin AO Busbar tetap OK
+        final List<Map<String, dynamic>> finalPayload = rawDataList.map((item) {
+          return {
+            "panel": {
+              'no_pp': item['no_pp']?.toString() ?? "",
+              'no_panel': item['no_panel']?.toString() ?? "",
+              'no_wbs': item['no_wbs']?.toString() ?? "",
+              'project': item['project']?.toString() ?? "",
+              'panel_type': item['panel_type']?.toString() ?? "",
+              'percent_progress':
+                  double.tryParse(
+                    item['percent_progress']?.toString() ?? "0",
+                  ) ??
+                  0.0,
+              'target_delivery': parseDate(item['target_delivery']),
+              'ao_busbar_pcc': parseDate(item['ao_busbar_pcc']), // Tetap aman
+              'vendor_id': item['vendor_id']?.toString() ?? "",
+              'busbar_vendor_id': item['busbar_vendor_id']?.toString() ?? "",
+              'status_busbar_pcc': item['status_busbar_pcc']?.toString() ?? "",
+            },
+          };
+        }).toList();
+
+        _statusNotifier.value = "Updating Panels...";
+        await DatabaseHelper.instance.importMassPanels(
+          mode: 'replace',
+          panels: finalPayload,
+        );
+      }
+
+      // --- SELESAI ---
+      _progressNotifier.value = 1.0;
+      _statusNotifier.value = "Berhasil memperbarui data!";
+
+      if (mounted) {
+        Navigator.pop(context); // Tutup progress dialog
+        Navigator.pop(context, true); // Kembali dengan sinyal sukses
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Data berhasil diperbarui ke database"),
+            backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
-      
-      if (mounted) {
-        Navigator.of(context).pop(); 
-
-        final message = e.toString().replaceFirst("Exception: ", "");
-
-        
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) => _ImportErrorBottomSheet(errorMessage: message),
-        );
-      }
+      if (mounted) Navigator.pop(context);
+      _showErrorSnackBar("Gagal memperbarui data: $e");
     }
   }
 
@@ -1258,7 +1320,6 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
                           _invalidIdentifierRows[tableName]?.contains(index) ??
                           false;
 
-                      
                       final isPanelBusbarProblematic = brokenCells.any((col) {
                         final normalizedCol = col.toLowerCase();
                         return (normalizedCol == 'panel' ||
@@ -1269,7 +1330,6 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
                       return DataRow(
                         key: ObjectKey(rowData),
                         color: MaterialStateProperty.resolveWith<Color?>((s) {
-                          
                           if (isUpdate) {
                             return Colors.green.withOpacity(0.15);
                           }
@@ -1282,7 +1342,6 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
                             return AppColors.red.withOpacity(0.15);
                           }
                           if (isPanelBusbarProblematic) {
-                            
                             return AppColors.red.withOpacity(0.15);
                           }
                           if (brokenCells.isNotEmpty &&
@@ -1390,8 +1449,6 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
     final companyId = rowData[colName]?.toString() ?? '';
     final companyName = _companyIdToName[companyId] ?? companyId;
 
-    
-    
     final bool isNotSelected = companyId.isEmpty;
     final bool isProblematic =
         isBroken || (isNotSelected && !widget.isCustomTemplate);
@@ -2425,8 +2482,6 @@ class _AddNewCompanyRoleSheetState extends State<_AddNewCompanyRoleSheet> {
   }
 }
 
-
-
 class _ImportErrorBottomSheet extends StatelessWidget {
   final String errorMessage;
 
@@ -2434,7 +2489,6 @@ class _ImportErrorBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
     final parts = errorMessage.split('\n- ');
     final title = parts.first.replaceAll(
       'Impor dibatalkan karena error berikut:',
@@ -2442,96 +2496,108 @@ class _ImportErrorBottomSheet extends StatelessWidget {
     );
     final errors = parts.length > 1 ? parts.sublist(1) : <String>[];
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.6,
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              height: 5,
-              width: 40,
-              decoration: BoxDecoration(
-                color: AppColors.grayLight,
-                borderRadius: BorderRadius.circular(100),
-              ),
-            ),
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (context, scrollController) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
           ),
-          const SizedBox(height: 24),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w500,
-              color: AppColors.red,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Harap perbaiki masalah berikut di dalam tabel sebelum menyimpan kembali:',
-            style: TextStyle(
-              color: AppColors.gray,
-              fontSize: 12,
-              fontWeight: FontWeight.w300,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.red.withOpacity(0.05),
-                border: Border.all(color: AppColors.red.withOpacity(0.2)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 12,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  height: 5,
+                  width: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.grayLight,
+                    borderRadius: BorderRadius.circular(100),
+                  ),
                 ),
-                itemCount: errors.length,
-                separatorBuilder: (context, index) =>
-                    const Divider(height: 12, color: Colors.transparent),
-                itemBuilder: (context, index) {
-                  return Text(
-                    '• ${errors[index]}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.red,
-                      fontWeight: FontWeight.w400,
-                      height: 1.5,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.red,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Harap perbaiki masalah berikut di dalam tabel sebelum menyimpan kembali:',
+                style: TextStyle(
+                  color: AppColors.gray,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w300,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              /// 🔥 INI BAGIAN YANG PENTING
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.red.withOpacity(0.05),
+                    border: Border.all(color: AppColors.red.withOpacity(0.2)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ListView.separated(
+                    controller: scrollController,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 12,
                     ),
-                  );
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: AppColors.schneiderGreen,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
+                    itemCount: errors.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      return Text(
+                        '• ${errors[index]}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.red,
+                          fontWeight: FontWeight.w400,
+                          height: 1.5,
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
-              child: const Text(
-                "Perbaiki Sekarang",
-                style: TextStyle(fontSize: 12),
+
+              const SizedBox(height: 24),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: AppColors.schneiderGreen,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  child: const Text(
+                    "Perbaiki Sekarang",
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

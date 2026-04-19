@@ -24,7 +24,8 @@ class _PreviewBottomSheetState extends State<PreviewBottomSheet> {
  bool _exportPanelData = true;
   bool _exportUserData = true;
   bool _exportIssueData = false; 
-  bool _exportSrData = false;   
+  bool _exportSrData = false;
+  bool _exportWiring = false; 
   String _selectedFormat = 'Excel';
 
 
@@ -123,7 +124,7 @@ class _PreviewBottomSheetState extends State<PreviewBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isAnyDataSelected = _exportPanelData || _exportUserData || _exportIssueData || _exportSrData;
+    final bool isAnyDataSelected = _exportPanelData || _exportUserData || _exportIssueData || _exportSrData || _exportWiring;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -190,6 +191,12 @@ class _PreviewBottomSheetState extends State<PreviewBottomSheet> {
                         onTap: () =>
                             setState(() => _exportSrData = !_exportSrData),
                       ),
+                      _buildToggleOption(
+                        label: "Wiring",
+                        isSelected: _exportWiring,
+                        onTap: () =>
+                            setState(() => _exportWiring = !_exportWiring),
+                      ),
                     ],
                   ),
                   _buildSectionTitle("Pilih Format File"),
@@ -244,6 +251,7 @@ class _PreviewBottomSheetState extends State<PreviewBottomSheet> {
                           'exportUser': _exportUserData,
                           'exportIssue': _exportIssueData,
                           'exportSr': _exportSrData,
+                          'exportWiring': _exportWiring,
                           'format': _selectedFormat,
                         }),
                   child: const Text('Extract', style: TextStyle(fontSize: 12)),

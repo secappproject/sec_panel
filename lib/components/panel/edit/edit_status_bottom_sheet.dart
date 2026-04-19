@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:secpanel/helpers/db_helper.dart';
@@ -54,27 +52,19 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
     "Close",
     "Red Block",
   ];
-  final List<String> _componentStatusOptions = [
-    "Open",
-    "On Progress",
-    "Close",
-  ];
+  final List<String> _componentStatusOptions = ["Open", "On Progress", "Close"];
 
   @override
   void initState() {
     super.initState();
 
-    
     String currentVendorRemark = '';
     try {
       final remarkData = widget.panelData.busbarRemarks.firstWhere(
         (remark) => remark.vendorId == widget.currentCompany.id,
       );
       currentVendorRemark = remarkData.remark ?? '';
-    } catch (e) {
-      
-      
-    }
+    } catch (e) {}
 
     _remarkController = TextEditingController(text: currentVendorRemark);
 
@@ -98,7 +88,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
     setState(() => _isLoading = true);
     try {
       final panelToUpdate = await DatabaseHelper.instance.getPanelByNoPp(
-        widget.panelData.panel.noPp,
+        (widget.panelData.panel.noPp ?? ''),
       );
       if (panelToUpdate != null) {
         if (_isK5) {
@@ -111,7 +101,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
           String? aoBusbarPcc = _aoBusbar?.toIso8601String() ?? '';
 
           await DatabaseHelper.instance.upsertStatusAOK5(
-            panelNoPp: widget.panelData.panel.noPp,
+            panelNoPp: widget.panelData.panel.noPp ?? '',
             vendorId: widget.currentCompany.id,
             aoBusbarPcc: aoBusbarPcc,
             aoBusbarMcc: aoBusbarMcc,
@@ -119,16 +109,15 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
             statusBusbarMcc: _selectedStatus ?? '',
           );
 
-          
           await DatabaseHelper.instance.upsertBusbarRemarkandVendor(
-            panelNoPp: widget.panelData.panel.noPp,
+            panelNoPp: widget.panelData.panel.noPp ?? '',
             vendorId: widget.currentCompany.id,
             newRemark: _remarkController.text,
           );
         } else if (_isWHS) {
           panelToUpdate.statusComponent = _selectedComponentStatus;
           await DatabaseHelper.instance.upsertStatusWHS(
-            panelNoPp: widget.panelData.panel.noPp,
+            panelNoPp: widget.panelData.panel.noPp ?? '',
             vendorId: widget.currentCompany.id,
             statusComponent: _selectedComponentStatus ?? '',
           );
@@ -151,20 +140,6 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
 
   String _getComponentStatusImage(String status) {
     final lower = status.toLowerCase();
@@ -241,13 +216,12 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
       ),
     );
   }
-  
 
   Widget _buildStatusCard(String durationLabel) {
     final panel = widget.panelData.panel;
     final progress = (panel.percentProgress ?? 0) / 100.0;
 
-    final bool isTemporary = panel.noPp.startsWith('TEMP_PP_');
+    final bool isTemporary = (panel.noPp ?? '').startsWith('TEMP_PP_');
     final String displayDuration = isTemporary
         ? "Belum Diatur"
         : (widget.startDate == null ? "Belum Diatur" : widget.duration);
@@ -426,7 +400,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
                       "Tipe Panel",
                       style: TextStyle(fontSize: 12, color: AppColors.gray),
                     ),
-                    
+
                     Text(
                       panel.panelType ?? "Belum Diatur",
                       style: const TextStyle(fontSize: 12),
@@ -441,11 +415,11 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
                       "No. PP",
                       style: TextStyle(fontSize: 12, color: AppColors.gray),
                     ),
-                    
+
                     Text(
-                      panel.noPp.startsWith('TEMP_PP_')
+                      (panel.noPp ?? '').startsWith('TEMP_PP_')
                           ? 'Belum Diatur'
-                          : panel.noPp,
+                          : (panel.noPp ?? ''),
                       style: const TextStyle(fontSize: 12),
                     ),
                   ],
@@ -458,7 +432,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
                       "No. WBS",
                       style: TextStyle(fontSize: 12, color: AppColors.gray),
                     ),
-                    
+
                     Text(
                       panel.noWbs ?? "Belum Diatur",
                       style: const TextStyle(fontSize: 12),
@@ -473,7 +447,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
                       "Project",
                       style: TextStyle(fontSize: 12, color: AppColors.gray),
                     ),
-                    
+
                     Text(
                       panel.project ?? "",
                       style: const TextStyle(fontSize: 12),
@@ -653,12 +627,9 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
     );
   }
 
-  
   Widget _buildVendornameField() {
     if (!_isK5) return const SizedBox.shrink();
 
-    
-    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -679,7 +650,6 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
             borderRadius: BorderRadius.circular(8),
           ),
           child: widget.busbarVendorNames.isEmpty
-              
               ? Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -698,7 +668,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
                     ),
                     Expanded(
                       child: Text(
-                        widget.currentCompany.name, 
+                        widget.currentCompany.name,
                         textAlign: TextAlign.end,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -710,7 +680,6 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
                     ),
                   ],
                 )
-              
               : Text(
                   widget.busbarVendorNames,
                   style: const TextStyle(
@@ -729,7 +698,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Remark Anda", 
+          "Remark Anda",
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
@@ -783,9 +752,7 @@ class _EditStatusBottomSheetState extends State<EditStatusBottomSheet> {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton(
-            onPressed: _isLoading
-                ? null
-                : _saveChanges, 
+            onPressed: _isLoading ? null : _saveChanges,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               backgroundColor: AppColors.schneiderGreen,

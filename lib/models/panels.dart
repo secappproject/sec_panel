@@ -1,9 +1,7 @@
-
-
 import 'dart:convert';
 
 class Panel {
-  String noPp;
+  String? noPp;
   String? noPanel;
   String? noWbs;
   String? project;
@@ -15,6 +13,7 @@ class Panel {
   String? statusComponent;
   String? statusPalet;
   String? statusCorepart;
+  String? statusWiring;
   DateTime? aoBusbarPcc;
   DateTime? aoBusbarMcc;
   String? createdBy;
@@ -27,7 +26,7 @@ class Panel {
   DateTime? closeDateBusbarMcc;
   String? statusPenyelesaian;
   String? productionSlot;
-  
+  DateTime? targetDeliveryWiring;
 
   Panel({
     required this.noPp,
@@ -42,6 +41,7 @@ class Panel {
     this.statusComponent,
     this.statusPalet,
     this.statusCorepart,
+    this.statusWiring,
     this.aoBusbarPcc,
     this.aoBusbarMcc,
     this.createdBy,
@@ -65,11 +65,13 @@ class Panel {
       'percent_progress': percentProgress,
       'start_date': startDate?.toUtc().toIso8601String(),
       'target_delivery': targetDelivery?.toUtc().toIso8601String(),
+      'target_delivery_wiring': targetDeliveryWiring?.toIso8601String(),
       'status_busbar_pcc': statusBusbarPcc,
       'status_busbar_mcc': statusBusbarMcc,
       'status_component': statusComponent,
       'status_palet': statusPalet,
       'status_corepart': statusCorepart,
+      'status_wiring': statusWiring,
       'ao_busbar_pcc': aoBusbarPcc?.toUtc().toIso8601String(),
       'ao_busbar_mcc': aoBusbarMcc?.toUtc().toIso8601String(),
       'created_by': createdBy,
@@ -94,11 +96,13 @@ class Panel {
       'percent_progress': percentProgress,
       'start_date': startDate?.toUtc().toIso8601String(),
       'target_delivery': targetDelivery?.toUtc().toIso8601String(),
+      'target_delivery_wiring': targetDeliveryWiring?.toIso8601String(),
       'status_busbar_pcc': statusBusbarPcc,
       'status_busbar_mcc': statusBusbarMcc,
       'status_component': statusComponent,
       'status_palet': statusPalet,
       'status_corepart': statusCorepart,
+      'status_wiring': statusWiring,
       'ao_busbar_pcc': aoBusbarPcc?.toUtc().toIso8601String(),
       'ao_busbar_mcc': aoBusbarMcc?.toUtc().toIso8601String(),
       'created_by': createdBy,
@@ -130,7 +134,7 @@ class Panel {
     return Panel(
       noPp: map['no_pp'] ?? '',
       noPanel: map['no_panel'],
-      noWbs: map['no_wbs'],
+      noWbs: map['no_wbs']?.toString(),
       project: map['project'],
       percentProgress: (map['percent_progress'] as num?)?.toDouble(),
       startDate: parseDate(map['start_date']),
@@ -140,6 +144,7 @@ class Panel {
       statusComponent: map['status_component'],
       statusPalet: map['status_palet'],
       statusCorepart: map['status_corepart'],
+      statusWiring: map['status_wiring'],
       aoBusbarPcc: parseDate(map['ao_busbar_pcc']),
       aoBusbarMcc: parseDate(map['ao_busbar_mcc']),
       createdBy: map['created_by'],

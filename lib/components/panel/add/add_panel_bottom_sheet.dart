@@ -39,9 +39,19 @@ class _AddPanelBottomSheetState extends State<AddPanelBottomSheet> {
   bool _isLoading = false;
   bool _isSuccess = false;
 
-  
   String? _selectedPanelType;
-  final List<String> panelTypeOptions = const ["MCCF", "MCCW", "PCC"];
+  final List<String> panelTypeOptions = const [
+    "MCCF",
+    "MCCW",
+    "PCC",
+    "Wall Mounting",
+    "PIX",
+    "MCSet",
+    "Drawer",
+    "LV Box PIX",
+    "LV Box MCSet",
+    "LV Box SM6",
+  ];
 
   bool get _isAdmin => widget.currentCompany.role == AppRole.admin;
 
@@ -200,21 +210,16 @@ class _AddPanelBottomSheetState extends State<AddPanelBottomSheet> {
   }
 
   Future<void> _savePanel() async {
-    
     if (_isLoading || _isSuccess) return;
 
     setState(() => _isLoading = true);
 
-    
     String noPp = _noPpController.text.trim();
 
-    
     if (noPp.isEmpty) {
-      
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       noPp = 'TEMP_PP_$timestamp';
     } else {
-      
       final isPpTaken = await DatabaseHelper.instance.isNoPpTaken(noPp);
       if (isPpTaken) {
         if (mounted) {
@@ -226,23 +231,22 @@ class _AddPanelBottomSheetState extends State<AddPanelBottomSheet> {
           );
           setState(() => _isLoading = false);
         }
-        return; 
+        return;
       }
     }
 
-    
     try {
       final newPanel = Panel(
-        noPp: noPp, 
+        noPp: noPp,
         noPanel: _noPanelController.text.trim(),
         noWbs: _noWbsController.text.trim(),
         project: _projectController.text.trim(),
         percentProgress:
             double.tryParse(_progressController.text.trim()) ?? 0.0,
-        startDate: _selectedDate,
+        targetDelivery: _selectedDate,
         createdBy: widget.currentCompany.id,
         vendorId: _selectedK3VendorId,
-        panelType: _selectedPanelType, 
+        panelType: _selectedPanelType,
         statusBusbarPcc: "On Progress",
         statusBusbarMcc: "On Progress",
         statusComponent: "Open",
@@ -250,42 +254,37 @@ class _AddPanelBottomSheetState extends State<AddPanelBottomSheet> {
         statusCorepart: "Open",
       );
 
-      
       await DatabaseHelper.instance.insertPanel(newPanel);
 
-      
       if (_selectedK3VendorId != null && _selectedK3VendorId!.isNotEmpty) {
         await DatabaseHelper.instance.upsertPalet(
-          Palet(panelNoPp: newPanel.noPp, vendor: _selectedK3VendorId!),
+          Palet(panelNoPp: newPanel.noPp ?? '', vendor: _selectedK3VendorId!),
         );
         await DatabaseHelper.instance.upsertCorepart(
-          Corepart(panelNoPp: newPanel.noPp, vendor: _selectedK3VendorId!),
+          Corepart(
+            panelNoPp: newPanel.noPp ?? '',
+            vendor: _selectedK3VendorId!,
+          ),
         );
       }
 
-      
       await DatabaseHelper.instance.upsertComponent(
-        Component(panelNoPp: newPanel.noPp, vendor: 'warehouse'),
+        Component(panelNoPp: newPanel.noPp ?? '', vendor: 'warehouse'),
       );
 
-      
       setState(() {
         _isLoading = false;
         _isSuccess = true;
       });
 
-      
       await Future.delayed(const Duration(milliseconds: 1500));
 
-      
       if (mounted) {
-        
         widget.onPanelAdded(newPanel);
-        
+
         Navigator.pop(context);
       }
     } catch (e) {
-      
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -403,15 +402,15 @@ class _AddPanelBottomSheetState extends State<AddPanelBottomSheet> {
                 return '0-100';
               }
             }
-            
+
             if (!isNumber && (value == null || value.isEmpty)) {
               return 'Field ini tidak boleh kosong';
             }
-            return null; 
+            return null;
           },
 
           decoration: InputDecoration(
-            hintText: 'Masukkan $label', 
+            hintText: 'Masukkan $label',
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 12,
@@ -439,7 +438,7 @@ class _AddPanelBottomSheetState extends State<AddPanelBottomSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Waktu Mulai Pengerjaan",
+          "target Delivery",
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
         ),
         const SizedBox(height: 8),

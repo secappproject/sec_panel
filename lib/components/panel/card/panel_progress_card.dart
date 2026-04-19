@@ -7,9 +7,12 @@ import 'package:secpanel/components/additionalsr/additionalsr_bottom_sheet.dart'
 import 'package:secpanel/components/issue/panel_issue_screen.dart';
 import 'package:secpanel/components/panel/card/remarks_bottom_sheet.dart';
 import 'package:secpanel/models/approles.dart';
-import 'package:secpanel/models/busbarremark.dart';
+// import 'package:secpanel/models/busbarremark.dart';
 import 'package:secpanel/models/company.dart';
 import 'package:secpanel/theme/colors.dart';
+import 'package:secpanel/models/paneldisplaydata.dart';
+import 'package:secpanel/widgets/wiring_modal.dart';
+import 'package:secpanel/models/panels.dart';
 
 class AlertInfo {
   final String title;
@@ -47,6 +50,7 @@ class PanelProgressCard extends StatelessWidget {
   final String statusComponent;
   final String statusPalet;
   final String statusCorepart;
+  final String statusWiring;
   final String ppNumber;
   final String wbsNumber;
   final String project;
@@ -57,12 +61,17 @@ class PanelProgressCard extends StatelessWidget {
   final String componentVendorName;
   final String paletVendorName;
   final String corepartVendorName;
+  final String wiringVendorName;
+  final VoidCallback? onWiringTap;
   final String g3VendorNames;
   final bool isClosed;
   final DateTime? closedDate;
   final String? panelRemarks;
   final List<BusbarRemark> busbarRemarks;
   final int additionalSrCount;
+  final PanelDisplayData data;
+  final VoidCallback? onRefresh;
+  final ValueChanged<PanelDisplayData>? onPanelUpdated;
 
   const PanelProgressCard({
     super.key,
@@ -83,6 +92,7 @@ class PanelProgressCard extends StatelessWidget {
     required this.statusComponent,
     required this.statusPalet,
     required this.statusCorepart,
+    this.statusWiring = "",
     required this.ppNumber,
     required this.wbsNumber,
     required this.project,
@@ -93,6 +103,11 @@ class PanelProgressCard extends StatelessWidget {
     required this.componentVendorName,
     required this.paletVendorName,
     required this.corepartVendorName,
+    this.wiringVendorName = "",
+    this.onWiringTap,
+    required this.data,
+    this.onRefresh,
+    this.onPanelUpdated,
     required this.g3VendorNames,
     required this.isClosed,
     this.closedDate,
@@ -225,12 +240,16 @@ class PanelProgressCard extends StatelessWidget {
 
   String _getPaletStatusImage(String status) =>
       status.toLowerCase().contains('close')
-          ? 'assets/images/done-green.png'
-          : 'assets/images/no-status-gray.png';
+      ? 'assets/images/done-green.png'
+      : 'assets/images/no-status-gray.png';
   String _getCorepartStatusImage(String status) =>
       status.toLowerCase().contains('close')
-          ? 'assets/images/done-green.png'
-          : 'assets/images/no-status-gray.png';
+      ? 'assets/images/done-green.png'
+      : 'assets/images/no-status-gray.png';
+  String _getWiringStatusImage(String status) =>
+      status.toLowerCase().contains('close')
+      ? 'assets/images/done-green.png'
+      : 'assets/images/no-status-gray.png';
 
   Widget _buildStatusChip() {
     AlertInfo? alert;
@@ -258,7 +277,7 @@ class PanelProgressCard extends StatelessWidget {
       child: Container(
         width: double.infinity,
         alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
           color: alert.backgroundColor,
           borderRadius: BorderRadius.circular(8),
@@ -284,7 +303,8 @@ class PanelProgressCard extends StatelessWidget {
   }
 
   Widget _buildPanelPosition() {
-    final status = statusPenyelesaian ??
+    final status =
+        statusPenyelesaian ??
         (closedPanel != null
             ? 'Warehouse ${DateFormat('dd MMM yyyy, HH:mm').format(closedPanel!)}'
             : 'Warehouse (Not Closed Yet)');
@@ -294,13 +314,17 @@ class PanelProgressCard extends StatelessWidget {
 
     switch (status) {
       case 'Production':
-        positionText = 'Production (${RegExp(r'Cell\s+\d+')
-                                    .firstMatch(productionSlot!)
-                                    ?.group(0) ?? productionSlot! ?? 'N/A'})';
+        positionText =
+            'Production (${RegExp(r'Cell\s+\d+').firstMatch(productionSlot!)?.group(0) ?? productionSlot! ?? 'N/A'})';
         iconPath = 'assets/images/production.png';
         break;
       case 'Subcontractor':
-        positionText = 'Subcon ${g3VendorNames.isNotEmpty ? g3VendorNames : 'N/A'}';
+        // Gunakan data.wiringVendorNames (bukan wiringVendorNames saja)
+        String displayVendor = (data.wiringVendorNames.isNotEmpty)
+            ? data.wiringVendorNames
+            : (g3VendorNames.isNotEmpty ? g3VendorNames : 'N/A');
+
+        positionText = 'Subcon $displayVendor';
         iconPath = 'assets/images/production.png';
         break;
       case 'FAT':
@@ -318,6 +342,18 @@ class PanelProgressCard extends StatelessWidget {
             : 'Warehouse (Not Closed Yet)';
         iconPath = 'assets/images/warehouse.png';
         break;
+    }
+    Widget _getWiringStatusImage(String status) {
+      switch (status) {
+        case "Open":
+          return Icon(Icons.circle_outlined, color: Colors.grey, size: 16);
+        case "Progress":
+          return Icon(Icons.autorenew, color: Colors.orange, size: 16);
+        case "Ready":
+          return Icon(Icons.check_circle, color: Colors.green, size: 16);
+        default:
+          return Icon(Icons.help_outline, color: Colors.black, size: 16);
+      }
     }
 
     return Row(
@@ -344,28 +380,41 @@ class PanelProgressCard extends StatelessWidget {
     final bool hasPanelRemarks =
         panelRemarks != null && panelRemarks!.trim().isNotEmpty;
 
-    final String displayStatus =
-        statusBusbar.isEmpty ? 'Progress' : statusBusbar;
-    final String componentDisplayStatus =
-        statusComponent.isEmpty ? 'Open' : statusComponent;
-    final String paletDisplayStatus =
-        statusPalet.isEmpty ? 'Open' : statusPalet;
-    final String corepartDisplayStatus =
-        statusCorepart.isEmpty ? 'Open' : statusCorepart;
-
+    final String displayStatus = statusBusbar.isEmpty
+        ? 'Progress'
+        : statusBusbar;
+    final String componentDisplayStatus = statusComponent.isEmpty
+        ? 'Open'
+        : statusComponent;
+    final String paletDisplayStatus = statusPalet.isEmpty
+        ? 'Open'
+        : statusPalet;
+    final String corepartDisplayStatus = statusCorepart.isEmpty
+        ? 'Open'
+        : statusCorepart;
+    final String wiringDisplayStatus = statusWiring.isEmpty
+        ? 'Open'
+        : statusWiring;
     final bool isFuture =
         startDate != null && startDate!.isAfter(DateTime.now());
 
     final String durationLabel = isFuture ? "Mulai Dalam" : "Durasi Proses";
-    final String displayDuration =
-        startDate == null ? "Belum Diatur" : duration;
-    final String displayPanelType =
-        panelType.isEmpty ? "Belum Diatur" : panelType;
-    final String displayPanelTitle =
-        panelTitle.isEmpty ? "Belum Diatur" : panelTitle;
+    final String displayDuration = startDate == null
+        ? "Belum Diatur"
+        : duration;
+    final String displayPanelType = panelType.isEmpty
+        ? "Belum Diatur"
+        : panelType;
+    final String displayTargetWiring = data.targetDeliveryWiring == null
+        ? "Belum Diatur"
+        : DateFormat("dd MMM yyyy").format(data.targetDeliveryWiring!);
+    final String displayPanelTitle = panelTitle.isEmpty
+        ? "Belum Diatur"
+        : panelTitle;
     final String displayPpNumber = isTemporary ? "Belum Diatur" : ppNumber;
-    final String displayWbsNumber =
-        wbsNumber.isEmpty ? "Belum Diatur" : wbsNumber;
+    final String displayWbsNumber = wbsNumber.isEmpty
+        ? "Belum Diatur"
+        : wbsNumber;
     final String displayProject = project.isEmpty ? "Belum Diatur" : project;
 
     return Padding(
@@ -378,11 +427,12 @@ class PanelProgressCard extends StatelessWidget {
           border: Border.all(width: 1, color: AppColors.grayLight),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildStatusChip(),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               decoration: const BoxDecoration(
                 border: Border(
                   bottom: BorderSide(width: 2, color: AppColors.grayLight),
@@ -441,29 +491,19 @@ class PanelProgressCard extends StatelessWidget {
                               const Text(
                                 "Position:",
                                 style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w300,
-                                    color: AppColors.gray),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w300,
+                                  color: AppColors.gray,
+                                ),
                               ),
-                              // SizedBox(
-                              //   width: 8,
-                              // ),
-                              // Align(
-                              //   alignment: Alignment.centerRight,
-                              //   child: _buildPanelPosition(),
-                              // ),
                             ],
                           ),
-                          SizedBox(
-                            height: 6,
-                          ),
+                          SizedBox(height: 6),
                           Align(
                             alignment: Alignment.centerRight,
                             child: _buildPanelPosition(),
                           ),
-                          SizedBox(
-                            height: 6,
-                          ),
+                          SizedBox(height: 6),
                           Row(
                             children: [
                               Text(
@@ -502,15 +542,17 @@ class PanelProgressCard extends StatelessWidget {
                 ],
               ),
             ),
+
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Flexible(
+                      Expanded(
                         child: Text(
                           displayPanelTitle,
                           style: const TextStyle(
@@ -521,10 +563,58 @@ class PanelProgressCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+
                       const SizedBox(width: 8),
+
+                      GestureDetector(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate:
+                                data.targetDeliveryWiring ?? DateTime.now(),
+                            firstDate: DateTime(2023),
+                            lastDate: DateTime(2100),
+                          );
+
+                          if (picked != null) {}
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.grayLight,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                "Target deliv. Wiring: ",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w400,
+                                  color: AppColors.gray,
+                                ),
+                              ),
+                              Text(
+                                displayTargetWiring,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.black,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+
+                  const SizedBox(height: 8),
+
                   Row(
                     children: [
                       Expanded(
@@ -533,14 +623,14 @@ class PanelProgressCard extends StatelessWidget {
                           (displayStatus == "100% Siap Kirim")
                               ? "Ready"
                               : (displayStatus == "On Progress")
-                                  ? "Progress"
-                                  : displayStatus,
+                              ? "Progress"
+                              : displayStatus,
                           _getBusbarStatusImage(statusBusbar),
                         ),
                       ),
-                      SizedBox(
-                        width: 4,
-                      ),
+
+                      const SizedBox(width: 4),
+
                       Expanded(
                         child: _buildStatusColumn(
                           "Comp.",
@@ -550,25 +640,53 @@ class PanelProgressCard extends StatelessWidget {
                           _getComponentStatusImage(statusComponent),
                         ),
                       ),
+
+                      const SizedBox(width: 4),
+
                       SizedBox(
-                        width: 4,
-                      ),
-                      Expanded(
+                        width: 130,
                         child: _buildStatusColumn(
                           "Palet",
                           paletDisplayStatus,
                           _getPaletStatusImage(statusPalet),
                         ),
                       ),
+
+                      const SizedBox(width: 4),
+
                       SizedBox(
-                        width: 4,
-                      ),
-                      Container(
-                        width: 60,
+                        width: 140,
                         child: _buildStatusColumn(
                           "Corepart",
                           corepartDisplayStatus,
                           _getCorepartStatusImage(statusCorepart),
+                        ),
+                      ),
+
+                      const SizedBox(width: 4),
+
+                      Tooltip(
+                        message:
+                            "Wiring Progress: ${data.wiringProgress ?? 0}%\nClick to Edit Progress",
+                        child: GestureDetector(
+                          onTap: () async {
+                            final updatedData = await WiringModal.open(
+                              context: context,
+                              panel: data,
+                            );
+
+                            if (updatedData != null) {
+                              onPanelUpdated?.call(updatedData);
+                            }
+                          },
+                          child: SizedBox(
+                            width: 60,
+                            child: _buildStatusColumn(
+                              "Wiring",
+                              "${data.wiringProgress ?? 0}%",
+                              _getWiringStatusImage(statusWiring),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -578,7 +696,11 @@ class PanelProgressCard extends StatelessWidget {
             ),
             Container(
               padding: const EdgeInsets.only(
-                  top: 12, right: 12, left: 12, bottom: 12),
+                top: 12,
+                right: 12,
+                left: 12,
+                bottom: 12,
+              ),
               decoration: const BoxDecoration(
                 border: Border(
                   bottom: BorderSide(width: 1, color: AppColors.grayLight),
@@ -590,23 +712,18 @@ class PanelProgressCard extends StatelessWidget {
                   Container(
                     padding: EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                        border: Border.all(width: 1, color: AppColors.grayLight),
-                        borderRadius: BorderRadius.all(Radius.circular(12))),
+                      border: Border.all(width: 1, color: AppColors.grayLight),
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildAdditionalSRButton(context),
-                        SizedBox(
-                          width: 8,
-                        ),
+                        SizedBox(width: 8),
                         _buildIssueButton(context),
-                        SizedBox(
-                          width: 8,
-                        ),
+                        SizedBox(width: 8),
                         _buildCycleButton(),
-                        SizedBox(
-                          width: 8,
-                        ),
+                        SizedBox(width: 8),
                         _buildEditButton(),
                       ],
                     ),
@@ -630,9 +747,10 @@ class PanelProgressCard extends StatelessWidget {
                         Text(
                           "Vendor",
                           style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w300,
-                              color: AppColors.gray),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w300,
+                            color: AppColors.gray,
+                          ),
                         ),
                         Row(
                           children: [
@@ -647,7 +765,9 @@ class PanelProgressCard extends StatelessWidget {
                             const SizedBox(width: 4),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 4, vertical: 2),
+                                horizontal: 4,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.grayLight,
                                 borderRadius: BorderRadius.circular(4),
@@ -675,7 +795,9 @@ class PanelProgressCard extends StatelessWidget {
                             const SizedBox(width: 4),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 4, vertical: 2),
+                                horizontal: 4,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.grayLight,
                                 borderRadius: BorderRadius.circular(4),
@@ -697,7 +819,7 @@ class PanelProgressCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Column(
                     children: [
                       _buildInfoRow("Tipe Panel", displayPanelType),
@@ -711,7 +833,7 @@ class PanelProgressCard extends StatelessWidget {
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -765,20 +887,16 @@ class PanelProgressCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/images/cycle.png',
-              height: 20,
-            ),
-            SizedBox(
-              width: 8,
-            ),
+            Image.asset('assets/images/cycle.png', height: 20),
+            SizedBox(width: 8),
             Text(
               "Transfer",
               style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.black,
-                  fontWeight: FontWeight.w300,
-                  overflow: TextOverflow.ellipsis),
+                fontSize: 11,
+                color: AppColors.black,
+                fontWeight: FontWeight.w300,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -804,16 +922,15 @@ class PanelProgressCard extends StatelessWidget {
               height: 20,
               color: AppColors.gray,
             ),
-            SizedBox(
-              width: 8,
-            ),
+            SizedBox(width: 8),
             Text(
               isViewer ? "Detail" : "Edit",
               style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.black,
-                  fontWeight: FontWeight.w300,
-                  overflow: TextOverflow.ellipsis),
+                fontSize: 11,
+                color: AppColors.black,
+                fontWeight: FontWeight.w300,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -843,15 +960,21 @@ class PanelProgressCard extends StatelessWidget {
         child: Column(
           children: [
             if (additionalSrCount == 0) ...[
-              Image.asset('assets/images/package.png',
-                  height: 20, color: AppColors.gray),
+              Image.asset(
+                'assets/images/package.png',
+                height: 20,
+                color: AppColors.gray,
+              ),
             ],
             if (additionalSrCount != 0) ...[
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  Image.asset('assets/images/package.png',
-                      height: 20, color: AppColors.gray),
+                  Image.asset(
+                    'assets/images/package.png',
+                    height: 20,
+                    color: AppColors.gray,
+                  ),
                   Positioned(
                     right: -3,
                     top: -6,
@@ -879,16 +1002,15 @@ class PanelProgressCard extends StatelessWidget {
                 ],
               ),
             ],
-            SizedBox(
-              width: 8,
-            ),
+            SizedBox(width: 8),
             Text(
               "SR",
               style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.black,
-                  fontWeight: FontWeight.w300,
-                  overflow: TextOverflow.ellipsis),
+                fontSize: 11,
+                color: AppColors.black,
+                fontWeight: FontWeight.w300,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -912,7 +1034,7 @@ class PanelProgressCard extends StatelessWidget {
               busbarVendor: busbarVendorNames,
             ),
           ),
-        )
+        ),
       },
       borderRadius: BorderRadius.circular(8),
       child: Container(
@@ -965,16 +1087,15 @@ class PanelProgressCard extends StatelessWidget {
                 ],
               ),
             ],
-            SizedBox(
-              width: 8,
-            ),
+            SizedBox(width: 8),
             Text(
               "Issue",
               style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.black,
-                  fontWeight: FontWeight.w300,
-                  overflow: TextOverflow.ellipsis),
+                fontSize: 11,
+                color: AppColors.black,
+                fontWeight: FontWeight.w300,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
