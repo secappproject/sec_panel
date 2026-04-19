@@ -33,12 +33,12 @@ class DatabaseHelper {
 
   String get _baseUrl {
     if (kReleaseMode) {
-      return "http://localhost:8099";
+      return "http://72.60.198.70:8081";
     } else {
       if (kIsWeb) {
         return "http://localhost:8099";
       } else {
-        return "http://localhost:8099";
+        return "http://10.0.2.2:8099";
       }
     }
   }
