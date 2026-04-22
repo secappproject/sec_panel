@@ -346,7 +346,6 @@ class _ImportBottomSheetState extends State<ImportBottomSheet> {
           }
         }
 
-        // 3. FILTER: Hanya masukkan jika Panel No PP tidak kosong
         // Ini akan menghapus baris "hantu" yang membuat tombol simpan mati
         if (currentPP.isNotEmpty) {
           dataMap['is_wiring'] = true;
@@ -356,7 +355,6 @@ class _ImportBottomSheetState extends State<ImportBottomSheet> {
       }
     }
 
-    // final result = {'panel': rows, 'data': rows};
     final result = {'data': rows};
     return result;
   }
@@ -539,13 +537,11 @@ class _ImportBottomSheetState extends State<ImportBottomSheet> {
             ),
             const SizedBox(height: 16),
             Container(
-              width: double.infinity, // Memenuhi lebar layar
+              width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.schneiderGreen, // Blok latar hijau
-                borderRadius: BorderRadius.circular(
-                  8,
-                ), // Sudut melengkung halus
+                color: AppColors.schneiderGreen,
+                borderRadius: BorderRadius.circular(8),
               ),
               child: const Text(
                 "Upload Data",
@@ -553,7 +549,7 @@ class _ImportBottomSheetState extends State<ImportBottomSheet> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white, // Tulisan jadi putih agar kontras
+                  color: Colors.white,
                 ),
               ),
             ),

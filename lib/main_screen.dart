@@ -693,6 +693,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildMassDataFab() {
     final bool canImportData =
         _currentCompany?.role == AppRole.admin ||
+        _currentCompany?.role == AppRole.k5 ||
         _currentCompany?.role == AppRole.k3;
     final bool canExportData = true;
     final bool canBulkDelete = _currentCompany?.role == AppRole.admin;
@@ -885,6 +886,7 @@ class _MainScreenState extends State<MainScreen> {
 
     final bool canAddPanel =
         _currentCompany?.role == AppRole.admin ||
+        _currentCompany?.role == AppRole.k5 ||
         _currentCompany?.role == AppRole.k3;
 
     return LayoutBuilder(
