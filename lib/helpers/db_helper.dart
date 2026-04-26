@@ -32,14 +32,17 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
 
   String get _baseUrl {
-    if (kReleaseMode) {
-      return "http://72.60.198.70:8081";
-    } else {
-      if (kIsWeb) {
-        return "http://localhost:8099";
-      } else {
-        return "http://10.0.2.2:8099";
+    if (kIsWeb) {
+      final host = Uri.base.host;
+
+      if (host == "localhost" || host == "127.0.0.1") {
+        return "http://localhost:8099"; // backend lokal
       }
+
+      return "";
+    } else {
+      // 📱 MOBILE
+      return "http://72.60.198.70:8099";
     }
   }
 
