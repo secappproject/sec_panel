@@ -36,13 +36,12 @@ class DatabaseHelper {
       final host = Uri.base.host;
 
       if (host == "localhost" || host == "127.0.0.1") {
-        return "http://localhost:8099"; // backend lokal
+        return "http://localhost:8099";
       }
 
-      return "";
+      return "http://72.60.198.70:8081";
     } else {
-      // 📱 MOBILE
-      return "http://72.60.198.70:8099";
+      return "http://72.60.198.70:8081";
     }
   }
 
