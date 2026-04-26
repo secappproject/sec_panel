@@ -27,7 +27,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   bool _isPageLoading = true;
   bool _isPasswordVisible = false;
-  bool _showForm = false; 
+  bool _showForm = false;
 
   @override
   void initState() {
@@ -47,7 +47,6 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-
   Future<void> _handleStartupChecks() async {
     const mobilePlatforms = [TargetPlatform.android, TargetPlatform.iOS];
     if (mobilePlatforms.contains(defaultTargetPlatform)) {
@@ -55,19 +54,16 @@ class _LoginPageState extends State<LoginPage> {
       await _requestBatteryOptimizationExemption();
     }
 
-    
     if (kIsWeb) await Future.delayed(const Duration(milliseconds: 1200));
 
     if (mounted) {
-      
       setState(() {
         _isPageLoading = false;
-        if (!kIsWeb) { 
-          _showForm = true; 
+        if (!kIsWeb) {
+          _showForm = true;
         }
       });
 
-      
       if (kIsWeb) {
         await Future.delayed(const Duration(milliseconds: 1500));
         if (mounted) {
@@ -79,68 +75,69 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  
+  Future<void> _login() async {
+    if (_isLoading || _isPageLoading) return;
+    setState(() => _isLoading = true);
 
-Future<void> _login() async {
-  if (_isLoading || _isPageLoading) return;
-  setState(() => _isLoading = true);
+    try {
+      final username = _usernameController.text.trim();
+      final password = _passwordController.text.trim();
 
-  try {
-    
-    
-    final username = _usernameController.text.trim();
-    final password = _passwordController.text.trim();
+      if (username.isEmpty || password.isEmpty) {
+        _showErrorSnackBar('Username dan password tidak boleh kosong.');
+        setState(() => _isLoading = false);
+        return;
+      }
 
-    if (username.isEmpty || password.isEmpty) {
-      _showErrorSnackBar('Username dan password tidak boleh kosong.');
-      setState(() => _isLoading = false);
-      return;
-    }
+      final Company? company = await DatabaseHelper.instance.login(
+        username,
+        password,
+      );
 
-    final Company? company = await DatabaseHelper.instance.login(
-      username,
-      password,
-    );
+      if (!mounted) return;
 
-    if (mounted) {
       if (company != null) {
-        
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('loggedInUsername', username);
         await prefs.setString('companyId', company.id);
         await prefs.setString('companyRole', company.role.name);
-        
-        
-        try {
-          String? token = await FirebaseMessaging.instance.getToken();
-          if (token != null) {
-            await DatabaseHelper.instance.registerDeviceToken(
-              username: username,
-              token: token,
-            );
+
+        // ✅ FIX: HANYA JALANKAN FCM DI MOBILE
+        if (!kIsWeb) {
+          try {
+            String? token = await FirebaseMessaging.instance.getToken();
+
+            if (token != null) {
+              await DatabaseHelper.instance.registerDeviceToken(
+                username: username,
+                token: token,
+              );
+            }
+          } catch (e) {
+            print('FCM error (diabaikan di web): $e');
           }
-        } catch (e) {
-          print('Error saat mendaftarkan token perangkat: $e');
         }
 
-        
         _showSuccessSnackBar('Login berhasil! Mengalihkan...');
-        Navigator.pushReplacementNamed(context, '/home');
 
+        // kasih delay kecil biar UI stabil
+        await Future.delayed(const Duration(milliseconds: 300));
+
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, '/home');
       } else {
         _showErrorSnackBar('Username atau password salah.');
         setState(() => _isLoading = false);
       }
-    }
-  } catch (e) {
-    if (mounted) {
-      _showErrorSnackBar('Terjadi kesalahan: $e');
-      setState(() => _isLoading = false);
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar('Terjadi kesalahan: $e');
+        setState(() => _isLoading = false);
+      }
     }
   }
-}
 
-Future<void> _launchURL(String urlString) async {
+  Future<void> _launchURL(String urlString) async {
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
@@ -218,7 +215,7 @@ Future<void> _launchURL(String urlString) async {
         children: [
           const VideoBackground(),
           AnimatedOpacity(
-            opacity: _showForm ? 1.0 : 0.0, 
+            opacity: _showForm ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 800),
             child: _showForm
                 ? SafeArea(
@@ -237,40 +234,41 @@ Future<void> _launchURL(String urlString) async {
       ),
     );
   }
-Widget _buildWebAppLayout() {
-  
-  return SingleChildScrollView(
-    child: Container(
-      constraints: BoxConstraints(
-        minHeight: MediaQuery.of(context).size.height, 
+
+  Widget _buildWebAppLayout() {
+    return SingleChildScrollView(
+      child: Container(
+        constraints: BoxConstraints(
+          minHeight: MediaQuery.of(context).size.height,
+        ),
+        width: 400,
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.all(32.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              spreadRadius: 5,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildFormFields(),
+            const SizedBox(height: 32),
+            _buildActionButtons(isWebLayout: true),
+            _buildPortalLinks(),
+          ],
+        ),
       ),
-      width: 400,
-      alignment: Alignment.centerLeft, 
-      padding: const EdgeInsets.all(32.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            spreadRadius: 5,
-          )
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildFormFields(),
-          const SizedBox(height: 32),
-          _buildActionButtons(isWebLayout: true),
-          _buildPortalLinks(),
-        ],
-      ),
-    ),
-  );
-}
+    );
+  }
+
   Widget _buildMobileLayout() {
     return Container(
       color: Colors.white,
@@ -339,7 +337,9 @@ Widget _buildWebAppLayout() {
               shadowColor: Colors.transparent,
               backgroundColor: AppColors.schneiderGreen,
               foregroundColor: Colors.white,
-              disabledBackgroundColor: AppColors.schneiderGreen.withOpacity(0.7),
+              disabledBackgroundColor: AppColors.schneiderGreen.withOpacity(
+                0.7,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -368,8 +368,8 @@ Widget _buildWebAppLayout() {
             onPressed: areButtonsDisabled
                 ? null
                 : () => Navigator.of(context).push(
-                      FadeThroughPageRoute(page: const LoginChangePasswordPage()),
-                    ),
+                    FadeThroughPageRoute(page: const LoginChangePasswordPage()),
+                  ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
@@ -412,8 +412,8 @@ Widget _buildWebAppLayout() {
             onPressed: areButtonsDisabled
                 ? null
                 : () => Navigator.of(context).push(
-                      FadeThroughPageRoute(page: const LoginChangePasswordPage()),
-                    ),
+                    FadeThroughPageRoute(page: const LoginChangePasswordPage()),
+                  ),
             child: const Text(
               'Ubah Password',
               style: TextStyle(
@@ -433,7 +433,9 @@ Widget _buildWebAppLayout() {
               shadowColor: Colors.transparent,
               backgroundColor: AppColors.schneiderGreen,
               foregroundColor: Colors.white,
-              disabledBackgroundColor: AppColors.schneiderGreen.withOpacity(0.7),
+              disabledBackgroundColor: AppColors.schneiderGreen.withOpacity(
+                0.7,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -522,7 +524,7 @@ Widget _buildWebAppLayout() {
         fontFamily: 'Lexend',
         fontWeight: FontWeight.w300,
         fontSize: 14,
-        color: Colors.black, 
+        color: Colors.black,
       ),
       controller: _usernameController,
       decoration: _inputDecoration('Username'),
@@ -535,18 +537,15 @@ Widget _buildWebAppLayout() {
         fontFamily: 'Lexend',
         fontWeight: FontWeight.w300,
         fontSize: 14,
-        color: Colors.black, 
+        color: Colors.black,
       ),
       controller: _passwordController,
       obscureText: !_isPasswordVisible,
       decoration: _inputDecoration('Password').copyWith(
-        suffixIcon: 
-        IconButton(
-          
-          
-          
-          
-          icon: _isPasswordVisible ? Image.asset("assets/images/eye-open.png", height: 24,) : Image.asset("assets/images/eye-close.png", height: 24,),
+        suffixIcon: IconButton(
+          icon: _isPasswordVisible
+              ? Image.asset("assets/images/eye-open.png", height: 24)
+              : Image.asset("assets/images/eye-close.png", height: 24),
           onPressed: () =>
               setState(() => _isPasswordVisible = !_isPasswordVisible),
         ),
@@ -653,6 +652,7 @@ Widget _buildWebAppLayout() {
     }
   }
 }
+
 class VideoBackground extends StatefulWidget {
   const VideoBackground({super.key});
 
@@ -661,7 +661,6 @@ class VideoBackground extends StatefulWidget {
 }
 
 class _VideoBackgroundState extends State<VideoBackground> {
-  
   Timer? _textAnimationTimer;
   int _currentTextIndex = 0;
   double _textOpacity = 0.0;
@@ -672,34 +671,26 @@ class _VideoBackgroundState extends State<VideoBackground> {
     'Catat dan selesaikan setiap kendala dengan mudah.',
   ];
 
-  
-
-  
   Timer? _imageSliderTimer;
   int _currentImageIndex = 0;
-  final int _totalImages = 12; 
+  final int _totalImages = 12;
 
   @override
   void initState() {
     super.initState();
     _startTextAnimation();
-    _startImageSlider(); 
+    _startImageSlider();
   }
 
   void _startImageSlider() {
-    
     _imageSliderTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) {
         setState(() {
-          
           _currentImageIndex = (_currentImageIndex + 1) % _totalImages;
         });
       }
     });
   }
-  
-  
-
 
   void _startTextAnimation() {
     Future.delayed(const Duration(milliseconds: 500), () {
@@ -724,7 +715,7 @@ class _VideoBackgroundState extends State<VideoBackground> {
   @override
   void dispose() {
     _textAnimationTimer?.cancel();
-    _imageSliderTimer?.cancel(); 
+    _imageSliderTimer?.cancel();
     super.dispose();
   }
 
@@ -734,16 +725,14 @@ class _VideoBackgroundState extends State<VideoBackground> {
       fit: StackFit.expand,
       alignment: Alignment.centerRight,
       children: [
-        
         AnimatedSwitcher(
-          duration: const Duration(milliseconds: 1500), 
+          duration: const Duration(milliseconds: 1500),
           transitionBuilder: (Widget child, Animation<double> animation) {
             return FadeTransition(opacity: animation, child: child);
           },
           child: Image.asset(
-            
             'assets/images/bg-${_currentImageIndex + 1}.png',
-            
+
             key: ValueKey<int>(_currentImageIndex),
             fit: BoxFit.cover,
             height: double.infinity,
@@ -751,11 +740,8 @@ class _VideoBackgroundState extends State<VideoBackground> {
             alignment: Alignment.center,
           ),
         ),
-        
-        
-        Container(
-          color: AppColors.schneiderGreen.withOpacity(0.3),
-        ),
+
+        Container(color: AppColors.schneiderGreen.withOpacity(0.3)),
         Positioned(
           bottom: 40,
           left: 440,

@@ -1,7 +1,7 @@
-
-import 'dart:io'; 
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:secpanel/login.dart';
 import 'package:secpanel/login_change_password.dart';
 import 'package:secpanel/main_screen.dart';
@@ -11,17 +11,14 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:secpanel/session_timeout_manager.dart';
 
-
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
-
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   print("Pesan FCM (background): ${message.notification?.title}");
 }
-
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -34,21 +31,17 @@ class MyHttpOverrides extends HttpOverrides {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  
+
   HttpOverrides.global = MyHttpOverrides();
 
   await initializeDateFormatting('id_ID', null);
 
-  
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  if (!kIsWeb) {
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
 
-  
   final prefs = await SharedPreferences.getInstance();
   final companyId = prefs.getString('companyId');
 
@@ -72,6 +65,7 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
   }
+
   @override
   Widget build(BuildContext context) {
     return SessionTimeoutManager(
@@ -89,7 +83,7 @@ class _MyAppState extends State<MyApp> {
           ),
           useMaterial3: true,
         ),
-        initialRoute:  '/login',
+        initialRoute: '/login',
         routes: {
           // '/login': (context) => const MaintenancePage(),
           '/login': (context) => const LoginPage(),
