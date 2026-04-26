@@ -39,9 +39,9 @@ class DatabaseHelper {
         return "http://localhost:8099";
       }
 
-      return "http://72.60.198.70:8081";
+      return "http://72.60.198.70:8099";
     } else {
-      return "http://72.60.198.70:8081";
+      return "http://72.60.198.70:8099";
     }
   }
 
